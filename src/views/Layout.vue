@@ -4,6 +4,14 @@
       <!-- 系统头部 -->
       <el-header>
         <span>xxx管理系统</span>
+        <!-- 搜索框 -->
+        <el-input
+          v-model="searchQuery"
+          placeholder="请输入搜索内容"
+          class="search-box"
+          @input="handleSearch"
+          clearable
+        ></el-input>
         <!-- 退出 -->
         <div><i class="el-icon-switch-button" @click="logout"></i></div>
       </el-header>
@@ -49,6 +57,7 @@ export default {
   data(){
     return {
       activeMenu: '',
+      searchQuery: '', // 搜索框绑定的数据
       // 菜单数组
       menus: [
         { 
@@ -96,6 +105,11 @@ export default {
       localStorage.setItem("token", "");
       localStorage.setItem("selectMenu", "");
     },
+    // 搜索框输入事件
+    handleSearch() {
+      console.log('搜索内容:', this.searchQuery);
+      // 可在此处添加搜索逻辑
+    }
   },
   created(){
     this.activeMenu = localStorage.getItem('selectMenu') ? localStorage.getItem('selectMenu') : this.menus[0].path
@@ -116,6 +130,9 @@ export default {
 }
 .el-header {
   background-color: #ffffff20;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 .el-main {
   background-color: #f6f6f6d4;
@@ -137,5 +154,9 @@ export default {
   float: right;
   height: 60px;
   cursor: pointer;
+}
+.search-box {
+  width: 300px;
+  margin-right: 20px;
 }
 </style>
