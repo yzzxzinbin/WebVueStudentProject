@@ -1,5 +1,4 @@
 <template>
-<link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
     <div class="login-view">
         <div class="background-overlay"></div>
         <div class="login-container mosaic-glass">
@@ -47,11 +46,8 @@
         </div>
     </div>
 </template>
-<script src="https://unpkg.com/vue@2/dist/vue.js"></script>
-<!-- import JavaScript -->
-<script src="https://unpkg.com/element-ui/lib/index.js"></script>
-<script>
 
+<script>
 export default {
     name: "LoginView",
     data() {
