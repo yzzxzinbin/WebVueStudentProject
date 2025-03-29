@@ -2,20 +2,25 @@
     <div class="user">
         <el-card shadow="hover" class="search-card">
             <div class="search-group">
-                <el-select v-model="selectedField" placeholder="选择字段" clearable class="field-select">
-                    <el-option v-for="item in fields" :key="item.value" :label="item.label"
-                        :value="item.value"></el-option>
-                </el-select>
-                <el-input v-model="searchQuery" placeholder="请输入搜索内容" class="search-box" clearable
-                    @keyup.enter.native="handleSearch">
-                    <el-button slot="append" icon="el-icon-search" @click="handleSearch"></el-button>
-                </el-input>
-                <el-button type="success" icon="el-icon-plus" @click="openAddDialog"
-                    class="action-button">添加</el-button>
-                <el-button type="primary" icon="el-icon-upload2" @click="importData"
-                    class="action-button">导入</el-button>
-                <el-button type="warning" icon="el-icon-download" @click="exportData"
-                    class="action-button">导出</el-button>
+                <div class="search-inputs">
+                    <el-select v-model="selectedField" placeholder="选择字段" clearable class="field-select">
+                        <el-option v-for="item in fields" :key="item.value" :label="item.label"
+                            :value="item.value"></el-option>
+                    </el-select>
+                    <el-input v-model="searchQuery" placeholder="请输入搜索内容" class="search-box" clearable
+                        @keyup.enter.native="handleSearch">
+                        <el-button slot="append" icon="el-icon-search" @click="handleSearch"></el-button>
+                    </el-input>
+                </div>
+                <div class="divider"></div>
+                <div class="action-buttons">
+                    <el-button type="success" icon="el-icon-plus" @click="openAddDialog"
+                        class="action-button">添加</el-button>
+                    <el-button type="primary" icon="el-icon-upload2" @click="importData"
+                        class="action-button">导入</el-button>
+                    <el-button type="warning" icon="el-icon-download" @click="exportData"
+                        class="action-button">导出</el-button>
+                </div>
             </div>
         </el-card>
 
@@ -324,6 +329,23 @@ export default {
     align-items: center;
     gap: 10px;
     /* 元素间距 */
+}
+
+.search-inputs {
+    display: flex;
+    flex: 1;
+    gap: 10px;
+}
+
+.divider {
+    width: 1px;
+    height: 40px;
+    background-color: #dcdcdc;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 10px;
 }
 
 .field-select {
