@@ -1,0 +1,138 @@
+[
+  {
+    "id": "WH001",
+    "name": "华北一号中央仓库",
+    "status": "运营中",
+    "capacity": "5000吨",
+    "location": "北京市朝阳区建国路88号",
+    "manager": "张伟"
+  },
+  {
+    "id": "WH002",
+    "name": "华东冷链仓储中心",
+    "status": "维护中",
+    "capacity": "3000立方米",
+    "location": "上海市浦东新区张江高科技园区",
+    "manager": "李娜"
+  },
+  {
+    "id": "WH003",
+    "name": "华南电子产品保税仓",
+    "status": "运营中",
+    "capacity": "8000标准托盘",
+    "location": "广州市黄埔区保税区大道1号",
+    "manager": "王强"
+  },
+  {
+    "id": "WH004",
+    "name": "西南农产品恒温仓",
+    "status": "暂停使用",
+    "capacity": "2000吨",
+    "location": "成都市双流区航空港经济开发区",
+    "manager": "赵敏"
+  },
+  {
+    "id": "WH005",
+    "name": "东北重型机械存储基地",
+    "status": "运营中",
+    "capacity": "10000平方米",
+    "location": "沈阳市铁西区重工北街66号",
+    "manager": "刘建国"
+  },
+  {
+    "id": "WH006",
+    "name": "华中服装纺织品仓库",
+    "status": "运营中",
+    "capacity": "6000标准箱",
+    "location": "武汉市汉阳区黄金口工业园",
+    "manager": "陈芳"
+  },
+  {
+    "id": "WH007",
+    "name": "西北化工原料专用仓",
+    "status": "建设中",
+    "capacity": "4000吨",
+    "location": "西安市高陵区泾渭工业园",
+    "manager": "杨光"
+  },
+  {
+    "id": "WH008",
+    "name": "东南沿海进口商品保税仓",
+    "status": "运营中",
+    "capacity": "500标准集装箱",
+    "location": "厦门市海沧区保税港区",
+    "manager": "林小玉"
+  },
+  {
+    "id": "WH009",
+    "name": "京津冀生鲜配送中心",
+    "status": "运营中",
+    "capacity": "1500吨",
+    "location": "天津市武清区京滨工业园",
+    "manager": "周涛"
+  },
+  {
+    "id": "WH010",
+    "name": "长三角自动化智能仓",
+    "status": "测试中",
+    "capacity": "20000标准件",
+    "location": "杭州市余杭区未来科技城",
+    "manager": "马云飞"
+  },
+  {
+    "id": "WH011",
+    "name": "珠三角跨境电商仓",
+    "status": "运营中",
+    "capacity": "10000标准包裹",
+    "location": "深圳市宝安区福永街道",
+    "manager": "郑晓雯"
+  },
+  {
+    "id": "WH012",
+    "name": "中部图书出版物存储中心",
+    "status": "运营中",
+    "capacity": "8000立方",
+    "location": "长沙市岳麓区麓谷大道",
+    "manager": "吴文斌"
+  },
+  {
+    "id": "WH013",
+    "name": "东北亚边境贸易仓",
+    "status": "暂停使用",
+    "capacity": "5000吨",
+    "location": "延边朝鲜族自治州珲春市",
+    "manager": "金哲"
+  },
+  {
+    "id": "WH014",
+    "name": "西部矿产原料储备库",
+    "status": "运营中",
+    "capacity": "15000吨",
+    "location": "兰州市西固区化工街",
+    "manager": "马建军"
+  },
+  {
+    "id": "WH015",
+    "name": "海南免税品保税仓库",
+    "status": "运营中",
+    "capacity": "3000标准货架",
+    "location": "海口市综合保税区",
+    "manager": "苏明"
+  },
+  {
+    "id": "WH016",
+    "name": "重庆山城立体智能仓",
+    "status": "升级中",
+    "capacity": "12000标准箱",
+    "location": "重庆市沙坪坝区物流园",
+    "manager": "彭浩"
+  },
+  {
+    "id": "WH017",
+    "name": "山西煤炭设备专用仓库",
+    "status": "运营中",
+    "capacity": "8000平方米",
+    "location": "太原市小店区经济技术开发区",
+    "manager": "郭志强"
+  }
+]

@@ -21,23 +21,22 @@
 
         <el-card shadow="hover" class="table-card">
             <div class="table-header">
-                <span class="table-title">商品列表</span>
+                <span class="table-title">仓库列表</span>
                 <el-tag type="info">共 {{ totalFiltered }} 条记录</el-tag>
             </div>
-            <el-table ref="table" :data="paginatedProducts" height=tableHeight stripe border highlight-current-row
+            <el-table ref="table" :data="paginatedWarehouses" height=tableHeight stripe border highlight-current-row
                 style="width: 100%" v-loading="loading" @sort-change="handleSortChange"
                 @header-dragend="handleHeaderDragEnd" :resizable="true">
-                <el-table-column prop="id" label="商品ID" width="100" sortable></el-table-column>
-                <el-table-column prop="name" label="商品名称" width="220" sortable></el-table-column>
-                <el-table-column prop="features" label="商品特性" width="260"></el-table-column>
-                <el-table-column prop="price" label="商品价格" width="120" sortable></el-table-column>
-                <el-table-column prop="type" label="商品类型" width="120"></el-table-column>
-                <el-table-column prop="supplier" label="供应商" width="150" sortable></el-table-column>
-                <el-table-column prop="createdAt" label="创建日期" width="180" sortable></el-table-column>
+                <el-table-column prop="id" label="仓库ID" width="100" sortable></el-table-column>
+                <el-table-column prop="name" label="仓库名称" width="220" sortable></el-table-column>
+                <el-table-column prop="status" label="状态" width="120" sortable></el-table-column>
+                <el-table-column prop="capacity" label="最大容量" width="120" sortable></el-table-column>
+                <el-table-column prop="location" label="地点" width="200"></el-table-column>
+                <el-table-column prop="manager" label="负责人" width="150"></el-table-column>
                 <el-table-column label="操作" width="180" fixed="right" align="center" header-align="center">
                     <template slot-scope="scope">
-                        <el-button size="mini" type="primary" @click="editProduct(scope.row)">修改</el-button>
-                        <el-button size="mini" type="danger" @click="deleteProduct(scope.row.id)">删除</el-button>
+                        <el-button size="mini" type="primary" @click="editWarehouse(scope.row)">修改</el-button>
+                        <el-button size="mini" type="danger" @click="deleteWarehouse(scope.row.id)">删除</el-button>
                     </template>
                 </el-table-column>
             </el-table>
@@ -51,50 +50,45 @@
                 </el-pagination>
             </div>
         </el-card>
-        <!-- 修改商品信息弹框 -->
-        <el-dialog title="修改商品信息" :visible.sync="editDialogVisible" width="650px" center>
+        <!-- 修改仓库信息弹框 -->
+        <el-dialog title="修改仓库信息" :visible.sync="editDialogVisible" width="650px" center>
             <el-form :model="editForm" label-width="80px">
                 <el-row :gutter="20">
                     <el-col :span="12">
-                        <el-form-item label="商品ID">
+                        <el-form-item label="仓库ID">
                             <el-input v-model="editForm.id" disabled></el-input>
                         </el-form-item>
                     </el-col>
                     <el-col :span="12">
-                        <el-form-item label="商品名称">
+                        <el-form-item label="仓库名称">
                             <el-input v-model="editForm.name"></el-input>
                         </el-form-item>
                     </el-col>
                 </el-row>
                 <el-row :gutter="20">
                     <el-col :span="12">
-                        <el-form-item label="商品特性">
-                            <el-input v-model="editForm.features"></el-input>
+                        <el-form-item label="状态">
+                            <el-select v-model="editForm.status" placeholder="选择状态">
+                                <el-option label="启用" value="启用"></el-option>
+                                <el-option label="停用" value="停用"></el-option>
+                            </el-select>
                         </el-form-item>
                     </el-col>
                     <el-col :span="12">
-                        <el-form-item label="商品价格">
-                            <el-input v-model="editForm.price" type="number"></el-input>
+                        <el-form-item label="最大容量">
+                            <el-input v-model="editForm.capacity" type="number"></el-input>
                         </el-form-item>
                     </el-col>
                 </el-row>
                 <el-row :gutter="20">
                     <el-col :span="12">
-                        <el-form-item label="商品类型">
-                            <el-input v-model="editForm.type"></el-input>
+                        <el-form-item label="地点">
+                            <el-input v-model="editForm.location"></el-input>
                         </el-form-item>
                     </el-col>
                     <el-col :span="12">
-                        <el-form-item label="供应商">
-                            <el-input v-model="editForm.supplier"></el-input>
-                        </el-form-item>
-                    </el-col>
-                </el-row>
-                <el-row>
-                    <el-col :span="24">
-                        <el-form-item label="创建日期">
-                            <el-date-picker v-model="editForm.createdAt" type="datetime" placeholder="选择日期时间"
-                                value-format="yyyy-MM-dd HH:mm:ss"></el-date-picker>
+                        <el-form-item label="负责人">
+                            <el-input v-model="editForm.manager"></el-input>
                         </el-form-item>
                     </el-col>
                 </el-row>
@@ -104,42 +98,45 @@
                 <el-button type="primary" @click="saveEdit">保存</el-button>
             </div>
         </el-dialog>
-        <!-- 添加商品信息弹框 -->
-        <el-dialog title="添加商品信息" :visible.sync="addDialogVisible" width="650px" modal-append-to-body>
+        <!-- 添加仓库信息弹框 -->
+        <el-dialog title="添加仓库信息" :visible.sync="addDialogVisible" width="650px" modal-append-to-body>
             <el-form :model="addForm" label-width="80px">
                 <el-row :gutter="20">
                     <el-col :span="12">
-                        <el-form-item label="商品ID">
+                        <el-form-item label="仓库ID">
                             <el-input v-model="addForm.id"></el-input>
                         </el-form-item>
                     </el-col>
                     <el-col :span="12">
-                        <el-form-item label="商品名称">
+                        <el-form-item label="仓库名称">
                             <el-input v-model="addForm.name"></el-input>
                         </el-form-item>
                     </el-col>
                 </el-row>
                 <el-row :gutter="20">
                     <el-col :span="12">
-                        <el-form-item label="商品特性">
-                            <el-input v-model="addForm.features"></el-input>
+                        <el-form-item label="状态">
+                            <el-select v-model="addForm.status" placeholder="选择状态">
+                                <el-option label="启用" value="启用"></el-option>
+                                <el-option label="停用" value="停用"></el-option>
+                            </el-select>
                         </el-form-item>
                     </el-col>
                     <el-col :span="12">
-                        <el-form-item label="商品价格">
-                            <el-input v-model="addForm.price" type="number"></el-input>
+                        <el-form-item label="最大容量">
+                            <el-input v-model="addForm.capacity" type="number"></el-input>
                         </el-form-item>
                     </el-col>
                 </el-row>
                 <el-row :gutter="20">
                     <el-col :span="12">
-                        <el-form-item label="商品类型">
-                            <el-input v-model="addForm.type"></el-input>
+                        <el-form-item label="地点">
+                            <el-input v-model="addForm.location"></el-input>
                         </el-form-item>
                     </el-col>
                     <el-col :span="12">
-                        <el-form-item label="供应商">
-                            <el-input v-model="addForm.supplier"></el-input>
+                        <el-form-item label="负责人">
+                            <el-input v-model="addForm.manager"></el-input>
                         </el-form-item>
                     </el-col>
                 </el-row>
@@ -159,18 +156,17 @@ export default {
             searchQuery: '',
             selectedField: '',
             fields: [
-                { label: '商品名称', value: 'name' },
-                { label: '商品特性', value: 'features' },
-                { label: '商品价格', value: 'price' },
-                { label: '商品类型', value: 'type' },
-                { label: '供应商', value: 'supplier' },
-                { label: '创建日期', value: 'createdAt' }
+                { label: '仓库名称', value: 'name' },
+                { label: '状态', value: 'status' },
+                { label: '最大容量', value: 'capacity' },
+                { label: '地点', value: 'location' },
+                { label: '负责人', value: 'manager' }
             ],
-            products: [],
+            warehouses: [],
             editDialogVisible: false,
             editForm: {},
             addDialogVisible: false,
-            addForm: { id: '', name: '', features: '', price: '', type: '', supplier: '', createdAt: '' },
+            addForm: { id: '', name: '', status: '', capacity: '', location: '', manager: '' },
             currentPage: 1,
             pageSize: 20,
             total: 0,
@@ -178,21 +174,21 @@ export default {
         };
     },
     computed: {
-        filteredProducts() {
+        filteredWarehouses() {
             if (!this.selectedField || !this.searchQuery) {
-                return this.products;
+                return this.warehouses;
             }
-            return this.products.filter(product =>
-                product[this.selectedField]?.toString().includes(this.searchQuery)
+            return this.warehouses.filter(warehouse =>
+                warehouse[this.selectedField]?.toString().includes(this.searchQuery)
             );
         },
-        paginatedProducts() {
+        paginatedWarehouses() {
             const start = (this.currentPage - 1) * this.pageSize;
             const end = start + this.pageSize;
-            return this.filteredProducts.slice(start, end);
+            return this.filteredWarehouses.slice(start, end);
         },
         totalFiltered() {
-            return this.filteredProducts.length; // 动态计算筛选后的总记录数
+            return this.filteredWarehouses.length;
         }
     },
     methods: {
@@ -217,50 +213,50 @@ export default {
         },
         handleSortChange({ prop, order }) {
             if (order === 'ascending') {
-                this.products.sort((a, b) => (a[prop] > b[prop] ? 1 : -1));
+                this.warehouses.sort((a, b) => (a[prop] > b[prop] ? 1 : -1));
             } else if (order === 'descending') {
-                this.products.sort((a, b) => (a[prop] < b[prop] ? 1 : -1));
+                this.warehouses.sort((a, b) => (a[prop] < b[prop] ? 1 : -1));
             }
         },
         exportData() {
-            const dataStr = JSON.stringify(this.products, null, 2);
+            const dataStr = JSON.stringify(this.warehouses, null, 2);
             const blob = new Blob([dataStr], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
-            link.download = 'products.json';
+            link.download = 'warehouses.json';
             link.click();
             URL.revokeObjectURL(url);
         },
-        loadProducts() {
-            const savedProducts = localStorage.getItem('products');
-            this.products = savedProducts ? JSON.parse(savedProducts) : [];
-            this.total = this.products.length;
+        loadWarehouses() {
+            const savedWarehouses = localStorage.getItem('warehouses');
+            this.warehouses = savedWarehouses ? JSON.parse(savedWarehouses) : [];
+            this.total = this.warehouses.length;
         },
-        saveProducts() {
-            localStorage.setItem('products', JSON.stringify(this.products));
-            this.total = this.products.length;
+        saveWarehouses() {
+            localStorage.setItem('warehouses', JSON.stringify(this.warehouses));
+            this.total = this.warehouses.length;
         },
-        editProduct(product) {
-            this.editForm = { ...product };
+        editWarehouse(warehouse) {
+            this.editForm = { ...warehouse };
             this.editDialogVisible = true;
         },
         saveEdit() {
-            const index = this.products.findIndex(product => product.id === this.editForm.id);
+            const index = this.warehouses.findIndex(warehouse => warehouse.id === this.editForm.id);
             if (index !== -1) {
-                this.products.splice(index, 1, { ...this.editForm });
-                this.saveProducts();
+                this.warehouses.splice(index, 1, { ...this.editForm });
+                this.saveWarehouses();
                 this.$message.success('修改成功');
             }
             this.editDialogVisible = false;
         },
-        deleteProduct(id) {
-            this.products = this.products.filter(product => product.id !== id);
-            this.saveProducts();
+        deleteWarehouse(id) {
+            this.warehouses = this.warehouses.filter(warehouse => warehouse.id !== id);
+            this.saveWarehouses();
             this.$message.success('删除成功');
         },
         openAddDialog() {
-            this.addForm = { id: '', name: '', features: '', price: '', type: '', supplier: '', createdAt: new Date().toISOString() };
+            this.addForm = { id: '', name: '', status: '', capacity: '', location: '', manager: '' };
             this.addDialogVisible = true;
         },
         saveAdd() {
@@ -268,8 +264,8 @@ export default {
                 this.$message.error('请填写完整信息');
                 return;
             }
-            this.products.push({ ...this.addForm });
-            this.saveProducts();
+            this.warehouses.push({ ...this.addForm });
+            this.saveWarehouses();
             this.$message.success('添加成功');
             this.addDialogVisible = false;
         },
@@ -285,8 +281,8 @@ export default {
                         try {
                             const importedData = JSON.parse(e.target.result);
                             if (Array.isArray(importedData)) {
-                                this.products = [...this.products, ...importedData];
-                                this.saveProducts();
+                                this.warehouses = [...this.warehouses, ...importedData];
+                                this.saveWarehouses();
                                 this.$message.success('数据导入成功');
                             } else {
                                 this.$message.error('文件格式错误');
@@ -302,7 +298,7 @@ export default {
         }
     },
     created() {
-        this.loadProducts();
+        this.loadWarehouses();
     }
 };
 </script>
