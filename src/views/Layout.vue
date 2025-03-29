@@ -168,7 +168,7 @@ export default {
 /* ========== 布局样式 ========== */
 .layout {
   height: 100vh;
-  background-image: url("../assets/b.png");
+  background-image: url("../assets/images/b.png");
   background-size: 100% 100%;
 }
 

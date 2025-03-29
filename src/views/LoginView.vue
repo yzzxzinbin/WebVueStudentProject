@@ -133,7 +133,7 @@ body {
     align-items: center;
     min-height: 100vh;
     padding: 20px;
-    background-image: url("../assets/a.png");
+    background-image: url("../assets/images/a.png");
     background-size: cover;
     position: relative;
 }
