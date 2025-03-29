@@ -10,24 +10,24 @@ const routes = [
   },
   {
     path: '/',
-    // 路由重定向
-    redirect: '/user',
-    component: ()=> import('../views/Layout.vue'),
+    redirect: '/list/products',
+    component: () => import('../views/Layout.vue'),
     children: [
-      // 用户管理 - 学生管理
       {
-        path: 'user',
-        component: ()=>import('../views/UserList.vue')
+        path: 'list/products',
+        component: () => import('../views/ProductList.vue')
       },
-      // 用户管理 - 教职工管理
       {
-        path: 'staff',
-        component: ()=>import('../views/StaffList.vue')
+        path: 'list/warehouses',
+        component: () => import('../views/Warehouse.vue')
       },
-      // 楼栋管理
       {
-        path: 'building',
-        component: ()=>import('../views/Building.vue')
+        path: 'list/warehouse-products',
+        component: () => import('../views/warehouse-products.vue')
+      },
+      {
+        path: 'operation',
+        component: () => import('../views/operation.vue')
       }
     ]
   }

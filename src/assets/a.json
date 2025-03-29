@@ -1,0 +1,1042 @@
+[
+    {
+        "id": "P001",
+        "name": "iPhone 15",
+        "features": "6.1英寸OLED, A16芯片, 5G",
+        "price": 799.99,
+        "type": "智能手机",
+        "supplier": "Apple",
+        "createdAt": "2023-09-20 08:00:00"
+    },
+    {
+        "id": "P002",
+        "name": "Samsung Galaxy S23",
+        "features": "120Hz刷新率, 8K录像, 骁龙8 Gen2",
+        "price": 749.99,
+        "type": "智能手机",
+        "supplier": "Samsung",
+        "createdAt": "2023-02-01 10:30:00"
+    },
+    {
+        "id": "P003",
+        "name": "Logitech MX Master 3",
+        "features": "无线蓝牙, 4000DPI, 人体工学",
+        "price": 99.99,
+        "type": "电脑外设",
+        "supplier": "Logitech",
+        "createdAt": "2023-03-15 14:20:00"
+    },
+    {
+        "id": "P004",
+        "name": "Dyson V15 Detect",
+        "features": "激光除尘, 60分钟续航, HEPA过滤",
+        "price": 699.99,
+        "type": "家用电器",
+        "supplier": "Dyson",
+        "createdAt": "2023-04-10 11:45:00"
+    },
+    {
+        "id": "P005",
+        "name": "Nike Air Force 1",
+        "features": "全皮革, 气垫缓震, 经典款",
+        "price": 110.0,
+        "type": "运动鞋",
+        "supplier": "Nike",
+        "createdAt": "2023-05-22 16:10:00"
+    },
+    {
+        "id": "P006",
+        "name": "Sony WH-1000XM5",
+        "features": "主动降噪, 30小时续航, 高解析音频",
+        "price": 349.99,
+        "type": "耳机",
+        "supplier": "Sony",
+        "createdAt": "2023-06-05 09:30:00"
+    },
+    {
+        "id": "P007",
+        "name": "Amazon Echo Dot (5th Gen)",
+        "features": "智能语音助手, Alexa, 蓝牙音箱",
+        "price": 49.99,
+        "type": "智能家居",
+        "supplier": "Amazon",
+        "createdAt": "2023-07-12 13:15:00"
+    },
+    {
+        "id": "P008",
+        "name": "HP Pavilion 15",
+        "features": "AMD Ryzen 7, 16GB RAM, 512GB SSD",
+        "price": 799.0,
+        "type": "笔记本电脑",
+        "supplier": "HP",
+        "createdAt": "2023-08-18 10:50:00"
+    },
+    {
+        "id": "P009",
+        "name": "LEGO Star Wars Millennium Falcon",
+        "features": "7541块, 收藏版, 18+",
+        "price": 849.99,
+        "type": "玩具",
+        "supplier": "LEGO",
+        "createdAt": "2023-09-30 15:25:00"
+    },
+    {
+        "id": "P010",
+        "name": "Bose QuietComfort 45",
+        "features": "主动降噪, 24小时续航, 蓝牙5.1",
+        "price": 329.0,
+        "type": "耳机",
+        "supplier": "Bose",
+        "createdAt": "2023-10-05 12:40:00"
+    },
+    {
+        "id": "P011",
+        "name": "Canon EOS R5",
+        "features": "45MP, 8K视频, 机身防抖",
+        "price": 3799.0,
+        "type": "相机",
+        "supplier": "Canon",
+        "createdAt": "2023-11-10 17:00:00"
+    },
+    {
+        "id": "P012",
+        "name": "Adidas Ultraboost 22",
+        "features": "Boost中底, Primeknit鞋面, 跑步鞋",
+        "price": 180.0,
+        "type": "运动鞋",
+        "supplier": "Adidas",
+        "createdAt": "2023-12-01 10:20:00"
+    },
+    {
+        "id": "P013",
+        "name": "LG OLED C3",
+        "features": "4K 120Hz, AI音画, HDMI 2.1",
+        "price": 1999.99,
+        "type": "电视",
+        "supplier": "LG",
+        "createdAt": "2024-01-15 14:35:00"
+    },
+    {
+        "id": "P014",
+        "name": "Instant Pot Duo 7-in-1",
+        "features": "电压力锅, 慢炖, 蒸煮",
+        "price": 99.95,
+        "type": "厨房电器",
+        "supplier": "Instant Pot",
+        "createdAt": "2024-02-05 09:10:00"
+    },
+    {
+        "id": "P015",
+        "name": "Razer BlackWidow V4",
+        "features": "机械轴, RGB背光, 可编程宏",
+        "price": 169.99,
+        "type": "键盘",
+        "supplier": "Razer",
+        "createdAt": "2024-03-08 16:45:00"
+    },
+    {
+        "id": "P016",
+        "name": "Fitbit Charge 6",
+        "features": "心率监测, GPS, 7天续航",
+        "price": 159.95,
+        "type": "智能手表",
+        "supplier": "Fitbit",
+        "createdAt": "2024-04-12 11:30:00"
+    },
+    {
+        "id": "P017",
+        "name": "Tesla Powerwall 3",
+        "features": "13.5kWh储能, 太阳能集成, 家用电池",
+        "price": 8999.0,
+        "type": "能源设备",
+        "supplier": "Tesla",
+        "createdAt": "2024-05-20 08:50:00"
+    },
+    {
+        "id": "P018",
+        "name": "GoPro HERO12 Black",
+        "features": "5.3K视频, HyperSmooth 6.0, 防水",
+        "price": 399.99,
+        "type": "运动相机",
+        "supplier": "GoPro",
+        "createdAt": "2024-06-10 13:25:00"
+    },
+    {
+        "id": "P019",
+        "name": "IKEA MALM 床架",
+        "features": "双人床, 高箱储物, 北欧简约",
+        "price": 199.0,
+        "type": "家具",
+        "supplier": "IKEA",
+        "createdAt": "2024-07-05 15:40:00"
+    },
+    {
+        "id": "P020",
+        "name": "Nintendo Switch OLED",
+        "features": "7英寸OLED屏, 掌机/家用, Joy-Con",
+        "price": 349.99,
+        "type": "游戏机",
+        "supplier": "Nintendo",
+        "createdAt": "2024-08-18 10:15:00"
+    },
+	{
+        "id": "F001",
+        "name": "金龙鱼黄金比例调和油5L",
+        "features": "非转基因, 均衡营养",
+        "price": 79.9,
+        "type": "食用油",
+        "supplier": "金龙鱼",
+        "createdAt": "2024-01-10 08:30:00"
+    },
+    {
+        "id": "F002",
+        "name": "福临门东北大米10kg",
+        "features": "一级粳米, 香甜软糯",
+        "price": 59.9,
+        "type": "粮食",
+        "supplier": "福临门",
+        "createdAt": "2024-02-15 14:20:00"
+    },
+    {
+        "id": "F003",
+        "name": "海天金标生抽500ml",
+        "features": "酿造酱油, 零添加防腐剂",
+        "price": 12.8,
+        "type": "调味品",
+        "supplier": "海天",
+        "createdAt": "2024-03-05 09:45:00"
+    },
+    {
+        "id": "F004",
+        "name": "康师傅红烧牛肉面5连包",
+        "features": "经典口味, 方便速食",
+        "price": 15.5,
+        "type": "方便食品",
+        "supplier": "康师傅",
+        "createdAt": "2024-01-22 11:10:00"
+    },
+    {
+        "id": "F005",
+        "name": "蒙牛纯牛奶250ml×12盒",
+        "features": "全脂灭菌乳, 高钙",
+        "price": 36.0,
+        "type": "乳制品",
+        "supplier": "蒙牛",
+        "createdAt": "2024-02-28 16:50:00"
+    },
+    {
+        "id": "F006",
+        "name": "洽洽香瓜子260g",
+        "features": "原味, 独立小包装",
+        "price": 9.9,
+        "type": "炒货",
+        "supplier": "洽洽",
+        "createdAt": "2024-03-12 13:25:00"
+    },
+    {
+        "id": "F007",
+        "name": "三只松鼠每日坚果750g",
+        "features": "混合果仁, 科学配比",
+        "price": 89.9,
+        "type": "坚果",
+        "supplier": "三只松鼠",
+        "createdAt": "2024-01-18 10:15:00"
+    },
+    {
+        "id": "F008",
+        "name": "百事可乐330ml×24罐",
+        "features": "碳酸饮料, 经典口味",
+        "price": 48.0,
+        "type": "饮料",
+        "supplier": "百事",
+        "createdAt": "2024-02-05 12:30:00"
+    },
+    {
+        "id": "F009",
+        "name": "农夫山泉天然饮用水550ml×24瓶",
+        "features": "弱碱性, 天然水源",
+        "price": 30.0,
+        "type": "饮用水",
+        "supplier": "农夫山泉",
+        "createdAt": "2024-03-20 15:40:00"
+    },
+    {
+        "id": "F010",
+        "name": "德芙丝滑牛奶巧克力43g",
+        "features": "牛奶味, 独立包装",
+        "price": 8.5,
+        "type": "糖果巧克力",
+        "supplier": "德芙",
+        "createdAt": "2024-01-30 09:20:00"
+    },
+	{
+        "id": "J001",
+        "name": "顾家家居真皮沙发（三人位）",
+        "features": "头层牛皮, 高回弹海绵",
+        "price": 5999.0,
+        "type": "沙发",
+        "supplier": "顾家家居",
+        "createdAt": "2024-01-05 10:00:00"
+    },
+    {
+        "id": "J002",
+        "name": "全友家居实木餐桌（1.4米）",
+        "features": "橡木材质, 可伸缩",
+        "price": 1899.0,
+        "type": "餐桌",
+        "supplier": "全友",
+        "createdAt": "2024-02-10 14:30:00"
+    },
+    {
+        "id": "J003",
+        "name": "索菲亚定制衣柜（推拉门）",
+        "features": "E0级环保板材, 多格设计",
+        "price": 4500.0,
+        "type": "衣柜",
+        "supplier": "索菲亚",
+        "createdAt": "2024-03-08 11:45:00"
+    },
+    {
+        "id": "J004",
+        "name": "林氏木业北欧风电视柜",
+        "features": "简约设计, 多层储物",
+        "price": 1299.0,
+        "type": "电视柜",
+        "supplier": "林氏木业",
+        "createdAt": "2024-01-15 09:20:00"
+    },
+    {
+        "id": "J005",
+        "name": "芝华仕功能单人沙发",
+        "features": "电动调节, 头层牛皮",
+        "price": 2999.0,
+        "type": "功能沙发",
+        "supplier": "芝华仕",
+        "createdAt": "2024-02-20 16:10:00"
+    },
+    {
+        "id": "J006",
+        "name": "宜家马尔姆六斗柜",
+        "features": "白色漆面, 大容量收纳",
+        "price": 999.0,
+        "type": "储物柜",
+        "supplier": "宜家",
+        "createdAt": "2024-03-25 13:50:00"
+    },
+    {
+        "id": "J007",
+        "name": "红苹果现代简约双人床",
+        "features": "高箱储物, 环保板材",
+        "price": 2399.0,
+        "type": "床",
+        "supplier": "红苹果",
+        "createdAt": "2024-01-08 08:40:00"
+    },
+    {
+        "id": "J008",
+        "name": "联邦米尼布艺沙发（L型）",
+        "features": "可拆洗, 高密度海绵",
+        "price": 3599.0,
+        "type": "布艺沙发",
+        "supplier": "联邦米尼",
+        "createdAt": "2024-02-12 15:25:00"
+    },
+    {
+        "id": "J009",
+        "name": "曲美家居实木书桌",
+        "features": "胡桃木色, 多功能收纳",
+        "price": 1599.0,
+        "type": "书桌",
+        "supplier": "曲美",
+        "createdAt": "2024-03-18 10:30:00"
+    },
+    {
+        "id": "J010",
+        "name": "左右沙发真皮贵妃榻",
+        "features": "头层牛皮, 可躺可坐",
+        "price": 4999.0,
+        "type": "休闲椅",
+        "supplier": "左右沙发",
+        "createdAt": "2024-01-25 12:15:00"
+    },
+	{
+        "id": "D001",
+        "name": "维达抽纸（3层120抽×24包）",
+        "features": "原生木浆, 柔韧不易破",
+        "price": 59.9,
+        "type": "纸品",
+        "supplier": "维达",
+        "createdAt": "2024-01-12 09:10:00"
+    },
+    {
+        "id": "D002",
+        "name": "蓝月亮洗衣液（3kg）",
+        "features": "深层去渍, 低泡易漂",
+        "price": 39.9,
+        "type": "洗衣用品",
+        "supplier": "蓝月亮",
+        "createdAt": "2024-02-14 14:50:00"
+    },
+    {
+        "id": "D003",
+        "name": "舒肤佳纯白香皂（125g×12块）",
+        "features": "抑菌99%, 经典清香",
+        "price": 29.9,
+        "type": "洗浴用品",
+        "supplier": "舒肤佳",
+        "createdAt": "2024-03-10 11:30:00"
+    },
+    {
+        "id": "D004",
+        "name": "黑人牙膏（超白系列180g）",
+        "features": "氟化物防蛀, 清新薄荷",
+        "price": 15.8,
+        "type": "口腔清洁",
+        "supplier": "黑人",
+        "createdAt": "2024-01-20 08:45:00"
+    },
+    {
+        "id": "D005",
+        "name": "苏菲超熟睡夜用卫生巾（420mm×10片）",
+        "features": "超薄透气, 防侧漏",
+        "price": 18.5,
+        "type": "女性护理",
+        "supplier": "苏菲",
+        "createdAt": "2024-02-22 16:20:00"
+    },
+    {
+        "id": "D006",
+        "name": "妙洁保鲜膜（30cm×100m）",
+        "features": "PE材质, 耐高温",
+        "price": 12.9,
+        "type": "厨房用品",
+        "supplier": "妙洁",
+        "createdAt": "2024-03-15 10:05:00"
+    },
+    {
+        "id": "D007",
+        "name": "乐扣乐扣保鲜盒（3件套）",
+        "features": "耐热玻璃, 微波可用",
+        "price": 89.0,
+        "type": "厨房收纳",
+        "supplier": "乐扣乐扣",
+        "createdAt": "2024-01-28 13:40:00"
+    },
+    {
+        "id": "D008",
+        "name": "天堂伞（三折晴雨伞）",
+        "features": "防紫外线, 加固骨架",
+        "price": 49.9,
+        "type": "雨具",
+        "supplier": "天堂伞",
+        "createdAt": "2024-02-18 15:15:00"
+    },
+    {
+        "id": "D009",
+        "name": "双枪竹制筷子（10双装）",
+        "features": "无漆无蜡, 防霉防蛀",
+        "price": 19.9,
+        "type": "餐具",
+        "supplier": "双枪",
+        "createdAt": "2024-03-22 09:55:00"
+    },
+    {
+        "id": "D010",
+        "name": "洁柔Face抽纸（3层120抽×24包）",
+        "features": "湿水不易破, 柔韧亲肤",
+        "price": 55.0,
+        "type": "纸品",
+        "supplier": "洁柔",
+        "createdAt": "2024-01-07 11:25:00"
+    },
+    {
+        "id": "D011",
+        "name": "立白洗衣粉（2.5kg）",
+        "features": "去污强效, 低泡易漂",
+        "price": 25.9,
+        "type": "洗衣用品",
+        "supplier": "立白",
+        "createdAt": "2024-02-05 14:35:00"
+    },
+    {
+        "id": "D012",
+        "name": "六神清凉沐浴露（1L）",
+        "features": "冰爽薄荷, 持久留香",
+        "price": 32.8,
+        "type": "洗浴用品",
+        "supplier": "六神",
+        "createdAt": "2024-03-28 10:50:00"
+    },
+    {
+        "id": "D013",
+        "name": "高露洁牙刷（软毛3支装）",
+        "features": "防滑手柄, 深层清洁",
+        "price": 16.9,
+        "type": "口腔清洁",
+        "supplier": "高露洁",
+        "createdAt": "2024-01-14 08:30:00"
+    },
+    {
+        "id": "D014",
+        "name": "心相印茶语抽纸（3层120抽×24包）",
+        "features": "天然茶香, 柔韧舒适",
+        "price": 52.0,
+        "type": "纸品",
+        "supplier": "心相印",
+        "createdAt": "2024-02-25 15:45:00"
+    },
+    {
+        "id": "D015",
+        "name": "威猛先生厨房重油污清洁剂",
+        "features": "强力去油, 快速分解",
+        "price": 18.8,
+        "type": "清洁用品",
+        "supplier": "威猛先生",
+        "createdAt": "2024-03-08 12:20:00"
+    },
+    {
+        "id": "D016",
+        "name": "美的电热水壶（1.7L）",
+        "features": "304不锈钢, 防干烧",
+        "price": 99.0,
+        "type": "小家电",
+        "supplier": "美的",
+        "createdAt": "2024-01-30 09:10:00"
+    },
+    {
+        "id": "D017",
+        "name": "苏泊尔不粘锅炒锅（32cm）",
+        "features": "麦饭石涂层, 电磁炉通用",
+        "price": 159.0,
+        "type": "厨具",
+        "supplier": "苏泊尔",
+        "createdAt": "2024-02-16 14:00:00"
+    },
+    {
+        "id": "D018",
+        "name": "爱仕达压力锅（6L）",
+        "features": "安全阀设计, 节能省时",
+        "price": 199.0,
+        "type": "厨具",
+        "supplier": "爱仕达",
+        "createdAt": "2024-03-14 11:35:00"
+    },
+    {
+        "id": "D019",
+        "name": "九阳豆浆机（1.2L）",
+        "features": "免滤技术, 多功能",
+        "price": 299.0,
+        "type": "小家电",
+        "supplier": "九阳",
+        "createdAt": "2024-01-22 10:25:00"
+    },
+    {
+        "id": "D020",
+        "name": "飞科剃须刀（三刀头）",
+        "features": "浮动刀网, 快充",
+        "price": 89.0,
+        "type": "个人护理",
+        "supplier": "飞科",
+        "createdAt": "2024-02-28 16:40:00"
+    },
+	{
+        "id": "C001",
+        "name": "优衣库U系列圆领T恤（白色）",
+        "features": "100%棉, 宽松版型",
+        "price": 99.0,
+        "type": "服装",
+        "supplier": "优衣库",
+        "createdAt": "2024-04-01 10:00:00"
+    },
+    {
+        "id": "C002",
+        "name": "李宁运动短裤（男款）",
+        "features": "速干面料, 透气网眼",
+        "price": 129.0,
+        "type": "运动服装",
+        "supplier": "李宁",
+        "createdAt": "2024-04-05 14:20:00"
+    },
+    {
+        "id": "C003",
+        "name": "ZARA高腰牛仔裤（女款）",
+        "features": "修身弹力, 复古水洗",
+        "price": 299.0,
+        "type": "服装",
+        "supplier": "ZARA",
+        "createdAt": "2024-03-28 11:30:00"
+    },
+    {
+        "id": "C004",
+        "name": "波司登轻薄羽绒服",
+        "features": "90%白鸭绒, 可折叠收纳",
+        "price": 599.0,
+        "type": "羽绒服",
+        "supplier": "波司登",
+        "createdAt": "2024-02-15 09:45:00"
+    },
+    {
+        "id": "C005",
+        "name": "安踏儿童运动鞋（防滑款）",
+        "features": "魔术贴设计, EVA缓震",
+        "price": 159.0,
+        "type": "童鞋",
+        "supplier": "安踏",
+        "createdAt": "2024-04-10 16:10:00"
+    },
+
+    {
+        "id": "M001",
+        "name": "雅诗兰黛小棕瓶精华（50ml）",
+        "features": "修护抗老, 夜间专用",
+        "price": 899.0,
+        "type": "护肤品",
+        "supplier": "雅诗兰黛",
+        "createdAt": "2024-03-20 13:15:00"
+    },
+    {
+        "id": "M002",
+        "name": "YSL小金条口红（21号）",
+        "features": "哑光质地, 复古正红",
+        "price": 350.0,
+        "type": "彩妆",
+        "supplier": "YSL",
+        "createdAt": "2024-04-02 10:50:00"
+    },
+    {
+        "id": "M003",
+        "name": "资生堂安耐晒防晒霜（60ml）",
+        "features": "SPF50+, 防水防汗",
+        "price": 198.0,
+        "type": "防晒",
+        "supplier": "资生堂",
+        "createdAt": "2024-03-25 15:30:00"
+    },
+    {
+        "id": "M004",
+        "name": "欧莱雅黑精华面膜（10片装）",
+        "features": "玻尿酸补水, 密集修护",
+        "price": 129.0,
+        "type": "面膜",
+        "supplier": "欧莱雅",
+        "createdAt": "2024-04-08 12:40:00"
+    },
+    {
+        "id": "M005",
+        "name": "完美日记动物眼影盘（小猪盘）",
+        "features": "12色哑光珠光, 显色持久",
+        "price": 129.0,
+        "type": "彩妆",
+        "supplier": "完美日记",
+        "createdAt": "2024-03-15 14:25:00"
+    },
+
+    {
+        "id": "S001",
+        "name": "迪卡侬登山杖（碳纤维）",
+        "features": "可调节长度, 防滑手柄",
+        "price": 199.0,
+        "type": "户外装备",
+        "supplier": "迪卡侬",
+        "createdAt": "2024-04-03 09:20:00"
+    },
+    {
+        "id": "S002",
+        "name": "Keep瑜伽垫（加厚款）",
+        "features": "TPE材质, 防滑纹路",
+        "price": 129.0,
+        "type": "健身器材",
+        "supplier": "Keep",
+        "createdAt": "2024-03-22 16:50:00"
+    },
+    {
+        "id": "S003",
+        "name": "斯伯丁NBA官方比赛用球",
+        "features": "真皮材质, 标准7号",
+        "price": 599.0,
+        "type": "球类",
+        "supplier": "斯伯丁",
+        "createdAt": "2024-02-28 11:10:00"
+    },
+    {
+        "id": "S004",
+        "name": "北面防风冲锋衣（男款）",
+        "features": "GORE-TEX面料, 轻量化",
+        "price": 1899.0,
+        "type": "户外服装",
+        "supplier": "The North Face",
+        "createdAt": "2024-04-12 14:30:00"
+    },
+    {
+        "id": "S005",
+        "name": "小米运动手环7 Pro",
+        "features": "1.64英寸AMOLED屏, 血氧监测",
+        "price": 399.0,
+        "type": "智能穿戴",
+        "supplier": "小米",
+        "createdAt": "2024-03-30 10:15:00"
+    },
+
+    {
+        "id": "B001",
+        "name": "《三体》全集（刘慈欣著）",
+        "features": "科幻经典, 雨果奖作品",
+        "price": 128.0,
+        "type": "图书",
+        "supplier": "重庆出版社",
+        "createdAt": "2024-03-10 08:40:00"
+    },
+    {
+        "id": "B002",
+        "name": "《Python编程：从入门到实践》",
+        "features": "零基础教程, 项目实战",
+        "price": 89.0,
+        "type": "计算机图书",
+        "supplier": "人民邮电出版社",
+        "createdAt": "2024-04-05 13:20:00"
+    },
+    {
+        "id": "B003",
+        "name": "《活着》（余华著）",
+        "features": "当代文学, 平装版",
+        "price": 35.0,
+        "type": "文学",
+        "supplier": "作家出版社",
+        "createdAt": "2024-02-18 10:55:00"
+    },
+    {
+        "id": "B004",
+        "name": "《小狗钱钱》儿童财商启蒙",
+        "features": "理财童话, 插图版",
+        "price": 45.0,
+        "type": "童书",
+        "supplier": "南海出版公司",
+        "createdAt": "2024-04-15 16:25:00"
+    },
+    {
+        "id": "B005",
+        "name": "《明朝那些事儿》全集",
+        "features": "通俗历史, 幽默叙事",
+        "price": 258.0,
+        "type": "历史",
+        "supplier": "中国友谊出版公司",
+        "createdAt": "2024-03-28 12:10:00"
+    },
+
+    {
+        "id": "P001",
+        "name": "皇家小型犬成犬粮（1.5kg）",
+        "features": "均衡营养, 适口性好",
+        "price": 129.0,
+        "type": "宠物食品",
+        "supplier": "皇家",
+        "createdAt": "2024-04-07 11:30:00"
+    },
+    {
+        "id": "P002",
+        "name": "pidan混合猫砂（6L）",
+        "features": "豆腐砂+膨润土, 结团快",
+        "price": 39.9,
+        "type": "猫砂",
+        "supplier": "pidan",
+        "createdAt": "2024-03-25 15:45:00"
+    },
+    {
+        "id": "P003",
+        "name": "小佩智能饮水机（宠物用）",
+        "features": "静音循环, 三重过滤",
+        "price": 199.0,
+        "type": "宠物电器",
+        "supplier": "小佩",
+        "createdAt": "2024-04-10 09:50:00"
+    },
+    {
+        "id": "P004",
+        "name": "福莱希伸缩牵引绳（5米）",
+        "features": "一键制动, 耐磨纤维",
+        "price": 149.0,
+        "type": "宠物用品",
+        "supplier": "福莱希",
+        "createdAt": "2024-02-20 14:15:00"
+    },
+    {
+        "id": "P005",
+        "name": "zeze猫爬架（多层实木）",
+        "features": "剑麻柱, 跳台设计",
+        "price": 299.0,
+        "type": "宠物家具",
+        "supplier": "zeze",
+        "createdAt": "2024-04-12 17:20:00"
+    },
+
+    {
+        "id": "E001",
+        "name": "Apple Watch Ultra 2",
+        "features": "钛金属表壳, 双频GPS",
+        "price": 6499.0,
+        "type": "智能手表",
+        "supplier": "Apple",
+        "createdAt": "2024-04-18 10:00:00"
+    },
+    {
+        "id": "E002",
+        "name": "华为MateBook X Pro 2024",
+        "features": "13代i7, 3.1K触控屏",
+        "price": 9999.0,
+        "type": "笔记本电脑",
+        "supplier": "华为",
+        "createdAt": "2024-04-15 14:30:00"
+    },
+    {
+        "id": "E003",
+        "name": "索尼PS5 Slim版",
+        "features": "1TB SSD, 光驱版",
+        "price": 3599.0,
+        "type": "游戏机",
+        "supplier": "索尼",
+        "createdAt": "2024-04-20 09:45:00"
+    },
+    {
+        "id": "E004",
+        "name": "大疆Mini 4 Pro无人机",
+        "features": "4K/60fps, 全向避障",
+        "price": 5199.0,
+        "type": "无人机",
+        "supplier": "大疆",
+        "createdAt": "2024-04-10 16:20:00"
+    },
+    {
+        "id": "E005",
+        "name": "佳能EOS R6 Mark II",
+        "features": "2420万像素, 8K视频",
+        "price": 15999.0,
+        "type": "相机",
+        "supplier": "佳能",
+        "createdAt": "2024-04-05 11:10:00"
+    },
+    {
+        "id": "E006",
+        "name": "小米14 Ultra",
+        "features": "徕卡四摄, 骁龙8 Gen3",
+        "price": 6499.0,
+        "type": "智能手机",
+        "supplier": "小米",
+        "createdAt": "2024-04-12 13:50:00"
+    },
+    {
+        "id": "E007",
+        "name": "任天堂Switch 2（OLED版）",
+        "features": "7英寸OLED屏, 便携模式",
+        "price": 2499.0,
+        "type": "游戏机",
+        "supplier": "任天堂",
+        "createdAt": "2024-04-22 08:30:00"
+    },
+    {
+        "id": "E008",
+        "name": "Bose QuietComfort Ultra耳机",
+        "features": "自适应降噪, 空间音频",
+        "price": 3499.0,
+        "type": "耳机",
+        "supplier": "Bose",
+        "createdAt": "2024-04-17 15:40:00"
+    },
+    {
+        "id": "E009",
+        "name": "联想拯救者Y9000P 2024",
+        "features": "RTX 4070, 16英寸2.5K屏",
+        "price": 12999.0,
+        "type": "游戏本",
+        "supplier": "联想",
+        "createdAt": "2024-04-14 12:25:00"
+    },
+    {
+        "id": "E010",
+        "name": "三星Galaxy Z Fold6",
+        "features": "折叠屏, S Pen支持",
+        "price": 13999.0,
+        "type": "智能手机",
+        "supplier": "三星",
+        "createdAt": "2024-04-25 10:15:00"
+    },
+	{
+        "id": "A001",
+        "name": "iPhone 15 Pro",
+        "features": "A17 Pro芯片, 钛金属边框",
+        "price": 8999.0,
+        "type": "智能手机",
+        "supplier": "Apple",
+        "createdAt": "2024-04-01 09:00:00"
+    },
+    {
+        "id": "A002",
+        "name": "MacBook Air 15寸",
+        "features": "M2芯片, 视网膜显示屏",
+        "price": 10499.0,
+        "type": "笔记本电脑",
+        "supplier": "Apple",
+        "createdAt": "2024-04-05 10:30:00"
+    },
+    {
+        "id": "A003",
+        "name": "AirPods Pro 2",
+        "features": "主动降噪, 空间音频",
+        "price": 1899.0,
+        "type": "耳机",
+        "supplier": "Apple",
+        "createdAt": "2024-03-28 14:15:00"
+    },
+    {
+        "id": "A004",
+        "name": "iPad Pro 11寸",
+        "features": "M2芯片, 120Hz刷新率",
+        "price": 6799.0,
+        "type": "平板电脑",
+        "supplier": "Apple",
+        "createdAt": "2024-04-10 11:20:00"
+    },
+    {
+        "id": "A005",
+        "name": "Apple TV 4K",
+        "features": "A15仿生芯片, 杜比视界",
+        "price": 1299.0,
+        "type": "流媒体设备",
+        "supplier": "Apple",
+        "createdAt": "2024-03-25 16:45:00"
+    },
+    {
+        "id": "S001",
+        "name": "Galaxy S24 Ultra",
+        "features": "骁龙8 Gen3, S Pen支持",
+        "price": 9699.0,
+        "type": "智能手机",
+        "supplier": "Samsung",
+        "createdAt": "2024-04-02 10:00:00"
+    },
+    {
+        "id": "S002",
+        "name": "Galaxy Tab S9 Ultra",
+        "features": "14.6英寸AMOLED, S Pen",
+        "price": 8999.0,
+        "type": "平板电脑",
+        "supplier": "Samsung",
+        "createdAt": "2024-04-08 14:30:00"
+    },
+    {
+        "id": "S003",
+        "name": "Galaxy Watch6 Classic",
+        "features": "旋转表圈, 血压监测",
+        "price": 2999.0,
+        "type": "智能手表",
+        "supplier": "Samsung",
+        "createdAt": "2024-03-30 11:15:00"
+    },
+    {
+        "id": "S004",
+        "name": "Samsung QN90C电视",
+        "features": "4K Neo QLED, 144Hz",
+        "price": 12999.0,
+        "type": "电视",
+        "supplier": "Samsung",
+        "createdAt": "2024-04-12 15:20:00"
+    },
+    {
+        "id": "S005",
+        "name": "Samsung T7 Shield移动硬盘",
+        "features": "1TB, IP65防护",
+        "price": 799.0,
+        "type": "存储设备",
+        "supplier": "Samsung",
+        "createdAt": "2024-03-27 09:45:00"
+    },
+    {
+        "id": "H001",
+        "name": "HUAWEI Mate 60 Pro",
+        "features": "麒麟9000S, 卫星通信",
+        "price": 6999.0,
+        "type": "智能手机",
+        "supplier": "HUAWEI",
+        "createdAt": "2024-04-03 13:00:00"
+    },
+    {
+        "id": "H002",
+        "name": "HUAWEI MateBook X Pro",
+        "features": "13代i7, 3.1K触控屏",
+        "price": 9999.0,
+        "type": "笔记本电脑",
+        "supplier": "HUAWEI",
+        "createdAt": "2024-04-09 16:30:00"
+    },
+    {
+        "id": "H003",
+        "name": "HUAWEI WATCH Ultimate",
+        "features": "卫星通信, 100米防水",
+        "price": 5999.0,
+        "type": "智能手表",
+        "supplier": "HUAWEI",
+        "createdAt": "2024-03-29 10:20:00"
+    },
+    {
+        "id": "H004",
+        "name": "HUAWEI FreeBuds Pro 3",
+        "features": "无损音质, 智能降噪",
+        "price": 1499.0,
+        "type": "耳机",
+        "supplier": "HUAWEI",
+        "createdAt": "2024-04-15 14:10:00"
+    },
+    {
+        "id": "H005",
+        "name": "HUAWEI Vision智慧屏",
+        "features": "4K 120Hz, 鸿蒙系统",
+        "price": 7999.0,
+        "type": "电视",
+        "supplier": "HUAWEI",
+        "createdAt": "2024-04-05 11:45:00"
+    },
+    {
+        "id": "X001",
+        "name": "Xiaomi 14 Ultra",
+        "features": "徕卡四摄, 骁龙8 Gen3",
+        "price": 6499.0,
+        "type": "智能手机",
+        "supplier": "Xiaomi",
+        "createdAt": "2024-04-07 09:30:00"
+    },
+    {
+        "id": "X002",
+        "name": "Xiaomi Pad 6 Pro",
+        "features": "骁龙8+ Gen1, 144Hz",
+        "price": 2999.0,
+        "type": "平板电脑",
+        "supplier": "Xiaomi",
+        "createdAt": "2024-04-11 15:15:00"
+    },
+    {
+        "id": "X003",
+        "name": "Xiaomi Watch S3",
+        "features": "1.43英寸AMOLED, 血氧监测",
+        "price": 999.0,
+        "type": "智能手表",
+        "supplier": "Xiaomi",
+        "createdAt": "2024-03-31 12:20:00"
+    },
+    {
+        "id": "X004",
+        "name": "Xiaomi TV S Pro",
+        "features": "Mini LED, 4K 144Hz",
+        "price": 4999.0,
+        "type": "电视",
+        "supplier": "Xiaomi",
+        "createdAt": "2024-04-14 17:00:00"
+    },
+    {
+        "id": "X005",
+        "name": "Xiaomi Sound Pro",
+        "features": "Harman调音, 360°环绕",
+        "price": 899.0,
+        "type": "智能音箱",
+        "supplier": "Xiaomi",
+        "createdAt": "2024-04-06 10:45:00"
+    }
+]

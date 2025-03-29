@@ -1,6 +1,6 @@
 <template>
   <div class="building">
-    <h1>楼栋管理页面</h1>
+    <h1>操作申请页面</h1>
   </div>
 </template>
 
