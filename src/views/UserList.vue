@@ -1,36 +1,31 @@
 <template>
     <div class="user">
-        <div class="search-container">
-            <el-card shadow="hover" class="search-card">
-                <div class="search-group">
-                    <el-select v-model="selectedField" placeholder="选择字段" clearable class="field-select">
-                        <el-option v-for="item in fields" :key="item.value" :label="item.label"
-                            :value="item.value"></el-option>
-                    </el-select>
-                    <el-input v-model="searchQuery" placeholder="请输入搜索内容" class="search-box" clearable
-                        @keyup.enter.native="handleSearch">
-                        <el-button slot="append" icon="el-icon-search" @click="handleSearch"></el-button>
-                    </el-input>
-                    <el-button type="success" icon="el-icon-plus" @click="openAddDialog"
-                        class="action-button">添加</el-button>
-                    <el-button type="primary" icon="el-icon-upload2" @click="importData"
-                        class="action-button">导入</el-button>
-                    <el-button type="warning" icon="el-icon-download" @click="exportData"
-                        class="action-button">导出</el-button>
-                </div>
-            </el-card>
-        </div>
+        <el-card shadow="hover" class="search-card">
+            <div class="search-group">
+                <el-select v-model="selectedField" placeholder="选择字段" clearable class="field-select">
+                    <el-option v-for="item in fields" :key="item.value" :label="item.label"
+                        :value="item.value"></el-option>
+                </el-select>
+                <el-input v-model="searchQuery" placeholder="请输入搜索内容" class="search-box" clearable
+                    @keyup.enter.native="handleSearch">
+                    <el-button slot="append" icon="el-icon-search" @click="handleSearch"></el-button>
+                </el-input>
+                <el-button type="success" icon="el-icon-plus" @click="openAddDialog"
+                    class="action-button">添加</el-button>
+                <el-button type="primary" icon="el-icon-upload2" @click="importData"
+                    class="action-button">导入</el-button>
+                <el-button type="warning" icon="el-icon-download" @click="exportData"
+                    class="action-button">导出</el-button>
+            </div>
+        </el-card>
 
-        <el-card shadow="hover" class="table-container">
+        <el-card shadow="hover" class="table-card">
             <div class="table-header">
                 <span class="table-title">学生信息列表</span>
                 <el-tag type="info">共 {{ total }} 条记录</el-tag>
             </div>
-
-            <el-table ref="table" :data="paginatedStudents" border stripe highlight-current-row style="width: 100%"
-                v-loading="loading" :height="tableHeight" @sort-change="handleSortChange"
-                @header-dragend="handleHeaderDragEnd">
-
+            <el-table ref="table" :data="paginatedStudents" height=tableHeight  stripe highlight-current-row style="width: 100%"
+                v-loading="loading" @sort-change="handleSortChange" @header-dragend="handleHeaderDragEnd">
                 <el-table-column prop="id" label="学号" width="120" sortable></el-table-column>
                 <el-table-column prop="name" label="姓名" width="100"></el-table-column>
                 <el-table-column prop="class" label="班级" width="150"></el-table-column>
@@ -41,7 +36,6 @@
                 <el-table-column prop="age" label="年龄" width="100" sortable></el-table-column>
                 <el-table-column prop="gender" label="性别" width="50"></el-table-column>
                 <el-table-column prop="enrollmentDate" label="入校日期" width="150" sortable></el-table-column>
-
                 <el-table-column label="操作" width="180" fixed="right" align="center" header-align="center">
                     <template slot-scope="scope">
                         <el-button size="mini" type="primary" @click="editStudent(scope.row)">修改</el-button>
@@ -49,15 +43,10 @@
                     </template>
                 </el-table-column>
             </el-table>
-
             <el-pagination class="pagination" @size-change="handleSizeChange" @current-change="handleCurrentChange"
                 :current-page="currentPage" :page-sizes="[10, 20, 50, 100]" :page-size="pageSize"
-                layout="total, sizes, prev, pager, next, jumper" :total="total">
-            </el-pagination>
+                layout="total, sizes, prev, pager, next, jumper" :total="total"></el-pagination>
         </el-card>
-
-        <!-- 修改/添加对话框（保持原有代码不变） -->
-        <!-- ... -->
         <!-- 修改学生信息弹框 -->
         <el-dialog title="修改学生信息" :visible.sync="editDialogVisible" width="650px" center>
             <el-form :model="editForm" label-width="80px">
@@ -199,6 +188,21 @@
 
 <script>
 export default {
+    /**
+     * 变量注解自动生成
+     * @property {string} searchQuery - 用户输入的搜索内容，用于过滤学生列表。
+     * @property {string} selectedField - 用户选择的过滤字段（例如：姓名、学号）。
+     * @property {Array<Object>} fields - 可供选择的过滤字段列表，每项包含标签和对应的值。
+     * @property {Array<Object>} students - 显示在表格中的学生数据列表。
+     * @property {boolean} editDialogVisible - 控制编辑学生信息弹框的显示状态。
+     * @property {Object} editForm - 编辑学生信息时的表单数据。
+     * @property {boolean} addDialogVisible - 控制添加学生信息弹框的显示状态。
+     * @property {Object} addForm - 添加学生信息时的表单数据，初始化为空值。
+     * @property {number} currentPage - 分页组件的当前页码。
+     * @property {number} pageSize - 分页组件每页显示的学生数量。
+     * @property {number} total - 数据集中学生的总数。
+     * @property {boolean} loading - 指示数据是否正在加载的动画（例如：API 调用期间）。
+     */
     data() {
         return {
             searchQuery: '',
@@ -223,11 +227,11 @@ export default {
             currentPage: 1,
             pageSize: 10,
             total: 0,
-            loading: false,
-            tableHeight: 570
+            loading: false
         };
     },
     computed: {
+        // 计算过滤后的学生列表
         filteredStudents() {
             if (!this.selectedField || !this.searchQuery) {
                 return this.students;
@@ -236,6 +240,7 @@ export default {
                 student[this.selectedField]?.toString().includes(this.searchQuery)
             );
         },
+        // 计算分页后的学生列表
         paginatedStudents() {
             const start = (this.currentPage - 1) * this.pageSize;
             const end = start + this.pageSize;
@@ -243,44 +248,31 @@ export default {
         }
     },
     methods: {
+        // 加载学生信息
         loadStudents() {
             const savedStudents = localStorage.getItem('students');
             this.students = savedStudents ? JSON.parse(savedStudents) : [];
             this.total = this.students.length;
         },
+        // 保存学生信息到 localStorage
         saveStudents() {
             localStorage.setItem('students', JSON.stringify(this.students));
             this.total = this.students.length;
         },
-        calcTableHeight() {
-            const windowHeight = window.innerHeight;
-            this.tableHeight = windowHeight - 410; // 根据实际布局调整
-        },
-        handleHeaderDragEnd() {
-            this.$nextTick(() => {
-                this.$refs.table.doLayout();
-            });
-        },
-        // 其他方法保持原有实现...
-        loadStudents() {
-            const savedStudents = localStorage.getItem('students');
-            this.students = savedStudents ? JSON.parse(savedStudents) : [];
-            this.total = this.students.length;
-        },
-        saveStudents() {
-            localStorage.setItem('students', JSON.stringify(this.students));
-            this.total = this.students.length;
-        },
+        // 搜索处理
         handleSearch() {
             this.currentPage = 1;
         },
+        // 分页大小变化处理
         handleSizeChange(size) {
             this.pageSize = size;
             this.currentPage = 1;
         },
+        // 分页处理
         handleCurrentChange(page) {
             this.currentPage = page;
         },
+        // 排序处理
         handleSortChange({ prop, order }) {
             if (order === 'ascending') {
                 this.students.sort((a, b) => (a[prop] > b[prop] ? 1 : -1));
@@ -288,6 +280,7 @@ export default {
                 this.students.sort((a, b) => (a[prop] < b[prop] ? 1 : -1));
             }
         },
+        // 导出数据
         exportData() {
             const dataStr = JSON.stringify(this.students, null, 2);
             const blob = new Blob([dataStr], { type: 'application/json' });
@@ -366,15 +359,6 @@ export default {
             input.click();
         }
     },
-    mounted() {
-        this.loadStudents();
-        this.calcTableHeight();
-        window.addEventListener('resize', this.calcTableHeight);
-        
-    },
-    beforeDestroy() {
-        window.removeEventListener('resize', this.calcTableHeight);
-    },
     created() {
         this.loadStudents();
     }
@@ -382,74 +366,57 @@ export default {
 </script>
 
 <style scoped>
+/* 主容器样式 */
 .user {
     padding: 8px;
+    border-radius: 20% !important;
 }
 
-.search-container {
+/* 搜索区域样式 */
+.search-card {
+    padding: 8px;
+    border-radius: 8px;
     margin-bottom: 20px;
 }
 
-.search-card {
-    padding: 12px;
-    border-radius: 8px;
-}
-
+/* 搜索框组样式 - 包含选择框、输入框和操作按钮 */
 .search-group {
     display: flex;
     align-items: center;
     gap: 10px;
-}
-
-.el-card {
-    background: rgb(250, 250, 250);
+    /* 元素间距 */
 }
 
 .field-select {
     width: 150px;
+    /* 字段选择框固定宽度 */
 }
 
 .search-box {
     flex: 1;
+    /* 搜索框占据剩余空间 */
 }
 
 .action-button {
     white-space: nowrap;
+    /* 按钮文字不换行 */
 }
 
-/* 关键样式修改 */
-.table-container {
-    padding: 0;
+/* 表格容器样式 */
+.table-card {
+    padding: 8px;
+    padding-bottom: 0px;
     border-radius: 8px;
     overflow: hidden;
-    display: flex;
-    flex-direction: column;
 }
 
+/* 表格头部样式 - 包含标题和统计标签 */
 .table-header {
     padding: 16px;
-    background: #f6f7f7;
+    background: rgb(250, 250, 250);
     display: flex;
     justify-content: space-between;
     align-items: center;
-}
-
-/* 移除表格内边距 */
-.el-table__body-wrapper {
-    padding: 0 !important;
-}
-
-/* 调整固定列样式 */
-.el-table__fixed-right {
-    bottom: auto !important;
-    top: 40px;
-    /* 表头高度 */
-    height: calc(100% - 40px) !important;
-}
-
-/* 隐藏多余的空白行 */
-.el-table__empty-block {
-    min-height: 0 !important;
 }
 
 .table-title {
@@ -457,11 +424,22 @@ export default {
     font-weight: bold;
 }
 
+/* 表格主体样式 */
 .el-table {
+    width: 100%;
     flex: 1;
+    max-height: calc(99vh - 400px);
+    /* 动态高度 */
+    overflow-y: auto;
 }
 
-/* 修复固定列样式 */
+/* 分页样式 */
+.pagination {
+    margin-top: 20px;
+    text-align: right;
+}
+
+/* 固定列特殊样式处理 */
 .el-table__fixed-right {
     height: calc(100% - 2px) !important;
     border-radius: 0 8px 0 0;
@@ -471,21 +449,11 @@ export default {
     background-color: transparent !important;
 }
 
-.pagination {
-    padding: 16px;
-    background: #f6f7f7;
-    border-top: 1px solid #ebeef5;
-}
-
-/* 响应式调整 */
-@media (max-width: 768px) {
-    .search-group {
-        flex-wrap: wrap;
-    }
-
-    .field-select,
-    .search-box {
-        width: 100%;
-    }
+/* 页面标题样式 (虽然模板中没有使用，但保留以防后续添加) */
+.page-title {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 20px;
+    color: #333;
 }
 </style>

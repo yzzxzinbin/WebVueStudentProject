@@ -13,7 +13,7 @@
               d="M310.208 512.064a187.648 187.648 0 0 1 187.392-187.456 187.712 187.712 0 0 1 184.64 219.456h172.672a338.432 338.432 0 0 0-1.344-75.52l52.416-40.64a54.912 54.912 0 0 0 17.728-73.6l-76.48-132.544a54.976 54.976 0 0 0-72.704-21.44l-61.184 25.024a356.288 356.288 0 0 0-75.392-43.392l-8.96-65.664A54.784 54.784 0 0 0 574.208 64H420.992a54.592 54.592 0 0 0-54.784 52.288l-9.024 65.664a361.088 361.088 0 0 0-75.392 43.392l-61.312-25.024a54.784 54.784 0 0 0-72.576 21.44L71.36 354.496a54.848 54.848 0 0 0 17.984 73.472l52.224 40.64a348.544 348.544 0 0 0 0 87.04l-52.352 40.448a54.784 54.784 0 0 0-17.792 73.6l76.48 132.608c7.424 12.608 19.2 21.76 33.408 25.6a54.208 54.208 0 0 0 39.232-4.352l61.248-25.024c23.04 17.344 48.384 31.872 75.392 43.392l9.024 65.728a54.72 54.72 0 0 0 54.784 52.352h76.48v-260.48a187.584 187.584 0 0 1-187.264-187.456z"
               fill="#8A7CBF" p-id="3198"></path>
           </svg>
-          <span class="system-name">&nbsp; < Student System> </span>
+          <span class="system-name">&nbsp; < Student System > </span>
         </div>
         <el-input v-model="searchQuery" placeholder="请输入搜索内容" class="search-box" @input="handleSearch"
           clearable></el-input>
@@ -65,11 +65,11 @@
 export default {
   data() {
     return {
-      isCollapse: false,
-      activeMenu: '',
-      searchQuery: '',
-      isLoading: false,
-      menus: [
+      isCollapse: false, // 侧边栏是否折叠
+      activeMenu: '', // 当前激活的菜单项
+      searchQuery: '', // 搜索框内容
+      isLoading: false, // 是否显示加载状态
+      menus: [ // 菜单配置
         {
           path: '/user',
           title: '用户管理',
@@ -88,19 +88,30 @@ export default {
           path: '/building',
           title: '楼栋管理',
           icon: 'el-icon-office-building',
-          children: [
-          ]
+          children: []
         }
       ]
     }
   },
   methods: {
+    /**
+     * 切换侧边栏折叠状态
+     */
     toggleAside() {
       this.isCollapse = !this.isCollapse;
     },
-    selectHandle(index, indexPath) {
+
+    /**
+     * 菜单项选择处理
+     * @param {string} index 选中的菜单路径
+     */
+    selectHandle(index) {
       localStorage.setItem('selectMenu', index)
     },
+
+    /**
+     * 退出登录
+     */
     logout() {
       this.$router.push({
         path: "/login",
@@ -112,15 +123,21 @@ export default {
       localStorage.setItem("token", "");
       localStorage.setItem("selectMenu", "");
     },
+
+    /**
+     * 搜索处理
+     */
     handleSearch() {
       console.log('搜索内容:', this.searchQuery);
     }
   },
   created() {
+    // 初始化时从本地存储获取当前激活菜单，默认为第一个菜单项
     this.activeMenu = localStorage.getItem('selectMenu') ? localStorage.getItem('selectMenu') : this.menus[0].path
   },
   watch: {
-    '$route'(to, from) {
+    // 路由变化时显示加载状态
+    '$route'() {
       this.isLoading = true
       setTimeout(() => {
         this.isLoading = false
@@ -131,7 +148,7 @@ export default {
 </script>
 
 <style>
-/* 基础样式 */
+/* ========== 全局变量 ========== */
 :root {
   --primary-color: rgba(173, 190, 220, 1);
   --primary-dark: rgba(250, 218, 219, 0.9);
@@ -143,7 +160,19 @@ export default {
 </style>
 
 <style scoped>
-/* 头部样式 */
+/* ========== 布局样式 ========== */
+.layout {
+  height: 100vh;
+  background-image: url("../assets/b.png");
+  background-size: 100% 100%;
+}
+
+body {
+  overflow: hidden;
+  height: 100vh;
+}
+
+/* ========== 头部样式 ========== */
 .el-header {
   background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
   display: flex;
@@ -154,6 +183,7 @@ export default {
   z-index: 10;
 }
 
+/* 标志容器 */
 .logo-container {
   display: flex;
   align-items: center;
@@ -167,7 +197,7 @@ export default {
   background-color: rgba(255, 255, 255, 0.2);
 }
 
-/* 添加过渡效果（0.3秒缓动动画） */
+/* 标志图标颜色过渡效果 */
 .light-fill,
 .dark-fill {
   transition: fill 0.5s ease-in-out;
@@ -181,78 +211,19 @@ export default {
   fill: #f2f5f4;
 }
 
-.logo-container:hover .system-name {
-  color: #8A7CBF;
-  transition: all 0.6s;
-  user-select: none;
-}
-
-.logo-container .system-name {
-  color: #f2f5f4;
-  transition: all 0.6s;
-}
-
+/* 系统名称样式 */
 .system-name {
   font-family: 'Courier New', monospace;
   font-size: 35px;
   font-weight: bold;
-  color: rgb(255, 255, 255);
+  color: var(--text-light);
   letter-spacing: 1px;
+  transition: all 0.6s;
+  user-select: none;
 }
 
-/* 侧边栏样式 */
-.el-aside {
-  /* background-color: #f1efef; */
-  box-shadow: 3px 0 6px rgba(0, 0, 0, 0.2);
-  transition: width 0.3s;
-  overflow: hidden !important;
-}
-
-/* 确保收起时图标居中 */
-.el-menu--collapse .el-menu-item i,
-.el-menu--collapse .el-submenu__title i {
-  margin-left: 4px;
-  /* 调整图标位置 */
-}
-
-/* 收起时隐藏菜单文字 */
-.el-menu--collapse .el-submenu__title span,
-.el-menu--collapse .el-menu-item span {
-  display: none;
-}
-
-/* 收起时隐藏二级菜单箭头 */
-.el-menu--collapse .el-submenu__icon-arrow {
-  display: none;
-}
-
-.el-menu {
-  border-right: none;
-  background-color: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(12px);
-}
-
-span {
-  font-size: 16px;
-  font-weight: bold;
-}
-
-.el-menu-item {
-  font-size: 15px;
-}
-
-.my-parent-memu-item {
-  /* background-color: rgb(225, 234, 252); */
-  background: linear-gradient(135deg, rgba(177, 192, 220, 0.5), rgba(250, 218, 219, 1));
-}
-
-.my-child-memu-item {
-  background-color: rgb(255, 255, 255);
-  padding-left: 50px !important;
-}
-
-.my-child-memu-item:hover {
-  background-color: rgb(242, 243, 244);
+.logo-container:hover .system-name {
+  color: #8A7CBF;
 }
 
 /* 搜索框样式 */
@@ -279,15 +250,11 @@ span {
   color: #ff4d4f;
 }
 
-body {
-  overflow: hidden;
-  height: 100vh;
-}
-
-.layout {
-  height: 100vh;
-  background-image: url("../assets/b.png");
-  background-size: 100% 100%;
+/* ========== 侧边栏样式 ========== */
+.el-aside {
+  box-shadow: 3px 0 6px rgba(0, 0, 0, 0.2);
+  transition: width 0.3s;
+  overflow: hidden !important;
 }
 
 .el-aside ul,
@@ -296,11 +263,56 @@ body {
   height: calc(100vh - 60px);
 }
 
+/* 菜单样式 */
+.el-menu {
+  border-right: none;
+  background-color: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+}
+
+/* 折叠状态下菜单样式 */
+.el-menu--collapse .el-menu-item i,
+.el-menu--collapse .el-submenu__title i {
+  margin-left: 4px;
+}
+
+.el-menu--collapse .el-submenu__title span,
+.el-menu--collapse .el-menu-item span {
+  display: none;
+}
+
+.el-menu--collapse .el-submenu__icon-arrow {
+  display: none;
+}
+
+/* 菜单项文本样式 */
+span {
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.el-menu-item {
+  font-size: 15px;
+}
+
+/* 一级菜单项样式 */
+.my-parent-memu-item {
+  background: linear-gradient(135deg, rgba(177, 192, 220, 0.5), rgba(250, 218, 219, 1));
+}
+
+/* 二级菜单项样式 */
+.my-child-memu-item {
+  background-color: rgb(250, 250, 250);
+  padding-left: 50px !important;
+}
+
+.my-child-memu-item:hover {
+  background-color: rgb(242, 243, 244);
+}
+
+/* ========== 主内容区样式 ========== */
 .el-main {
-  /* background-color: #f6f6f6d4; */
   background-color: rgba(255, 255, 255, 0.3);
-  /* -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px); */
   border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
@@ -308,11 +320,10 @@ body {
   overflow-y: auto;
   height: 100%;
   border-radius: 4px;
-  /* 自定义滚动条 */
-  /* scrollbar-width: thin; */
   scrollbar-color: rgba(255, 255, 255, 0.6) transparent;
 }
 
+/* 自定义滚动条 */
 .el-main>div::-webkit-scrollbar {
   width: 15px;
 }
@@ -331,7 +342,8 @@ body {
   background: rgba(255, 255, 255, 0.8);
 }
 
-/* 新增动画样式 */
+/* ========== 过渡动画 ========== */
+/* 页面切换动画 */
 .fade-transform-leave-active,
 .fade-transform-enter-active {
   transition: all 0.3s;
@@ -347,6 +359,7 @@ body {
   transform: translateX(-30px) scale(0.95);
 }
 
+/* 加载动画 */
 .loading-container {
   display: flex;
   justify-content: center;
