@@ -89,7 +89,7 @@ export default {
 <style>
 /* 基础样式 */
 :root {
-    --primary-color: #4a6bff;
+    --primary-color:  #409EFF;
     --primary-hover: #3a56d4;
     --text-color: #2b2d42;
     --light-text: rgba(255, 255, 255, 0.8);

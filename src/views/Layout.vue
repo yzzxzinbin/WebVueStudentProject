@@ -161,7 +161,7 @@ export default {
 <style>
 /* ========== 全局变量 ========== */
 :root {
-  --primary-color: rgba(173, 190, 220, 1);
+  --primary-color:  #409EFF;
   --primary-dark: rgba(250, 218, 219, 0.9);
   --text-color: #303133;
   --text-light: #ffffff;

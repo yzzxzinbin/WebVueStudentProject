@@ -272,7 +272,6 @@
 
 .chart-card {
   border-radius: 12px;
-  height: 420px;
   transition: all 0.3s;
   background-color: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(10px);
