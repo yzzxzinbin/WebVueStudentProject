@@ -3,8 +3,10 @@
     <el-card shadow="hover" class="search-card">
       <div class="search-group">
         <div class="search-inputs">
-          <el-select v-model="selectedWarehouse" placeholder="选择仓库" clearable class="warehouse-select" @change="handleWarehouseChange">
-            <el-option v-for="warehouse in warehouses" :key="warehouse.id" :label="warehouse.name" :value="warehouse.id"></el-option>
+          <el-select v-model="selectedWarehouse" placeholder="选择仓库" clearable class="warehouse-select"
+            @change="handleWarehouseChange">
+            <el-option v-for="warehouse in warehouses" :key="warehouse.id" :label="warehouse.name"
+              :value="warehouse.id"></el-option>
           </el-select>
           <el-select v-model="selectedField" placeholder="选择字段" clearable class="field-select">
             <el-option v-for="item in fields" :key="item.value" :label="item.label" :value="item.value"></el-option>
@@ -13,12 +15,6 @@
             @keyup.enter.native="handleSearch">
             <el-button slot="append" icon="el-icon-search" @click="handleSearch"></el-button>
           </el-input>
-        </div>
-        <div class="divider"></div>
-        <div class="action-buttons">
-          <el-button type="success" icon="el-icon-plus" @click="openAddDialog" class="action-button">添加</el-button>
-          <el-button type="primary" icon="el-icon-upload2" @click="importData" class="action-button">导入</el-button>
-          <el-button type="warning" icon="el-icon-download" @click="exportData" class="action-button">导出</el-button>
         </div>
       </div>
     </el-card>
@@ -31,9 +27,19 @@
       <el-table ref="table" :data="paginatedProducts" height="tableHeight" stripe border highlight-current-row
         style="width: 100%" v-loading="loading">
         <el-table-column prop="id" label="商品ID" width="150" sortable></el-table-column>
-        <el-table-column prop="name" label="商品名称" width="300" sortable></el-table-column>
-        <el-table-column prop="quantity" label="库存数量" width="150" sortable></el-table-column>
-        <el-table-column prop="location" label="存放位置" width="200"></el-table-column>
+        <el-table-column prop="name" label="商品名称" width="280" sortable></el-table-column>
+        <el-table-column prop="features" label="商品特性" width="350"></el-table-column>
+        <el-table-column prop="price" label="商品价格" width="160" sortable></el-table-column>
+        <el-table-column prop="quantity" label="库存数量" width="150" sortable>
+          <template slot-scope="scope">
+            <span style="font-weight: bold">{{ scope.row.quantity }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="location" label="存放位置" min-width="200">
+          <template slot-scope="scope">
+            <span>{{ scope.row.location || '--' }}</span>
+          </template>
+        </el-table-column>
       </el-table>
       <div class="table-footer">
         <el-button type="primary" plain size="mini" @click="scrollToTop" class="back-to-top">
@@ -93,54 +99,6 @@
         <el-button type="primary" @click="saveEdit">保存</el-button>
       </div>
     </el-dialog>
-    <!-- 添加仓库信息弹框 -->
-    <el-dialog title="添加仓库信息" :visible.sync="addDialogVisible" width="650px" modal-append-to-body>
-      <el-form :model="addForm" label-width="80px">
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="仓库ID">
-              <el-input v-model="addForm.id"></el-input>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="仓库名称">
-              <el-input v-model="addForm.name"></el-input>
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="状态">
-              <el-select v-model="addForm.status" placeholder="选择状态">
-                <el-option label="启用" value="启用"></el-option>
-                <el-option label="停用" value="停用"></el-option>
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="最大容量">
-              <el-input v-model="addForm.capacity" type="number"></el-input>
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="地点">
-              <el-input v-model="addForm.location"></el-input>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="负责人">
-              <el-input v-model="addForm.manager"></el-input>
-            </el-form-item>
-          </el-col>
-        </el-row>
-      </el-form>
-      <div slot="footer" class="dialog-footer">
-        <el-button @click="addDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="saveAdd">保存</el-button>
-      </div>
-    </el-dialog>
   </div>
 </template>
 
@@ -153,15 +111,16 @@ export default {
       selectedField: '',
       fields: [
         { label: '商品名称', value: 'name' },
+        { label: '商品特性', value: 'features' },
+        { label: '商品价格', value: 'price' },
         { label: '库存数量', value: 'quantity' },
         { label: '存放位置', value: 'location' }
       ],
       warehouses: [], // 仓库列表
       products: [], // 当前仓库的商品列表
+      allProducts: [], // 所有商品数据
       editDialogVisible: false,
       editForm: {},
-      addDialogVisible: false,
-      addForm: { id: '', name: '', status: '', capacity: '', location: '', manager: '' },
       currentPage: 1,
       pageSize: 20,
       total: 0,
@@ -216,20 +175,14 @@ export default {
         this.warehouses.sort((a, b) => (a[prop] < b[prop] ? 1 : -1));
       }
     },
-    exportData() {
-      const dataStr = JSON.stringify(this.warehouses, null, 2);
-      const blob = new Blob([dataStr], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = 'warehouses.json';
-      link.click();
-      URL.revokeObjectURL(url);
-    },
     loadWarehouses() {
       const savedWarehouses = localStorage.getItem('warehouses');
       this.warehouses = savedWarehouses ? JSON.parse(savedWarehouses) : [];
       this.total = this.warehouses.length;
+    },
+    loadAllProducts() {
+      const savedProducts = localStorage.getItem('products');
+      this.allProducts = savedProducts ? JSON.parse(savedProducts) : [];
     },
     loadProducts() {
       if (!this.selectedWarehouse) {
@@ -237,8 +190,19 @@ export default {
         this.total = 0;
         return;
       }
-      const allProducts = JSON.parse(localStorage.getItem('warehouseProducts')) || [];
-      this.products = allProducts.filter(product => product.warehouseId === this.selectedWarehouse);
+      const allWarehouseProducts = JSON.parse(localStorage.getItem('warehouseProducts')) || [];
+      const warehouseProducts = allWarehouseProducts.filter(product => product.warehouseId === this.selectedWarehouse);
+
+      // 合并商品详细信息
+      this.products = warehouseProducts.map(product => {
+        const productInfo = this.allProducts.find(p => p.id === product.id) || {};
+        return {
+          ...product,
+          features: productInfo.features || '',
+          price: productInfo.price || 0
+        };
+      });
+
       this.total = this.products.length;
     },
     saveWarehouses() {
@@ -257,56 +221,11 @@ export default {
         this.$message.success('修改成功');
       }
       this.editDialogVisible = false;
-    },
-    deleteWarehouse(id) {
-      this.warehouses = this.warehouses.filter(warehouse => warehouse.id !== id);
-      this.saveWarehouses();
-      this.$message.success('删除成功');
-    },
-    openAddDialog() {
-      this.addForm = { id: '', name: '', status: '', capacity: '', location: '', manager: '' };
-      this.addDialogVisible = true;
-    },
-    saveAdd() {
-      if (!this.addForm.id || !this.addForm.name) {
-        this.$message.error('请填写完整信息');
-        return;
-      }
-      this.warehouses.push({ ...this.addForm });
-      this.saveWarehouses();
-      this.$message.success('添加成功');
-      this.addDialogVisible = false;
-    },
-    importData() {
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = '.json';
-      input.onchange = (event) => {
-        const file = event.target.files[0];
-        if (file) {
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            try {
-              const importedData = JSON.parse(e.target.result);
-              if (Array.isArray(importedData)) {
-                this.warehouses = [...this.warehouses, ...importedData];
-                this.saveWarehouses();
-                this.$message.success('数据导入成功');
-              } else {
-                this.$message.error('文件格式错误');
-              }
-            } catch (error) {
-              this.$message.error('文件解析失败');
-            }
-          };
-          reader.readAsText(file);
-        }
-      };
-      input.click();
     }
   },
   created() {
     this.loadWarehouses();
+    this.loadAllProducts();
   }
 };
 </script>
@@ -331,7 +250,6 @@ export default {
   display: flex;
   align-items: center;
   gap: 10px;
-  /* 元素间距 */
 }
 
 /* 搜索框组输入框样式 */
@@ -341,36 +259,16 @@ export default {
   gap: 10px;
 }
 
-/* 分割线样式 */
-.divider {
-  width: 1px;
-  height: 40px;
-  background-color: #dcdcdc;
-}
-
-/* 操作按钮组样式 */
-.action-buttons {
-  display: flex;
-  gap: 10px;
-}
-
 .warehouse-select {
   width: 200px;
 }
 
 .field-select {
   width: 150px;
-  /* 字段选择框固定宽度 */
 }
 
 .search-box {
   flex: 1;
-  /* 搜索框占据剩余空间 */
-}
-
-.action-button {
-  white-space: nowrap;
-  /* 按钮文字不换行 */
 }
 
 /* 表格容器样式 */
@@ -420,8 +318,8 @@ export default {
   padding: 7px 12px;
   border-radius: 4px;
   transition: all 0.3s;
-  background-color: rgb(225,225,230);
-  border-color: rgb(205,205,210);
+  background-color: rgb(225, 225, 230);
+  border-color: rgb(205, 205, 210);
   color: rgb(99, 85, 85);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
@@ -454,13 +352,5 @@ export default {
 
 .el-table .el-table__header-wrapper th .cell {
   white-space: nowrap;
-}
-
-/* 页面标题样式 (模板中没有使用) */
-.page-title {
-  font-size: 24px;
-  font-weight: bold;
-  margin-bottom: 20px;
-  color: #333;
 }
 </style>
