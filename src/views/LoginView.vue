@@ -66,8 +66,9 @@ export default {
                 setTimeout(() => {
                     this.isLoading = false;
                     if (this.username === "admin" && this.password === "123456") {
-                        // 存储 token
+                        // 存储 token 和用户名
                         localStorage.setItem("token", "mock-token");
+                        localStorage.setItem("username", this.username); // 存储用户名
                         if (this.rememberMe) {
                             localStorage.setItem("rememberMe", true);
                         }

@@ -75,6 +75,7 @@
         <el-table-column prop="quantity" label="数量" width="100" sortable></el-table-column>
         <el-table-column prop="sourceWarehouse" label="源仓库" width="150"></el-table-column>
         <el-table-column prop="targetWarehouse" label="目标仓库" width="150"></el-table-column>
+        <el-table-column prop="operator" label="操作人" width="120"></el-table-column>
         <el-table-column prop="status" label="状态" width="100" sortable></el-table-column>
         <el-table-column prop="timestamp" label="时间" width="200" sortable></el-table-column>
       </el-table>
@@ -100,7 +101,8 @@ export default {
         productId: '',
         quantity: 1,
         sourceWarehouse: '',
-        targetWarehouse: ''
+        targetWarehouse: '',
+        operator: '' // 新增字段：操作人
       },
       warehouses: [], // 仓库列表
       products: [],   // 商品列表
@@ -182,6 +184,9 @@ export default {
           this.$message.error('未知商品，操作失败');
           return;
         }
+
+        // 设置操作人
+        this.operationForm.operator = localStorage.getItem('username') || '未知用户';
 
         // 检查出库合法性
         if (this.operationForm.type === '出库') {
