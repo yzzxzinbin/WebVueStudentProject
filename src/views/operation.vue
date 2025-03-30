@@ -423,7 +423,7 @@ export default {
 
 .form-card {
   border-radius: 8px;
-  background-color: rgba(245, 245, 250, 0.5);
+  background-color: rgba(245, 245, 250, 0.8);
   backdrop-filter: blur(10px);
 }
 
@@ -444,7 +444,7 @@ export default {
   /* 动态高度调整 */
   display: flex;
   flex-direction: column;
-  background-color: rgba(245, 245, 250, 0.5);
+  background-color: rgba(245, 245, 250, 0.8);
   backdrop-filter: blur(10px);
   border-radius: 8px;
 }
@@ -495,7 +495,7 @@ export default {
   gap: 10px;
   justify-content: flex-start;
   align-items: stretch;
-  background-color: rgba(245, 245, 250, 0.5);
+  background-color: rgba(245, 245, 250, 0.6);
   /*  使子元素拉伸填充宽度 */
   padding-left: 30px;
   padding-right: 30px;

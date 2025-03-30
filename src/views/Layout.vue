@@ -308,7 +308,7 @@ span {
 
 /* 一级菜单项样式 */
 .my-parent-memu-item {
-  background: linear-gradient(135deg, rgba(177, 192, 220, 0.5), rgba(250, 218, 219, 1));
+  background: linear-gradient(135deg, rgba(250, 218, 219, 1), rgba(177, 192, 220, 0.5));
 }
 
 /* 二级菜单项样式 */

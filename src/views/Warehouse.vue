@@ -30,8 +30,7 @@
                 <el-tag type="info">共 {{ totalFiltered }} 条记录</el-tag>
             </div>
             <el-table ref="table" :data="paginatedWarehouses" height=tableHeight stripe border highlight-current-row
-                style="width: 100%" v-loading="loading" @sort-change="handleSortChange"
-                @header-dragend="handleHeaderDragEnd" :resizable="true">
+                style="width: 100%" v-loading="loading" @sort-change="handleSortChange" :resizable="true">
                 <el-table-column prop="id" label="仓库ID" width="100" sortable></el-table-column>
                 <el-table-column prop="name" label="仓库名称" width="220" sortable></el-table-column>
                 <el-table-column prop="status" label="状态" width="120" sortable></el-table-column>
@@ -410,8 +409,8 @@ export default {
     padding: 7px 12px;
     border-radius: 4px;
     transition: all 0.3s;
-    background-color: rgb(225,225,230);
-    border-color: rgb(205,205,210);
+    background-color: rgb(225, 225, 230);
+    border-color: rgb(205, 205, 210);
     color: rgb(99, 85, 85);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }

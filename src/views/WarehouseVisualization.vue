@@ -120,7 +120,6 @@
           </el-skeleton>
         </el-card>
       </el-col>
-
       <el-col :xs="24" :sm="24" :md="12">
         <el-card shadow="hover" class="chart-card">
           <div class="chart-header">
@@ -134,6 +133,30 @@
               <el-skeleton-item variant="image" style="height: calc(100% - 50px)" />
             </template>
             <div ref="gaugeChart" class="chart-container"></div>
+          </el-skeleton>
+        </el-card>
+      </el-col>
+    </el-row>
+
+    <el-row :gutter="20" class="chart-row">
+      <el-col :span="24">
+        <el-card shadow="hover" class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title">仓库库存三维视图</div>
+            <div class="chart-controls">
+              <div style="flex: 1; min-width: 350px; max-width: 400px; margin-left: 10px;">
+                <el-slider v-model="scatter3dZoom" :min="50" :max="200" @change="handleZoomChange" show-input>
+                </el-slider>
+              </div>
+              <el-button type="text" @click="refresh3DChart" :icon="'el-icon-refresh'"></el-button>
+              <el-checkbox v-model="autoRotate" @change="handleAutoRotateChange">自动旋转</el-checkbox>
+            </div>
+          </div>
+          <el-skeleton :loading="loading.scatter3d" animated>
+            <template #template>
+              <el-skeleton-item variant="image" style="height: calc(100% - 50px)" />
+            </template>
+            <div ref="scatter3dChart" class="chart-container" style="height: 700px;"></div>
           </el-skeleton>
         </el-card>
       </el-col>
@@ -160,14 +183,14 @@
   background-position: center;
   padding: 20px;
   min-height: 100vh;
-  border-radius: 8px;
+  border-radius:12px;
 }
 
 .summary-card {
   margin-bottom: 20px;
   border-radius: 12px;
   transition: all 0.3s;
-  background-color: rgba(255, 255, 255, 0.8);
+  background-color: rgba(255, 255, 255, 0.6);
   backdrop-filter: blur(10px);
   padding-bottom: 10px;
 }
@@ -273,12 +296,13 @@
 .chart-card {
   border-radius: 12px;
   transition: all 0.3s;
-  background-color: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
+  background-color: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(6px);
 }
 
 .chart-card:hover {
   transform: translateY(-2px);
+  background-color: rgba(255, 255, 255, 1);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1) !important;
 }
 
@@ -306,6 +330,11 @@
 
 .negative {
   color: var(--danger-color);
+}
+
+.el-table {
+
+  border-radius: 8px;
 }
 
 .el-table .positive-row {
@@ -337,18 +366,114 @@
     font-size: 22px;
   }
 }
-</style>
 
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: nowrap;
+  /* 防止换行 */
+}
+
+.chart-title {
+  white-space: nowrap;
+  /* 防止标题换行 */
+  margin-right: 16px;
+  /* 标题和控件之间的间距 */
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.chart-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+  /* 防止控件区域被压缩 */
+}
+
+/* 调整滑块样式确保可见 */
+.el-slider__runway {
+  background-color: #ebeef5;
+  height: 4px;
+  width: 100%;
+}
+
+.el-slider__bar {
+  height: 4px;
+  background-color: #409EFF;
+}
+
+.el-slider__button {
+  width: 12px;
+  height: 12px;
+  border: 2px solid #409EFF;
+}
+
+/* 表格透明化样式 */
+.el-table {
+  background-color: transparent !important;
+}
+
+.el-table th,
+.el-table tr {
+  background-color: transparent !important;
+}
+
+.el-table::before {
+  display: none; /* 移除表格底部的线 */
+}
+
+/* 表格单元格样式 */
+.el-table td {
+  background-color: transparent !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.4); /* 保留淡淡的边框 */
+}
+
+/* 表头样式 */
+.el-table th {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+/* 鼠标悬停效果 */
+.el-table--enable-row-hover .el-table__body tr:hover>td {
+  background-color: rgba(255, 255, 255, 0.4) !important;
+}
+
+/* 斑马纹效果（如果启用了） */
+.el-table--striped .el-table__body tr.el-table__row--striped td {
+  background-color: rgba(255, 255, 255, 0.8) !important;
+}
+</style>
+<style scoped>
+
+</style>
 
 
 <script>
 import * as echarts from 'echarts'
 import { format } from 'date-fns'
+import { Scatter3DChart } from 'echarts-gl/charts';
+import { Grid3DComponent } from 'echarts-gl/components';
+import { TooltipComponent, LegendComponent } from 'echarts/components';
+import { CanvasRenderer } from 'echarts/renderers';
+import { Line3DChart } from 'echarts-gl/charts';
+echarts.use([
+  Scatter3DChart,
+  Grid3DComponent,
+  TooltipComponent,
+  LegendComponent,
+  CanvasRenderer,
+  Line3DChart
+]);
 
 export default {
   name: 'WarehouseDashboard',
   data() {
     return {
+      scatter3dZoom: 100, // 缩放比例，初始100%
+      autoRotate: true, // 是否自动旋转
       selectedWarehouse: '',
       productTopN: 5,
       trendDays: '7',
@@ -358,7 +483,8 @@ export default {
         product: false,
         heatmap: false,
         trend: true,
-        gauge: true
+        gauge: true,
+        scatter3d: true
       },
       trendData: {
         dates: [],
@@ -379,7 +505,8 @@ export default {
         product: null,
         heatmap: null,
         trend: null,
-        gauge: null
+        gauge: null,
+        scatter3d: null
       }
     }
   },
@@ -439,7 +566,7 @@ export default {
     recentOperations() {
       return [...this.operations]
         .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-        .slice(0, 5)
+        .slice(0, 8)
         .map(op => ({
           ...op,
           productName: this.products.find(p => p.id === op.productId)?.name || op.productId
@@ -453,18 +580,19 @@ export default {
   methods: {
     async loadData() {
       try {
-        this.loading = { product: true, heatmap: true, trend: true, gauge: true };
+        this.loading = { product: true, heatmap: true, trend: true, gauge: true, scatter3d: true };
         this.warehouses = JSON.parse(localStorage.getItem('warehouses')) || [];
         this.products = JSON.parse(localStorage.getItem('products')) || [];
         this.warehouseProducts = JSON.parse(localStorage.getItem('warehouseProducts')) || [];
         this.operations = JSON.parse(localStorage.getItem('operations')) || [];
       } finally {
-        this.loading = { product: false, heatmap: false, trend: false, gauge: false };
+        this.loading = { product: false, heatmap: false, trend: false, gauge: false, scatter3d: false };
         this.$nextTick(() => {
           this.updateCharts();
           this.updateTrendChart();  // 手动触发趋势图更新
           this.updateGaugeChart();  // 手动触发仪表图更新
-        });
+          this.updateScatter3DChart();  // 手动触发散点图更新
+        })
       }
     },
     initTrendChart() {
@@ -886,24 +1014,276 @@ export default {
     },
     handleResize() {
       Object.values(this.charts).forEach(chart => {
-        if (chart) chart.resize()
-      })
+        if (chart) chart.resize();
+      });
+    },
+    initScatter3DChart() {
+      this.charts.scatter3d = echarts.init(this.$refs.scatter3dChart);
+      this.updateScatter3DChart();
+    },
+
+    refresh3DChart() {
+      this.loading.scatter3d = true;
+      this.updateScatter3DChart();
+    },
+
+    updateScatter3DChart() {
+      if (!this.charts.scatter3d) return;
+
+      const data = this.prepareScatter3DData().filter(item => {
+        return (
+          item[0] &&
+          !isNaN(new Date(item[1]).getTime()) &&
+          !isNaN(item[2])
+        );
+      });
+
+      if (data.length === 0) {
+        this.showEmptyChart(this.charts.scatter3d, '暂无三维数据');
+        this.loading.scatter3d = false;
+        return;
+      }
+
+      const seriesData = {};
+      data.forEach(item => {
+        const warehouseId = item[0];
+        if (!seriesData[warehouseId]) {
+          seriesData[warehouseId] = {
+            name: item[3],
+            points: []
+          };
+        }
+        seriesData[warehouseId].points.push(item);
+      });
+
+      const option = {
+        backgroundColor: 'transparent',
+        tooltip: {
+          formatter: params => {
+            const pointData = params.data.value || [];
+            let timeStr;
+            try {
+              timeStr = format(new Date(pointData[1]), 'yyyy-MM-dd HH:mm');
+            } catch (e) {
+              timeStr = '时间数据异常';
+              console.error('时间格式化错误:', pointData[1], e);
+            }
+            return `
+          <strong>${params.seriesName}</strong><br/>
+          时间: ${timeStr}<br/>
+          库存总量: ${pointData[2] || 0}<br/>
+          状态: ${pointData[5] || '未知'}<br/>
+          操作ID: ${pointData[4] || '初始状态'}
+        `;
+          }
+        },
+        grid3D: {
+          viewControl: {
+            autoRotate: this.autoRotate, // 使用变量控制自动旋转
+            autoRotateSpeed: 10,
+            distance: 150 * (this.scatter3dZoom / 100), // 根据缩放比例调整距离
+            alpha: 40,
+            beta: 60,
+            zoomSensitivity: 0, // 禁用鼠标缩放
+            rotateSensitivity: 1 // 保持旋转灵敏度
+          },
+          axisPointer: {
+            lineStyle: { color: '#fff' }
+          }
+        },
+        xAxis3D: {
+          type: 'category',
+          name: '仓库',
+          data: Object.keys(seriesData), // 仓库ID列表
+          axisLabel: {
+            interval: 0,
+            rotate: 45,
+            fontSize: 10,
+            formatter: (value) => {
+              return seriesData[value]?.name || value; // 显示仓库名称
+            }
+          }
+        },
+        yAxis3D: {
+          type: 'time',
+          name: '时间',
+          axisLabel: {
+            formatter: (value) => format(new Date(value), 'MM-dd HH:mm')
+          }
+        },
+        zAxis3D: {
+          type: 'value',
+          name: '库存总量'
+        },
+        series: Object.entries(seriesData).map(([warehouseId, warehouse]) => ({
+          type: 'line3D', // 关键修改：使用 line3D 替代 scatter3D
+          name: warehouse.name,
+          data: warehouse.points.map(point => ({
+            value: point,
+            itemStyle: {
+              color: point[5] === '操作后' ? '#c23531' : '#61a0a8' // 颜色区分
+            }
+          })),
+          lineStyle: {
+            width: 3,
+            opacity: 0.8
+          },
+          symbol: 'circle', // 保留散点标记
+          symbolSize: 8,
+          emphasis: { // 高亮样式
+            lineStyle: { width: 4 },
+            symbolSize: 12
+          }
+        }))
+      };
+
+      this.charts.scatter3d.setOption(option);
+      this.loading.scatter3d = false;
+
+    },
+
+    prepareScatter3DData() {
+      const operations = JSON.parse(localStorage.getItem('operations')) || [];
+      const warehouses = JSON.parse(localStorage.getItem('warehouses')) || [];
+      const warehouseProducts = JSON.parse(localStorage.getItem('warehouseProducts')) || [];
+
+      // 计算每个仓库的当前库存总量
+      const warehouseTotalStock = {};
+      warehouses.forEach(warehouse => {
+        const total = warehouseProducts
+          .filter(p => p.warehouseId === warehouse.id)
+          .reduce((sum, p) => sum + p.quantity, 0);
+        warehouseTotalStock[warehouse.id] = total;
+      });
+
+      // 过滤掉库存总量为零的仓库
+      const validWarehouses = warehouses.filter(warehouse =>
+        warehouseTotalStock[warehouse.id] > 0
+      );
+
+      // 按仓库ID分组，记录每个仓库的商品总量随时间变化
+      const warehouseStockHistory = {};
+      validWarehouses.forEach(warehouse => {
+        warehouseStockHistory[warehouse.id] = [];
+      });
+
+      // 初始化每个有效仓库的初始库存
+      const initialStock = {};
+      validWarehouses.forEach(warehouse => {
+        initialStock[warehouse.id] = warehouseTotalStock[warehouse.id];
+      });
+
+      // 按时间顺序处理操作
+      const sortedOps = [...operations].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+      // 记录每个仓库的当前库存量
+      const currentStock = { ...initialStock };
+
+      // 遍历操作记录，计算每个操作后的库存状态
+      sortedOps.forEach(op => {
+        const time = new Date(op.timestamp).getTime();
+
+        // 只处理涉及有效仓库的操作
+        const isValidOp =
+          (op.type === '入库' && validWarehouses.some(w => w.id === op.targetWarehouse)) ||
+          (op.type === '出库' && validWarehouses.some(w => w.id === op.sourceWarehouse)) ||
+          (op.type === '转调' &&
+            validWarehouses.some(w => w.id === op.sourceWarehouse) &&
+            validWarehouses.some(w => w.id === op.targetWarehouse));
+
+        if (!isValidOp) return;
+
+        // 记录操作前的状态
+        validWarehouses.forEach(warehouse => {
+          warehouseStockHistory[warehouse.id].push({
+            time,
+            stock: currentStock[warehouse.id],
+            operationId: op.id,
+            isAfterOperation: false
+          });
+        });
+
+        // 更新库存状态
+        switch (op.type) {
+          case '入库':
+            if (op.targetWarehouse && validWarehouses.some(w => w.id === op.targetWarehouse)) {
+              currentStock[op.targetWarehouse] += op.quantity;
+            }
+            break;
+          case '出库':
+            if (op.sourceWarehouse && validWarehouses.some(w => w.id === op.sourceWarehouse)) {
+              currentStock[op.sourceWarehouse] -= op.quantity;
+            }
+            break;
+          case '转调':
+            if (op.sourceWarehouse && op.targetWarehouse &&
+              validWarehouses.some(w => w.id === op.sourceWarehouse) &&
+              validWarehouses.some(w => w.id === op.targetWarehouse)) {
+              currentStock[op.sourceWarehouse] -= op.quantity;
+              currentStock[op.targetWarehouse] += op.quantity;
+            }
+            break;
+        }
+
+        // 记录操作后的状态
+        validWarehouses.forEach(warehouse => {
+          warehouseStockHistory[warehouse.id].push({
+            time,
+            stock: currentStock[warehouse.id],
+            operationId: op.id,
+            isAfterOperation: true
+          });
+        });
+      });
+
+      // 转换为3D散点图数据格式
+      const result = [];
+      Object.entries(warehouseStockHistory).forEach(([warehouseId, history]) => {
+        const warehouse = validWarehouses.find(w => w.id === warehouseId);
+        if (warehouse) {
+          history.forEach(record => {
+            // 确保只添加库存量大于0的点
+            if (record.stock > 0) {
+              result.push([
+                warehouseId,          // x轴: 仓库ID
+                record.time,          // y轴: 时间
+                record.stock,         // z轴: 库存总量
+                warehouse.name,       // 仓库名称
+                record.operationId,   // 操作ID
+                record.isAfterOperation ? '操作后' : '操作前' // 状态
+              ]);
+            }
+          });
+        }
+      });
+      return result;
+    },
+    // 处理缩放滑块变化
+    handleZoomChange(value) {
+      this.scatter3dZoom = value;
+      this.updateScatter3DChart();
+    },
+
+    // 处理自动旋转切换
+    handleAutoRotateChange() {
+      this.updateScatter3DChart();
     }
   },
   mounted() {
     this.loadData();
     this.$nextTick(() => {
       this.initCharts();
-      this.initTrendChart();  // 确保趋势图初始化
-      this.initGaugeChart(); // 确保仪表图初始化
+      this.initTrendChart();
+      this.initGaugeChart();
+      this.initScatter3DChart(); // 新增
     });
     window.addEventListener('resize', this.handleResize);
   },
   beforeDestroy() {
-    window.removeEventListener('resize', this.handleResize)
+    window.removeEventListener('resize', this.handleResize);
     Object.values(this.charts).forEach(chart => {
-      if (chart) chart.dispose()
-    })
+      if (chart) chart.dispose();
+    });
   }
 }
 </script>

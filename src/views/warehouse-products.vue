@@ -30,9 +30,9 @@
       </div>
       <el-table ref="table" :data="paginatedProducts" height="tableHeight" stripe border highlight-current-row
         style="width: 100%" v-loading="loading">
-        <el-table-column prop="id" label="商品ID" width="100" sortable></el-table-column>
-        <el-table-column prop="name" label="商品名称" width="220" sortable></el-table-column>
-        <el-table-column prop="quantity" label="库存数量" width="120" sortable></el-table-column>
+        <el-table-column prop="id" label="商品ID" width="150" sortable></el-table-column>
+        <el-table-column prop="name" label="商品名称" width="300" sortable></el-table-column>
+        <el-table-column prop="quantity" label="库存数量" width="150" sortable></el-table-column>
         <el-table-column prop="location" label="存放位置" width="200"></el-table-column>
       </el-table>
       <div class="table-footer">
