@@ -234,11 +234,18 @@ export default {
         },
         loadWarehouses() {
             const savedWarehouses = localStorage.getItem('warehouses');
-            this.warehouses = savedWarehouses ? JSON.parse(savedWarehouses) : [];
+            this.warehouses = savedWarehouses ? JSON.parse(savedWarehouses).map(warehouse => ({
+                ...warehouse,
+                capacity: parseInt(warehouse.capacity, 10) || 0 // 确保容量为整数
+            })) : [];
             this.total = this.warehouses.length;
         },
         saveWarehouses() {
-            localStorage.setItem('warehouses', JSON.stringify(this.warehouses));
+            const normalizedWarehouses = this.warehouses.map(warehouse => ({
+                ...warehouse,
+                capacity: parseInt(warehouse.capacity, 10) || 0 // 确保容量为整数
+            }));
+            localStorage.setItem('warehouses', JSON.stringify(normalizedWarehouses));
             this.total = this.warehouses.length;
         },
         editWarehouse(warehouse) {
@@ -248,7 +255,10 @@ export default {
         saveEdit() {
             const index = this.warehouses.findIndex(warehouse => warehouse.id === this.editForm.id);
             if (index !== -1) {
-                this.warehouses.splice(index, 1, { ...this.editForm });
+                this.warehouses.splice(index, 1, {
+                    ...this.editForm,
+                    capacity: parseInt(this.editForm.capacity, 10) || 0 // 确保容量为整数
+                });
                 this.saveWarehouses();
                 this.$message.success('修改成功');
             }
@@ -268,7 +278,10 @@ export default {
                 this.$message.error('请填写完整信息');
                 return;
             }
-            this.warehouses.push({ ...this.addForm });
+            this.warehouses.push({
+                ...this.addForm,
+                capacity: parseInt(this.addForm.capacity, 10) || 0 // 确保容量为整数
+            });
             this.saveWarehouses();
             this.$message.success('添加成功');
             this.addDialogVisible = false;

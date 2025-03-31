@@ -537,9 +537,9 @@ export default {
         {
           title: "平均使用率",
           value: `${this.avgUsageRate}%`,
-          color: 'var(--danger-color)',
+          color: this.getUsageColor(this.avgUsageRate),
           icon: 'el-icon-data-line',
-          trend: 3.7
+          trend: 0 // 可根据需要添加趋势计算
         }
       ]
     },
@@ -555,13 +555,20 @@ export default {
       return this.warehouseProducts.reduce((sum, p) => sum + p.quantity, 0)
     },
     avgUsageRate() {
-      if (this.warehouses.length === 0) return 0
-      const total = this.warehouses.reduce((sum, w) => {
-        const warehouseProducts = this.warehouseProducts.filter(p => p.warehouseId === w.id)
-        const used = warehouseProducts.reduce((s, p) => s + p.quantity, 0)
-        return sum + (used / w.capacity * 100)
-      }, 0)
-      return (total / this.warehouses.length).toFixed(1)
+      // 如果有选中的仓库，只计算该仓库的使用率
+      if (this.selectedWarehouse) {
+        const warehouse = this.warehouses.find(w => w.id === this.selectedWarehouse);
+        if (!warehouse) return 0;
+
+        const usageData = this.warehouseUsageRates.find(w => w.id === warehouse.id);
+        return usageData ? usageData.usageRate : 0;
+      }
+
+      // 否则计算全局平均使用率
+      if (this.warehouseUsageRates.length === 0) return 0;
+      const total = this.warehouseUsageRates.reduce(
+        (sum, w) => sum + parseFloat(w.usageRate), 0);
+      return (total / this.warehouseUsageRates.length).toFixed(1);
     },
     recentOperations() {
       return [...this.operations]
@@ -575,7 +582,26 @@ export default {
     filteredWarehouseProducts() {
       if (!this.selectedWarehouse) return this.warehouseProducts
       return this.warehouseProducts.filter(p => p.warehouseId === this.selectedWarehouse)
-    }
+    },
+    warehouseUsageRates() {
+      return this.warehouses.map(warehouse => {
+        const productsInWarehouse = this.warehouseProducts.filter(
+          p => p.warehouseId === warehouse.id
+        );
+        const totalQuantity = productsInWarehouse.reduce((sum, p) => sum + p.quantity, 0);
+        const usageRate = warehouse.capacity > 0
+          ? Math.min((totalQuantity / warehouse.capacity) * 100, 100) // 不超过100%
+          : 0;
+
+        return {
+          id: warehouse.id,
+          name: warehouse.name,
+          usageRate: usageRate.toFixed(1),
+          used: totalQuantity,
+          capacity: warehouse.capacity
+        };
+      });
+    },
   },
   methods: {
     async loadData() {
@@ -585,6 +611,11 @@ export default {
         this.products = JSON.parse(localStorage.getItem('products')) || [];
         this.warehouseProducts = JSON.parse(localStorage.getItem('warehouseProducts')) || [];
         this.operations = JSON.parse(localStorage.getItem('operations')) || [];
+
+        // 确保capacity是数字类型
+        this.warehouses.forEach(w => {
+          w.capacity = Number(w.capacity) || 0;
+        });
       } finally {
         this.loading = { product: false, heatmap: false, trend: false, gauge: false, scatter3d: false };
         this.$nextTick(() => {
@@ -592,7 +623,7 @@ export default {
           this.updateTrendChart();  // 手动触发趋势图更新
           this.updateGaugeChart();  // 手动触发仪表图更新
           this.updateScatter3DChart();  // 手动触发散点图更新
-        })
+        });
       }
     },
     initTrendChart() {
@@ -676,92 +707,80 @@ export default {
     updateGaugeChart() {
       if (!this.charts.gauge) return;
 
-      // 未选中仓库时显示全局使用率
+      // 全局模式 - 显示平均使用率
       if (!this.selectedWarehouse) {
-        const totalUsed = this.warehouseProducts.reduce((sum, p) => sum + p.quantity, 0);
-        const totalCapacity = this.warehouses.reduce((sum, w) => sum + w.capacity, 0);
-        const globalUsage = totalCapacity > 0 ? Math.min(Math.round((totalUsed / totalCapacity) * 100), 100) : 0;
-
         const option = {
-          tooltip: {
-            formatter: `全局仓库使用率: ${globalUsage}%<br/>总用量: ${totalUsed}/${totalCapacity}`
-          },
           series: [{
             type: 'gauge',
-            center: ['50%', '50%'],
-            radius: '80%',
-            min: 0,
-            max: 100,
-            splitNumber: 5,
+            center: ['50%', '60%'], // 调整中心位置
+            radius: '90%', // 调整半径
+            detail: {
+              formatter: '{value}%',
+              offsetCenter: [0, '70%'], // 将详情文字下移
+              fontSize: 16,
+              fontWeight: 'bold'
+            },
+            data: [{
+              value: this.avgUsageRate,
+              name: '平均使用率',
+              itemStyle: {
+                color: this.getUsageColor(this.avgUsageRate)
+              }
+            }],
             axisLine: {
               lineStyle: {
-                width: 10,
                 color: [
                   [0.3, '#67C23A'],
                   [0.7, '#E6A23C'],
                   [1, '#F56C6C']
                 ]
               }
-            },
-            pointer: { itemStyle: { color: 'auto' } },
-            axisTick: { distance: -10, length: 5 },
-            splitLine: { distance: -10, length: 10 },
-            axisLabel: { distance: -20, color: 'inherit' },
-            detail: {
-              valueAnimation: true,
-              formatter: '{value}%',
-              color: 'inherit',
-              fontSize: 20
-            },
-            data: [{
-              value: globalUsage,
-              name: '全局仓库使用率',
-              used: totalUsed,
-              capacity: totalCapacity
-            }],
-            title: {
-              offsetCenter: [0, '80%'],
-              fontSize: 14,
-              color: '#666'
-            },
-            animationDuration: 2000
+            }
           }]
         };
-
         this.charts.gauge.setOption(option);
         return;
       }
 
-      // 选中仓库时显示单个仓库的仪表盘
+      // 单个仓库模式
       const warehouse = this.warehouses.find(w => w.id === this.selectedWarehouse);
-      if (!warehouse) {
-        this.showEmptyChart(this.charts.gauge, '仓库数据不存在');
-        return;
-      }
+      if (!warehouse) return;
 
-      const used = this.warehouseProducts
-        .filter(p => p.warehouseId === warehouse.id)
-        .reduce((sum, p) => sum + p.quantity, 0);
-      const percent = Math.min(Math.round((used / warehouse.capacity) * 100), 100);
+      const usageData = this.warehouseUsageRates.find(w => w.id === warehouse.id);
+      const usageRate = usageData ? usageData.usageRate : 0;
 
       const option = {
-        tooltip: {
-          formatter: `
-        <strong>${warehouse.name}</strong><br/>
-        使用率: ${percent}%<br/>
-        已用: ${used}/${warehouse.capacity}
-      `
-        },
         series: [{
           type: 'gauge',
-          center: ['50%', '50%'],
-          radius: '80%',
-          min: 0,
-          max: 100,
-          splitNumber: 5,
+          center: ['50%', '60%'], // 调整中心位置
+          radius: '90%', // 调整半径
+          detail: {
+            formatter: `{value}%\n${usageData.used}/${usageData.capacity}`,
+            offsetCenter: [0, '70%'], // 将详情文字下移
+            fontSize: 16,
+            fontWeight: 'bold',
+            rich: {
+              // 可以添加更丰富的文本样式
+              value: {
+                fontSize: 24,
+                color: this.getUsageColor(usageRate),
+                padding: [5, 0]
+              },
+              ratio: {
+                fontSize: 14,
+                color: '#909399'
+              }
+            }
+          },
+          data: [{
+            value: usageRate,
+            name: warehouse.name,
+            itemStyle: {
+              color: this.getUsageColor(usageRate)
+            }
+          }],
           axisLine: {
             lineStyle: {
-              width: 10,
               color: [
                 [0.3, '#67C23A'],
                 [0.7, '#E6A23C'],
@@ -769,33 +788,24 @@ export default {
               ]
             }
           },
-          pointer: { itemStyle: { color: 'auto' } },
-          axisTick: { distance: -10, length: 5 },
-          splitLine: { distance: -10, length: 10 },
-          axisLabel: { distance: -20, color: 'inherit' },
-          detail: {
-            valueAnimation: true,
-            formatter: '{value}%',
-            color: 'inherit',
-            fontSize: 20
-          },
-          data: [{
-            value: percent,
-            name: warehouse.name,
-            used: used,
-            capacity: warehouse.capacity
-          }],
+          // 添加标题
           title: {
-            offsetCenter: [0, '80%'],
+            show: true,
+            offsetCenter: [0, '-40%'], // 标题位置
             fontSize: 14,
-            color: '#666'
-          },
-          animationDuration: 2000
+            color: '#606266'
+          }
         }]
       };
 
       this.charts.gauge.setOption(option);
-      this.loading.gauge = false;
+    },
+    // 根据使用率返回颜色
+    getUsageColor(rate) {
+      rate = parseFloat(rate);
+      if (rate < 30) return '#67C23A';  // 绿色
+      if (rate < 70) return '#E6A23C';  // 黄色
+      return '#F56C6C';                 // 红色
     },
     initCharts() {
       this.charts.product = echarts.init(this.$refs.productChart)
