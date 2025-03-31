@@ -59,37 +59,104 @@ export default {
         };
     },
     methods: {
-        handleLogin() {
-            if (this.username && this.password) {
-                this.isLoading = true;
-                // 模拟登录逻辑
-                setTimeout(() => {
-                    this.isLoading = false;
-                    if (this.username === "admin" && this.password === "123456") {
-                        // 存储 token 和用户名
-                        localStorage.setItem("token", "mock-token");
-                        localStorage.setItem("username", this.username); // 存储用户名
-                        if (this.rememberMe) {
-                            localStorage.setItem("rememberMe", true);
-                        }
-                        this.$message.success("登录成功！");
-                        this.$router.push({ path: "/" }); // 跳转到首页
-                    } else {
-                        this.$message.error("用户名或密码错误！");
-                    }
-                }, 1000);
-            } else {
-                this.$message.error("请输入用户名和密码！");
+        async handleLogin() {
+            if (!this.username || !this.password) {
+                this.$message.error('请输入用户名和密码');
+                return;
             }
+
+            this.isLoading = true;
+
+            try {
+                const user = await this.authenticateUser(this.username, this.password);
+
+                if (user) {
+                    localStorage.setItem("token", this.generateToken(user));
+                    localStorage.setItem("user", JSON.stringify(user));
+
+                    if (this.rememberMe) {
+                        localStorage.setItem("rememberMe", "true");
+                    }
+
+                    this.$message.success(`欢迎回来，${user.name}`);
+
+                    // 根据用户角色重定向
+                    let redirectPath = '/list/products'; // 默认路由
+
+                    if (user.role === 'admin') {
+                        redirectPath = '/system/users';
+                    } else if (user.role === 'manager') {
+                        redirectPath = '/list/warehouses';
+                    } else if (user.role === 'operator') {
+                        redirectPath = '/operation';
+                    }
+
+                    this.$router.push(redirectPath).catch(err => {
+                        if (err.name !== 'NavigationDuplicated') {
+                            throw err;
+                        }
+                    });
+                } else {
+                    this.$message.error("用户名或密码错误");
+                }
+            } catch (error) {
+                this.$message.error("登录失败：" + error.message);
+            } finally {
+                this.isLoading = false;
+            }
+        },
+
+        // 用户认证方法
+        authenticateUser(username, password) {
+            return new Promise((resolve, reject) => {
+                setTimeout(() => {
+                    const users = JSON.parse(localStorage.getItem('users')) || [];
+                    console.log('存储的用户列表:', users); // 调试
+
+                    const user = users.find(u => u.username === username);
+                    console.log('找到的用户:', user); // 调试
+
+                    if (!user) {
+                        console.log('用户不存在');
+                        resolve(null);
+                        return;
+                    }
+
+                    const inputHash = this.hashPassword(password);
+                    console.log('输入密码哈希:', inputHash);
+                    console.log('存储密码哈希:', user.password);
+
+                    if (user.password === inputHash) {
+                        console.log('密码匹配成功');
+                        user.lastLogin = new Date().toISOString();
+                        localStorage.setItem('users', JSON.stringify(users));
+                        resolve(user);
+                    } else {
+                        console.log('密码不匹配');
+                        resolve(null);
+                    }
+                }, 800);
+            });
+        },
+
+        // 简单的密码哈希函数（实际项目应使用更安全的方案如bcrypt）
+        hashPassword(password) {
+            // 简单示例哈希，实际项目应使用更安全的算法
+            return password.split('').reverse().join('') + password.length;
+        },
+
+        // 生成简单token
+        generateToken(user) {
+            return btoa(`${user.id}:${user.username}:${Date.now()}`);
         }
-    },
+    }
 };
 </script>
 
 <style>
 /* 基础样式 */
 :root {
-    --primary-color:  #409EFF;
+    --primary-color: #409EFF;
     --primary-hover: #3a56d4;
     --text-color: #2b2d42;
     --light-text: rgba(255, 255, 255, 0.8);
