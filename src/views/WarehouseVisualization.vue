@@ -183,7 +183,7 @@
   background-position: center;
   padding: 20px;
   min-height: 100vh;
-  border-radius:12px;
+  border-radius: 12px;
 }
 
 .summary-card {
@@ -422,13 +422,15 @@
 }
 
 .el-table::before {
-  display: none; /* 移除表格底部的线 */
+  display: none;
+  /* 移除表格底部的线 */
 }
 
 /* 表格单元格样式 */
 .el-table td {
   background-color: transparent !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.4); /* 保留淡淡的边框 */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+  /* 保留淡淡的边框 */
 }
 
 /* 表头样式 */
@@ -446,9 +448,7 @@
   background-color: rgba(255, 255, 255, 0.8) !important;
 }
 </style>
-<style scoped>
-
-</style>
+<style scoped></style>
 
 
 <script>
@@ -1145,117 +1145,105 @@ export default {
     prepareScatter3DData() {
       const operations = JSON.parse(localStorage.getItem('operations')) || [];
       const warehouses = JSON.parse(localStorage.getItem('warehouses')) || [];
-      const warehouseProducts = JSON.parse(localStorage.getItem('warehouseProducts')) || [];
+      const products = JSON.parse(localStorage.getItem('products')) || [];
 
-      // 计算每个仓库的当前库存总量
-      const warehouseTotalStock = {};
-      warehouses.forEach(warehouse => {
-        const total = warehouseProducts
-          .filter(p => p.warehouseId === warehouse.id)
-          .reduce((sum, p) => sum + p.quantity, 0);
-        warehouseTotalStock[warehouse.id] = total;
-      });
-
-      // 过滤掉库存总量为零的仓库
-      const validWarehouses = warehouses.filter(warehouse =>
-        warehouseTotalStock[warehouse.id] > 0
+      // 1. 按时间排序所有操作
+      const sortedOps = [...operations].sort((a, b) =>
+        new Date(a.timestamp) - new Date(b.timestamp)
       );
 
-      // 按仓库ID分组，记录每个仓库的商品总量随时间变化
-      const warehouseStockHistory = {};
-      validWarehouses.forEach(warehouse => {
-        warehouseStockHistory[warehouse.id] = [];
+      // 2. 初始化每个仓库的库存历史记录
+      const warehouseHistory = {};
+      warehouses.forEach(warehouse => {
+        warehouseHistory[warehouse.id] = {
+          name: warehouse.name,
+          points: []
+        };
       });
 
-      // 初始化每个有效仓库的初始库存
-      const initialStock = {};
-      validWarehouses.forEach(warehouse => {
-        initialStock[warehouse.id] = warehouseTotalStock[warehouse.id];
+      // 3. 计算初始库存状态（所有仓库初始库存为0）
+      warehouses.forEach(warehouse => {
+        warehouseHistory[warehouse.id].points.push({
+          time: sortedOps.length > 0
+            ? new Date(sortedOps[0].timestamp).getTime() - 3600000 // 第一个操作前一h
+            : new Date().getTime() - 3600000, // 如果没有操作，使用当前时间前一h
+          stock: 0,
+          operationId: 'initial',
+          status: '初始状态'
+        });
       });
 
-      // 按时间顺序处理操作
-      const sortedOps = [...operations].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+      // 4. 重建库存变化历史（更精确的方法）
+      const currentStock = {};
+      warehouses.forEach(warehouse => {
+        currentStock[warehouse.id] = 0;
+      });
 
-      // 记录每个仓库的当前库存量
-      const currentStock = { ...initialStock };
-
-      // 遍历操作记录，计算每个操作后的库存状态
       sortedOps.forEach(op => {
-        const time = new Date(op.timestamp).getTime();
+        const opTime = new Date(op.timestamp).getTime();
+        const opType = op.type;
+        const quantity = op.quantity;
 
-        // 只处理涉及有效仓库的操作
-        const isValidOp =
-          (op.type === '入库' && validWarehouses.some(w => w.id === op.targetWarehouse)) ||
-          (op.type === '出库' && validWarehouses.some(w => w.id === op.sourceWarehouse)) ||
-          (op.type === '转调' &&
-            validWarehouses.some(w => w.id === op.sourceWarehouse) &&
-            validWarehouses.some(w => w.id === op.targetWarehouse));
-
-        if (!isValidOp) return;
-
-        // 记录操作前的状态
-        validWarehouses.forEach(warehouse => {
-          warehouseStockHistory[warehouse.id].push({
-            time,
+        // 记录操作前的状态（仅用于调试，正式版本可以去掉）
+        /*
+        warehouses.forEach(warehouse => {
+          warehouseHistory[warehouse.id].points.push({
+            time: opTime - 1, // 操作前1毫秒
             stock: currentStock[warehouse.id],
             operationId: op.id,
-            isAfterOperation: false
+            status: '操作前'
           });
         });
+        */
 
-        // 更新库存状态
-        switch (op.type) {
+        // 处理不同类型的操作
+        switch (opType) {
           case '入库':
-            if (op.targetWarehouse && validWarehouses.some(w => w.id === op.targetWarehouse)) {
-              currentStock[op.targetWarehouse] += op.quantity;
+            if (op.targetWarehouse) {
+              currentStock[op.targetWarehouse] = (currentStock[op.targetWarehouse] || 0) + quantity;
             }
             break;
+
           case '出库':
-            if (op.sourceWarehouse && validWarehouses.some(w => w.id === op.sourceWarehouse)) {
-              currentStock[op.sourceWarehouse] -= op.quantity;
+            if (op.sourceWarehouse) {
+              currentStock[op.sourceWarehouse] = Math.max(0, (currentStock[op.sourceWarehouse] || 0) - quantity);
             }
             break;
+
           case '转调':
-            if (op.sourceWarehouse && op.targetWarehouse &&
-              validWarehouses.some(w => w.id === op.sourceWarehouse) &&
-              validWarehouses.some(w => w.id === op.targetWarehouse)) {
-              currentStock[op.sourceWarehouse] -= op.quantity;
-              currentStock[op.targetWarehouse] += op.quantity;
+            if (op.sourceWarehouse && op.targetWarehouse) {
+              currentStock[op.sourceWarehouse] = Math.max(0, (currentStock[op.sourceWarehouse] || 0) - quantity);
+              currentStock[op.targetWarehouse] = (currentStock[op.targetWarehouse] || 0) + quantity;
             }
             break;
         }
 
         // 记录操作后的状态
-        validWarehouses.forEach(warehouse => {
-          warehouseStockHistory[warehouse.id].push({
-            time,
+        warehouses.forEach(warehouse => {
+          warehouseHistory[warehouse.id].points.push({
+            time: opTime,
             stock: currentStock[warehouse.id],
             operationId: op.id,
-            isAfterOperation: true
+            status: '操作后'
           });
         });
       });
 
-      // 转换为3D散点图数据格式
+      // 5. 转换为3D图表需要的数据格式
       const result = [];
-      Object.entries(warehouseStockHistory).forEach(([warehouseId, history]) => {
-        const warehouse = validWarehouses.find(w => w.id === warehouseId);
-        if (warehouse) {
-          history.forEach(record => {
-            // 确保只添加库存量大于0的点
-            if (record.stock > 0) {
-              result.push([
-                warehouseId,          // x轴: 仓库ID
-                record.time,          // y轴: 时间
-                record.stock,         // z轴: 库存总量
-                warehouse.name,       // 仓库名称
-                record.operationId,   // 操作ID
-                record.isAfterOperation ? '操作后' : '操作前' // 状态
-              ]);
-            }
-          });
-        }
+      Object.entries(warehouseHistory).forEach(([warehouseId, history]) => {
+        history.points.forEach(point => {
+          result.push([
+            warehouseId,          // x轴: 仓库ID
+            point.time,          // y轴: 时间
+            point.stock,         // z轴: 库存总量
+            history.name,        // 仓库名称
+            point.operationId,   // 操作ID
+            point.status         // 状态
+          ]);
+        });
       });
+
       return result;
     },
     // 处理缩放滑块变化
