@@ -70,42 +70,33 @@ export default {
 
             try {
                 const user = await this.authenticateUser(this.username, this.password);
-                const ip = await this.getIPAddress(); // 关键：等待IP获取
+                const ip = await this.getIPAddress();
+
                 if (user) {
                     // 保存登录历史
                     const loginHistory = JSON.parse(localStorage.getItem('loginHistory')) || [];
                     const currentLogin = {
                         timestamp: new Date().toISOString(),
-                        ip: ip, // 替换为真实IP获取逻辑
-
+                        ip: ip,
                         device: this.getDeviceInfo(),
-                        //从本地存储中找到当前username的id
                         userId: user.id
-
                     };
                     loginHistory.push(currentLogin);
                     localStorage.setItem('loginHistory', JSON.stringify(loginHistory.slice(-50)));
 
                     // 更新用户最后登录时间
-                    user.lastLogin = user.currentLogin || currentLogin.timestamp;
-                    user.currentLogin = currentLogin.timestamp;
-
-                    // Update lastLogin and save to localStorage
-                    user.lastLogin = currentLogin.timestamp;
-                    localStorage.setItem("user", JSON.stringify(user));                    // console.log('更新用户最后登录时间', user.lastLogin);
-
-                    localStorage.setItem("token", this.generateToken(user));
+                    user.lastLogin = new Date().toISOString();
                     localStorage.setItem("user", JSON.stringify(user));
+                    localStorage.setItem("token", this.generateToken(user));
 
                     if (this.rememberMe) {
                         localStorage.setItem("rememberMe", "true");
                     }
 
-                    this.$message.success(`欢迎回来，${user.name}`);
+                    this.$message.success(`欢迎回来，${user.name || user.username}`);
 
                     // 根据用户角色重定向
                     let redirectPath = '/list/products'; // 默认路由
-
                     if (user.role === 'admin') {
                         redirectPath = '/system/users';
                     } else if (user.role === 'manager') {
@@ -120,7 +111,7 @@ export default {
                         }
                     });
                 } else {
-                    this.$message.error("用户名或密码错误");
+                    // 这里不再显示错误信息，因为已经在authenticateUser中处理了
                 }
             } catch (error) {
                 this.$message.error("登录失败：" + error.message);
@@ -166,6 +157,14 @@ export default {
                         return;
                     }
 
+                    // 检查用户状态
+                    if (user.status === 'disabled') {
+                        console.log('账户已被禁用');
+                        this.$message.error('您的账户已被禁用，请联系管理员');
+                        resolve(null);
+                        return;
+                    }
+
                     const inputHash = this.hashPassword(password);
                     console.log('输入密码哈希:', inputHash);
                     console.log('存储密码哈希:', user.password);
@@ -179,11 +178,11 @@ export default {
                         console.log('密码不匹配');
                         resolve(null);
                     }
-                }, 800);
+                }, 300);
             });
         },
 
-        // 简单的密码哈希函数（实际项目应使用更安全的方案如bcrypt）
+        // 简单的密码哈希函数
         hashPassword(password) {
             // 简单示例哈希，实际项目应使用更安全的算法
             return password.split('').reverse().join('') + password.length;
@@ -192,11 +191,39 @@ export default {
         // 生成简单token
         generateToken(user) {
             return btoa(`${user.id}:${user.username}:${Date.now()}`);
+        },
+        initAdminUser() {
+            const users = JSON.parse(localStorage.getItem('users')) || [];
+            const adminExists = users.some(u => u.username === 'admin');
+
+            if (!adminExists) {
+                const adminUser = {
+                    id: this.generateId(),
+                    username: 'admin',
+                    password: this.hashPassword('123456'),
+                    name: '系统管理员',
+                    role: 'admin',
+                    email: 'admin@example.com',
+                    phone: '',
+                    department: '系统管理部',
+                    createdAt: new Date().toISOString(),
+                    lastLogin: null,
+                    status: 'active'
+                };
+                users.push(adminUser);
+                localStorage.setItem('users', JSON.stringify(users));
+                console.log('默认管理员账户已创建');
+            }
+        },
+        generateId() {
+            return Date.now().toString(36) + Math.random().toString(36).substr(2);
         }
     },
 
     created() {
+        this.initAdminUser();
         this.getIPAddress();
+
     }
 
 };

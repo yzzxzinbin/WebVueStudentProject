@@ -367,10 +367,9 @@ export default {
   },
 
   watch: {
-    // 监听路由变化更新激活菜单
     '$route'(to) {
-      this.activeMenu = to.path;
-      localStorage.setItem('selectMenu', to.path);
+      this.activeMenu = to.path.split('?')[0]; // 忽略查询参数
+      localStorage.setItem('selectMenu', this.activeMenu);
 
       // 路由变化时显示加载状态
       this.isLoading = true;
@@ -457,7 +456,7 @@ body {
   font-weight: bold;
   color: var(--text-light);
   letter-spacing: 1px;
-  transition: all 0.6s;
+  transition: all 0.5s;
   user-select: none;
 }
 
@@ -572,7 +571,7 @@ span {
 /* 页面切换动画 */
 .fade-transform-leave-active,
 .fade-transform-enter-active {
-  transition: all 0.3s;
+  transition: all 0.2s;
 }
 
 .fade-transform-enter {
@@ -667,6 +666,16 @@ span {
   width: 16px;
   text-align: center;
   font-size: 16px;
+}
+
+/* 头像框样式 */
+::v-deep .el-avatar img {
+  margin-bottom: 16px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  height: 100%;
+  object-fit: cover !important;
+  object-position: center !important;
 }
 
 /* 调整分割线样式 */

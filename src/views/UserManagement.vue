@@ -41,11 +41,12 @@
                 </el-table-column>
                 <el-table-column prop="email" label="邮箱" width="200"></el-table-column>
                 <el-table-column prop="department" label="部门" width="150"></el-table-column>
-                <el-table-column prop="lastLogin" label="最后登录" width="220" sortable></el-table-column>
-                <el-table-column label="操作" width="180" fixed="right" align="center" header-align="center">
+                <el-table-column prop="lastLogin" label="最后登录" width="180" sortable></el-table-column>
+                <el-table-column label="操作" width="240" fixed="right" align="center" header-align="center">
                     <template slot-scope="scope">
                         <el-button size="mini" type="primary" @click="editUser(scope.row)">编辑</el-button>
                         <el-button size="mini" type="danger" @click="deleteUser(scope.row.id)">删除</el-button>
+                        <el-button size="mini" type="info" @click="viewUserProfile(scope.row)">主页</el-button>
                     </template>
                 </el-table-column>
             </el-table>
@@ -180,6 +181,13 @@ export default {
         this.initAdminUser();
     },
     methods: {
+        viewUserProfile(user) {
+            // 使用特殊路由参数跳转到用户主页
+            this.$router.push({
+                path: '/system/profile',
+                query: { userId: user.id }
+            });
+        },
         loadUsers() {
             this.users = JSON.parse(localStorage.getItem('users')) || [];
         },
@@ -293,6 +301,7 @@ export default {
             if (index !== -1) {
                 users[index].status = user.status;
                 localStorage.setItem('users', JSON.stringify(users));
+                this.$message.success(`用户状态已${user.status === 'active' ? '启用' : '禁用'}`);
             }
         },
 

@@ -2,6 +2,18 @@
     <div class="user-profile">
         <!-- 用户信息卡片 - 优化后的布局 -->
         <el-card shadow="hover" class="profile-card">
+            <div v-if="isViewingOtherUser" class="viewing-notice">
+                <el-alert title="您正在查看其他用户的主页" type="info" show-icon :closable="false">
+                    <template #title>
+                        <div class="alert-title-content">
+                            <span>您正在查看其他用户的主页</span>
+                            <el-button type="primary" size="mini" @click="$router.push('/system/profile')">
+                                返回我的主页
+                            </el-button>
+                        </div>
+                    </template>
+                </el-alert>
+            </div>
             <div class="profile-header">
                 <h2>个人中心</h2>
             </div>
@@ -36,6 +48,14 @@
                             </el-tag>
                         </div>
                         <div class="info-item">
+                            <span class="info-label">电话：</span>
+                            <div class="info-value-edit">
+                                <span>{{ userInfo.phone || '未设置' }}</span>
+                                <el-button size="mini" type="text" icon="el-icon-edit"
+                                    @click="editField('phone')"></el-button>
+                            </div>
+                        </div>
+                        <div class="info-item">
                             <span class="info-label">邮箱：</span>
                             <div class="info-value-edit">
                                 <span>{{ userInfo.email || '未设置' }}</span>
@@ -49,6 +69,14 @@
                                 <span>{{ userInfo.department || '未设置' }}</span>
                                 <el-button size="mini" type="text" icon="el-icon-edit"
                                     @click="editField('department')"></el-button>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">职位：</span>
+                            <div class="info-value-edit">
+                                <span>{{ userInfo.position || '未设置' }}</span>
+                                <el-button size="mini" type="text" icon="el-icon-edit"
+                                    @click="editField('position')"></el-button>
                             </div>
                         </div>
                         <div class="info-item">
@@ -206,6 +234,10 @@ export default {
             passwordDialogVisible: false,
             profileDialogVisible: false,
             fieldDialogVisible: false,
+            // 添加一个标志位表示是否查看他人主页
+            isViewingOtherUser: false,
+            // 添加一个字段存储目标用户ID
+            targetUserId: null,
             passwordForm: {
                 oldPassword: '',
                 newPassword: '',
@@ -231,10 +263,21 @@ export default {
                     { required: true, message: '请确认新密码', trigger: 'blur' },
                     { validator: validatePassword, trigger: 'blur' }
                 ]
+            },
+            fieldLabels: {
+                name: '姓名',
+                phone: '电话',
+                email: '邮箱',
+                department: '部门',
+                position: '职位'
             }
         }
     },
     async created() {
+        // 检查路由参数中是否有userId
+        this.targetUserId = this.$route.query.userId;
+        this.isViewingOtherUser = !!this.targetUserId;
+
         await this.initAvatarDB() // 确保数据库初始化完成
         await this.loadUserInfo() // 再加载用户信息
         this.loadActivityData()
@@ -242,8 +285,6 @@ export default {
     },
 
     methods: {
-
-
         // 初始化头像专用数据库
         initAvatarDB() {
             return new Promise((resolve, reject) => {
@@ -324,40 +365,34 @@ export default {
             reader.readAsDataURL(file.raw)
         },
         async loadUserInfo() {
-            // 1. 从localStorage加载基本信息
-            const userData = JSON.parse(localStorage.getItem('user')) || {};
+            // 1. 从localStorage加载当前用户基本信息
+            const currentUserData = JSON.parse(localStorage.getItem('user')) || {};
 
-            // 2. 获取登录历史
-            const loginHistory = JSON.parse(localStorage.getItem('loginHistory')) || [];
+            // 2. 从users数组中获取要显示的用户信息
+            const users = JSON.parse(localStorage.getItem('users')) || [];
+            const userToDisplay = this.isViewingOtherUser
+                ? users.find(u => u.id === this.targetUserId)
+                : users.find(u => u.id === currentUserData.id);
 
-            // Filter login records for the current user
-            const currentUserId = this.userInfo.id;
-            const userLoginHistory = loginHistory.filter(login => login.userId === currentUserId);
-
-            // 3. 确定最后登录时间
-            let lastLogin = 'N/A';
-            if (userData.lastLogin) {
-                lastLogin = userData.lastLogin;
-                console.log('最后登录时间：', lastLogin)
-            } else if (userData.currentLogin) {
-                lastLogin = userData.currentLogin;
-            } else if (loginHistory.length > 0) {
-                // 从登录历史中获取最后一条记录
-                lastLogin = loginHistory[loginHistory.length - 1].timestamp;
+            if (!userToDisplay) {
+                this.$message.error('用户不存在');
+                this.$router.replace('/system/profile');
+                return;
             }
 
-            // 4. 设置基本信息
+            // 3. 合并数据
             this.userInfo = {
-                ...userData,
+                ...userToDisplay,
                 avatar: null,
-                lastLogin: lastLogin
+                lastLogin: userToDisplay.lastLogin || 'N/A'
             };
+
             this.profileForm = { ...this.userInfo };
 
-            // 5. 从IndexedDB加载头像
-            if (this.db && userData.id) {
+            // 4. 加载头像
+            if (this.db && this.userInfo.id) {
                 try {
-                    const avatar = await this.getAvatarFromDB(userData.id);
+                    const avatar = await this.getAvatarFromDB(this.userInfo.id);
                     if (avatar) {
                         this.userInfo.avatar = avatar;
                         this.profileForm.avatar = avatar;
@@ -368,9 +403,53 @@ export default {
                 }
             }
 
-            // 6. 最终回退逻辑
-            this.userInfo.avatar = userData.avatar || require('@/assets/default-avatar.svg');
-            this.profileForm.avatar = userData.avatar || require('@/assets/default-avatar.svg');
+            // 回退逻辑
+            this.userInfo.avatar = require('@/assets/default-avatar.svg');
+            this.profileForm.avatar = require('@/assets/default-avatar.svg');
+        },
+
+        updateProfile() {
+            if (this.isViewingOtherUser && !this.isAdmin()) {
+                this.$message.warning('您没有权限修改其他用户信息');
+                return;
+            }
+
+            const users = JSON.parse(localStorage.getItem('users')) || [];
+            const userIndex = users.findIndex(u => u.id === this.userInfo.id);
+
+            if (userIndex !== -1) {
+                // 更新users数组
+                const updatedUser = {
+                    ...users[userIndex],
+                    ...this.profileForm
+                };
+                delete updatedUser.avatar;
+
+                users[userIndex] = updatedUser;
+                localStorage.setItem('users', JSON.stringify(users));
+
+                // 如果是当前用户，则更新localStorage中的user信息
+                const currentUser = JSON.parse(localStorage.getItem('user')) || {};
+                if (currentUser.id === this.userInfo.id) {
+                    const userData = { ...this.profileForm };
+                    delete userData.avatar;
+                    localStorage.setItem('user', JSON.stringify({
+                        ...userData,
+                        id: this.userInfo.id,
+                        username: this.userInfo.username,
+                        role: this.userInfo.role
+                    }));
+                }
+
+                this.$message.success('个人档案更新成功');
+            }
+
+            this.profileDialogVisible = false;
+        },
+
+        isAdmin() {
+            const currentUser = JSON.parse(localStorage.getItem('user')) || {};
+            return currentUser.role === 'admin';
         },
 
         formatTime(row, column, cellValue) {
@@ -398,44 +477,46 @@ export default {
 
         loadActivityData() {
             this.loading = true;
-            // 模拟加载数据
+            // 预先设置空数据避免表格高度变化
+            this.activityData = [];
+
+            // 使用 setTimeout 模拟异步加载
             setTimeout(() => {
                 if (this.activeTab === 'login') {
-                    // 从localStorage获取所有登录记录
                     const loginHistory = JSON.parse(localStorage.getItem('loginHistory')) || [];
-
-                    // Filter login records for the current user
                     const currentUserId = this.userInfo.id;
                     const userLoginHistory = loginHistory.filter(login => login.userId === currentUserId);
 
-                    const allLogins = [...userLoginHistory];
-
-                    // 按时间排序
-                    this.activityData = allLogins
+                    this.activityData = userLoginHistory
                         .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
                         .map(item => ({
                             ...item,
                             timestamp: item.timestamp instanceof Date ? item.timestamp : new Date(item.timestamp)
                         }));
-
                 } else {
-                    // 从本地存储获取操作记录
                     const operations = JSON.parse(localStorage.getItem('operations')) || [];
-
-                    // Filter operations for the current user
                     const userOperations = operations.filter(op => op.operator === this.userInfo.username);
+
                     this.activityData = userOperations
-                        .filter(op => op.operator === this.userInfo.username)
                         .map(op => ({
                             timestamp: op.timestamp,
                             type: op.type,
                             details: `${op.type}商品 ${op.productId} (数量: ${op.quantity})`,
                             warehouse: op.sourceWarehouse || op.targetWarehouse || 'N/A'
                         }))
-                        .slice(0, 20); // 只显示最近的20条
+                        .slice(0, 20);
                 }
+
                 this.loading = false;
-            }, 500);
+
+                // 强制表格重新渲染
+                this.$nextTick(() => {
+                    const table = this.$refs.activityTable;
+                    if (table) {
+                        table.doLayout();
+                    }
+                });
+            }, 500); // 缩短加载时间
         },
 
         // 添加设备信息格式化方法
@@ -528,30 +609,6 @@ export default {
             })
         },
 
-        updateProfile() {
-            const users = JSON.parse(localStorage.getItem('users')) || []
-            const userIndex = users.findIndex(u => u.id === this.userInfo.id)
-
-            if (userIndex !== -1) {
-                // 1. 更新users数组（不含头像）
-                const userWithoutAvatar = { ...this.profileForm }
-                delete userWithoutAvatar.avatar // 不保存头像到localStorage
-
-                users[userIndex] = { ...users[userIndex], ...userWithoutAvatar }
-                localStorage.setItem('users', JSON.stringify(users))
-
-                // 2. 更新user数据（也不含头像）
-                const userData = { ...this.profileForm }
-                delete userData.avatar
-                localStorage.setItem('user', JSON.stringify(userData))
-
-                // 3. 更新界面状态（保留头像）
-                this.userInfo = { ...this.profileForm } // 保持头像数据
-                this.$message.success('个人档案更新成功')
-            }
-
-            this.profileDialogVisible = false
-        },
         async cleanupOldAvatars() {
             // 从localStorage移除头像
             const user = JSON.parse(localStorage.getItem('user')) || {}
@@ -574,11 +631,28 @@ export default {
         hashPassword(password) {
             return password.split('').reverse().join('') + password.length
         }
+    },
+    watch: {
+        // 监听路由变化
+        '$route'(to) {
+            this.targetUserId = to.query.userId;
+            this.isViewingOtherUser = !!this.targetUserId;
+            this.loadUserInfo();
+        }
     }
 }
 </script>
-
 <style scoped>
+/* 穿透到 el-avatar 内部的 img */
+::v-deep .avatar img {
+    margin-bottom: 16px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    height: 100%;
+    object-fit: cover !important;
+    object-position: center !important;
+}
+
 .user-profile {
     padding: 20px;
     max-width: 1200px;
@@ -635,15 +709,13 @@ export default {
     flex-shrink: 0;
 }
 
-.avatar {
-    margin-bottom: 16px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
+
 
 .avatar-uploader {
     margin-top: 12px;
     border-radius: 8px;
 }
+
 
 .info-section {
     flex: 1;
@@ -653,14 +725,17 @@ export default {
 .info-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 16px 24px;
+    gap: 12px 16px;
+    /* 减小行间距和列间距 */
 }
 
 .info-item {
+    min-height: 32px;
+    /* 减小高度 */
     display: flex;
     align-items: center;
-    min-height: 40px;
 }
+
 
 .info-label {
     width: 80px;
@@ -751,4 +826,31 @@ export default {
 .compact-table::before {
     display: none;
 }
+
+.viewing-notice {
+    margin-bottom: 16px;
+    /* 可选，调整间距 */
+}
+
+.alert-title-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding-right: 10px;
+
+}
+
+/* 可选：调整按钮与文字的对齐方式 */
+.alert-title-content span {
+    margin-right: 10px;
+
+    /* 确保文字和按钮之间有空隙 */
+}
+
+/* 设置el-card 子容器 el-alert 样式 */
+.el-card .el-alert {
+    background-color: rgba(240, 2, 2, 0.1);
+}
+
 </style>
