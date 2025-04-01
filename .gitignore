@@ -22,9 +22,5 @@ pnpm-debug.log*
 *.njsproj
 *.sln
 *.sw?
-babel.config.js
 jsconfig.json
-package-lock.json
-package.json
-vue.config.js
 yarn.lock

@@ -39,6 +39,7 @@ WebVueStudentProject/
 ├── src/
 │   ├── assets/              # 静态资源
 │   ├── components/          # 公共组件
+│   ├── utils/eventBus.js	 # 事件总线
 │   ├── router/              # 路由配置
 │   │   ├── index.js
 │   ├── views/               # 页面组件
@@ -48,7 +49,9 @@ WebVueStudentProject/
 │   │   ├── Warehouse.vue    # 仓库列表
 │   │   ├── warehouse-products.vue # 仓库商品
 │   │   ├── operation.vue    # 操作申请
-│   │   └── WarehouseVisualization.vue # 可视化
+│   │   ├── WarehouseVisualization.vue # 可视化组件
+│   │   ├── UserProfile.vue  # 个人信息
+│   │   └── UserManagement.vue # 用户管理
 │   ├── App.vue              # 根组件
 │   └── main.js              # 入口文件
 ├── .gitignore
@@ -71,6 +74,13 @@ cd WebVueStudentProject
 npm i element-ui -S
 npm install echarts --save
 npm install echarts-gl --save
+npm install date-fns --save
+```
+
+如果项目文件夹有依赖索引文件package.json或package-lock.json
+直接运行下述命令即可
+```bash
+npm install
 ```
 
 3. **运行开发服务器**
@@ -81,11 +91,11 @@ npm run serve
 
 4. **访问应用**
 
-打开浏览器访问 [http://localhost:8080](http://localhost:8080)
+	打开浏览器访问 [http://localhost:8080](http://localhost:8080)
 
 默认登录账号：
-- 用户名: `admin`
-- 密码: `123456`
+	- 用户名: `admin`
+	- 密码: `123456`
 
 ## 构建生产版本
 
