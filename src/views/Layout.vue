@@ -87,6 +87,7 @@
 export default {
   data() {
     return {
+      db: null, // IndexedDB数据库实例
       isCollapse: false, // 侧边栏是否折叠
       activeMenu: '', // 当前激活的菜单项
       searchQuery: '', // 搜索框内容
@@ -160,6 +161,76 @@ export default {
     }
   },
   methods: {
+
+    // 初始化头像专用数据库
+    initAvatarDB() {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open('AvatarDB', 1);
+
+        request.onupgradeneeded = (event) => {
+          const db = event.target.result;
+          if (!db.objectStoreNames.contains('avatars')) {
+            db.createObjectStore('avatars', { keyPath: 'userId' });
+          }
+        };
+
+        request.onsuccess = (event) => {
+          this.db = event.target.result;
+          resolve();
+        };
+
+        request.onerror = (event) => {
+          console.error('数据库初始化失败:', event.target.error);
+          reject(event.target.error);
+        };
+      });
+    },
+
+    // 从IndexedDB读取头像
+    async getAvatarFromDB(userId) {
+      if (!this.db) return null;
+
+      return new Promise((resolve) => {
+        const transaction = this.db.transaction(['avatars'], 'readonly');
+        const store = transaction.objectStore('avatars');
+
+        const request = store.get(userId);
+
+        request.onsuccess = () => resolve(request.result?.avatarData || null);
+        request.onerror = () => resolve(null);
+      });
+    },
+
+    // 修改后的用户信息加载方法
+    async loadUserInfo() {
+      // 1. 从localStorage加载基本信息
+      const user = JSON.parse(localStorage.getItem('user')) || {};
+
+      // 2. 设置基本信息（不包含头像）
+      this.userInfo = { ...user, avatar: null };
+
+      // 3. 确保数据库已初始化
+      if (!this.db) {
+        console.warn('IndexedDB 尚未初始化');
+        return;
+      }
+
+      // 4. 从IndexedDB加载头像
+      if (user.id) {
+        try {
+          const avatar = await this.getAvatarFromDB(user.id);
+          if (avatar) {
+            this.userInfo.avatar = avatar;
+            return;
+          }
+        } catch (error) {
+          console.error('从IndexedDB加载头像失败:', error);
+        }
+      }
+
+      // 5. 最终回退逻辑
+      this.userInfo.avatar = user.avatar || require('@/assets/default-avatar.svg');
+    },
     handleUserCommand(command) {
       if (command === 'info') {
         // 检查当前是否已经在个人中心页面
@@ -269,7 +340,15 @@ export default {
       console.log('搜索内容:', this.searchQuery);
     }
   },
-  created() {
+  async created() {
+    //初始化IndexedDB
+    await this.initAvatarDB();
+    await this.loadUserInfo();
+
+    //监听头像更新事件
+    this.$eventBus.$on('avatar-updated', (newAvatar) => {
+      this.userInfo.avatar = newAvatar
+    });
     // 初始化时从本地存储获取当前激活菜单，默认为第一个菜单项
     const savedPath = localStorage.getItem('selectMenu');
     const defaultPath = this.menus[0].children?.length ? this.menus[0].children[0].path : this.menus[0].path;
@@ -299,6 +378,9 @@ export default {
         this.isLoading = false;
       }, 300);
     }
+  },
+  beforeDestroy() {
+    this.$eventBus.$off('avatar-updated')
   }
 };
 </script>
@@ -337,6 +419,7 @@ body {
   padding: 0 20px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.5);
   z-index: 10;
+  height: 55px !important;
 }
 
 /* 标志容器 */
@@ -345,7 +428,7 @@ body {
   align-items: center;
   cursor: pointer;
   padding: 0 15px;
-  height: 100%;
+  height: 90%;
   transition: all 0.5s;
 }
 
@@ -537,7 +620,7 @@ span {
   align-items: center;
   cursor: pointer;
   padding: 0 10px;
-  height: 60px;
+  height: 55px;
   transition: all 0.3s;
 }
 

@@ -4,6 +4,7 @@
       <div class="form-header">
         <span class="table-title">操作申请</span>
       </div>
+      <hr class="custom-hr">
       <div class="form-content">
         <div class="form-inputs">
           <el-form :model="operationForm" label-width="100px" class="operation-form" :rules="rules"
@@ -423,15 +424,16 @@ export default {
 
 .form-card {
   border-radius: 8px;
-  background-color: rgba(245, 245, 250, 0.8);
+  background-color: rgba(245, 245, 250, 1);
   backdrop-filter: blur(10px);
 }
 
 .form-header {
-  margin-bottom: 20px;
+  margin-bottom: 8px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding-left: 24px;
 }
 
 .operation-form {
@@ -444,16 +446,19 @@ export default {
   /* 动态高度调整 */
   display: flex;
   flex-direction: column;
-  background-color: rgba(245, 245, 250, 0.8);
+  background-color: rgba(245, 245, 250,1);
   backdrop-filter: blur(10px);
   border-radius: 8px;
 }
 
 .el-table {
   flex: 1;
-  height: calc(99vh - 650px);
+  height: calc(99vh - 670px);
   overflow-y: auto;
-  border-radius: 16px;
+  border-radius: 12px;
+  margin-left: 18px;
+  max-width: 98%;
+
 }
 
 .table-header {
@@ -461,6 +466,7 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding-left: 22px;
 }
 
 .table-title {
@@ -470,6 +476,7 @@ export default {
 
 .table-footer {
   margin-top: 10px;
+  padding-left: 16px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -525,5 +532,9 @@ export default {
   width: 1px;
   background-color: #dcdcdc;
   height: auto;
+}
+
+.custom-hr {
+  margin-bottom: 10px;
 }
 </style>

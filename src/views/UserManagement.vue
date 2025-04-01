@@ -41,7 +41,7 @@
                 </el-table-column>
                 <el-table-column prop="email" label="邮箱" width="200"></el-table-column>
                 <el-table-column prop="department" label="部门" width="150"></el-table-column>
-                <el-table-column prop="lastLogin" label="最后登录" width="180" sortable></el-table-column>
+                <el-table-column prop="lastLogin" label="最后登录" width="220" sortable></el-table-column>
                 <el-table-column label="操作" width="180" fixed="right" align="center" header-align="center">
                     <template slot-scope="scope">
                         <el-button size="mini" type="primary" @click="editUser(scope.row)">编辑</el-button>

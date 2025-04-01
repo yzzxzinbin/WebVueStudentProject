@@ -1,6 +1,24 @@
-*{
-  margin: 0;
+.custom-hr {
+  margin-bottom: 6px;
+  border: 0;
+  /* 移除默认边框 */
+  height: 2px;
+  /* 设置分割线的高度 */
+  background-color:rgba(0,0,0,.12);
+  /* 设置分割线的颜色，这里使用深灰色 */
+  width: 96%;
+  /* 设置分割线的宽度为父容器的80% */
+  margin-left: 2%;
+  /* 设置左边界为父容器的10% */
+  margin-right: 3%;
+  /* 设置右边界为父容器的10% */
 }
-
-
-
+* {
+  margin: 0;
+  /* 禁止页面随滚轮移动 */
+  -webkit-overflow-scrolling: touch;
+}
+body {
+  overflow: hidden;
+  /* 隐藏水平滚动条 */
+}

@@ -5,6 +5,7 @@
             <div class="profile-header">
                 <h2>个人中心</h2>
             </div>
+            <hr class="custom-hr">
             <div class="profile-content">
                 <div class="avatar-section">
                     <el-avatar :size="120" :src="userInfo.avatar || require('@/assets/default-avatar.svg')"
@@ -197,6 +198,7 @@ export default {
         }
 
         return {
+            db: null,
             userInfo: {},
             activeTab: 'login',
             loading: false,
@@ -232,15 +234,126 @@ export default {
             }
         }
     },
-    created() {
-        this.loadUserInfo()
+    async created() {
+        await this.initAvatarDB() // 确保数据库初始化完成
+        await this.loadUserInfo() // 再加载用户信息
         this.loadActivityData()
+        this.cleanupOldAvatars()
     },
+
     methods: {
-        loadUserInfo() {
+
+
+        // 初始化头像专用数据库
+        initAvatarDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open('AvatarDB', 1)
+
+                request.onupgradeneeded = (event) => {
+                    const db = event.target.result
+                    if (!db.objectStoreNames.contains('avatars')) {
+                        db.createObjectStore('avatars', { keyPath: 'userId' })
+                    }
+                }
+
+                request.onsuccess = (event) => {
+                    this.db = event.target.result
+                    resolve() // 明确标记初始化完成
+                }
+
+                request.onerror = (event) => {
+                    console.error('数据库初始化失败:', event.target.error)
+                    reject(event.target.error)
+                }
+            })
+        },
+
+        // 保存头像到IndexedDB
+        async saveAvatarToDB(userId, avatarData) {
+            if (!this.db) return false
+
+            return new Promise((resolve) => {
+                const transaction = this.db.transaction(['avatars'], 'readwrite')
+                const store = transaction.objectStore('avatars')
+
+                const request = store.put({ userId, avatarData })
+
+                request.onsuccess = () => resolve(true)
+                request.onerror = () => resolve(false)
+            })
+        },
+
+        // 从IndexedDB读取头像
+        async getAvatarFromDB(userId) {
+            if (!this.db) return null
+
+            return new Promise((resolve) => {
+                const transaction = this.db.transaction(['avatars'], 'readonly')
+                const store = transaction.objectStore('avatars')
+
+                const request = store.get(userId)
+
+                request.onsuccess = () => resolve(request.result?.avatarData || null)
+                request.onerror = () => resolve(null)
+            })
+        },
+
+        // 修改后的头像上传方法
+        async handleAvatarChange(file) {
+            const reader = new FileReader()
+            reader.onload = async (e) => {
+                const avatarData = e.target.result
+                try {
+                    // 调试：打印即将存储的数据
+                    console.log('准备存储的头像数据:', avatarData.slice(0, 50) + '...')
+                    const success = await this.saveAvatarToDB(this.userInfo.id, avatarData)
+
+                    if (success) {
+                        console.log('IndexedDB存储确认')
+                        // 立即验证存储结果
+                        const storedData = await this.getAvatarFromDB(this.userInfo.id)
+                        console.log('读取已存储的头像:', storedData?.slice(0, 50) + '...')
+                        this.$eventBus.$emit('avatar-updated', avatarData) // 触发事件
+                        this.userInfo.avatar = avatarData
+                        this.profileForm.avatar = avatarData
+                    }
+                } catch (error) {
+                    console.error('头像更新全过程失败:', error)
+                }
+            }
+            reader.readAsDataURL(file.raw)
+        },
+        async loadUserInfo() {
+            // 1. 从localStorage加载基本信息
             const user = JSON.parse(localStorage.getItem('user')) || {}
-            this.userInfo = { ...user }
-            this.profileForm = { ...user }
+
+            // 2. 设置基本信息（不包含头像）
+            this.userInfo = { ...user, avatar: null }
+            this.profileForm = { ...user, avatar: null }
+
+            // 3. 确保数据库已初始化
+            if (!this.db) {
+                console.warn('IndexedDB 尚未初始化')
+                return
+            }
+
+            // 4. 从IndexedDB加载头像
+            if (user.id) {
+                try {
+                    const avatar = await this.getAvatarFromDB(user.id)
+                    if (avatar) {
+                        this.userInfo.avatar = avatar
+                        this.profileForm.avatar = avatar
+                        return
+                    }
+                } catch (error) {
+                    console.error('从IndexedDB加载头像失败:', error)
+                }
+            }
+
+            // 5. 最终回退逻辑
+            this.userInfo.avatar = user.avatar || require('@/assets/default-avatar.svg')
+            this.profileForm.avatar = user.avatar || require('@/assets/default-avatar.svg')
         },
 
         loadActivityData() {
@@ -364,27 +477,43 @@ export default {
             const userIndex = users.findIndex(u => u.id === this.userInfo.id)
 
             if (userIndex !== -1) {
-                users[userIndex] = { ...users[userIndex], ...this.profileForm }
+                // 1. 更新users数组（不含头像）
+                const userWithoutAvatar = { ...this.profileForm }
+                delete userWithoutAvatar.avatar // 不保存头像到localStorage
+
+                users[userIndex] = { ...users[userIndex], ...userWithoutAvatar }
                 localStorage.setItem('users', JSON.stringify(users))
-                localStorage.setItem('user', JSON.stringify(this.profileForm))
-                this.userInfo = { ...this.profileForm }
+
+                // 2. 更新user数据（也不含头像）
+                const userData = { ...this.profileForm }
+                delete userData.avatar
+                localStorage.setItem('user', JSON.stringify(userData))
+
+                // 3. 更新界面状态（保留头像）
+                this.userInfo = { ...this.profileForm } // 保持头像数据
                 this.$message.success('个人档案更新成功')
             }
 
             this.profileDialogVisible = false
         },
-
-        handleAvatarChange(file) {
-            // 模拟上传头像
-            const reader = new FileReader()
-            reader.onload = (e) => {
-                this.userInfo.avatar = e.target.result
-                this.profileForm.avatar = e.target.result
-                this.updateProfile()
+        async cleanupOldAvatars() {
+            // 从localStorage移除头像
+            const user = JSON.parse(localStorage.getItem('user')) || {}
+            if (user.avatar) {
+                delete user.avatar
+                localStorage.setItem('user', JSON.stringify(user))
             }
-            reader.readAsDataURL(file.raw)
-        },
 
+            // 从users数组移除头像
+            const users = JSON.parse(localStorage.getItem('users')) || []
+            if (users.length > 0) {
+                const updatedUsers = users.map(u => {
+                    if (u.avatar) delete u.avatar
+                    return u
+                })
+                localStorage.setItem('users', JSON.stringify(updatedUsers))
+            }
+        },
         // 简单的密码哈希函数（与系统其他部分一致）
         hashPassword(password) {
             return password.split('').reverse().join('') + password.length
@@ -424,6 +553,7 @@ export default {
 .profile-header,
 .activity-header {
     padding: 1px 24px;
+    padding-bottom: 6px;
 }
 
 .profile-header h2,
@@ -538,7 +668,7 @@ export default {
     max-height: calc(99vh - 450px);
     overflow-y: hidden;
     margin-bottom: 0px;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 
@@ -554,12 +684,12 @@ export default {
 
 .compact-table {
     border-width: 2px;
-    border-color:rgba(0, 0, 0, 0.1);
+    border-color: rgba(0, 0, 0, 0.1);
     border-radius: 8px;
     flex-direction: column;
-    max-height: calc(99vh - 610px);
+    max-height: calc(99vh - 625px);
     overflow: auto;
-    scrollbar-color: rgba(240,249,235, 0.4) transparent;
+    scrollbar-color: rgba(240, 249, 235, 0.4) transparent;
 }
 
 .compact-table::before {
