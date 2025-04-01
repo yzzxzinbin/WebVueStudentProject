@@ -55,7 +55,8 @@ export default {
             username: "",
             password: "",
             rememberMe: false,
-            isLoading: false
+            isLoading: false,
+            ipAddress: '',
         };
     },
     methods: {
@@ -69,8 +70,30 @@ export default {
 
             try {
                 const user = await this.authenticateUser(this.username, this.password);
-
+                const ip = await this.getIPAddress(); // 关键：等待IP获取
                 if (user) {
+                    // 保存登录历史
+                    const loginHistory = JSON.parse(localStorage.getItem('loginHistory')) || [];
+                    const currentLogin = {
+                        timestamp: new Date().toISOString(),
+                        ip: ip, // 替换为真实IP获取逻辑
+
+                        device: this.getDeviceInfo(),
+                        //从本地存储中找到当前username的id
+                        userId: user.id
+
+                    };
+                    loginHistory.push(currentLogin);
+                    localStorage.setItem('loginHistory', JSON.stringify(loginHistory.slice(-50)));
+
+                    // 更新用户最后登录时间
+                    user.lastLogin = user.currentLogin || currentLogin.timestamp;
+                    user.currentLogin = currentLogin.timestamp;
+
+                    // Update lastLogin and save to localStorage
+                    user.lastLogin = currentLogin.timestamp;
+                    localStorage.setItem("user", JSON.stringify(user));                    // console.log('更新用户最后登录时间', user.lastLogin);
+
                     localStorage.setItem("token", this.generateToken(user));
                     localStorage.setItem("user", JSON.stringify(user));
 
@@ -104,6 +127,27 @@ export default {
             } finally {
                 this.isLoading = false;
             }
+        },
+        async getIPAddress() {
+            try {
+                const response = await fetch('https://ipapi.co/json/');
+                const data = await response.json();
+                this.ipAddress = data.ip; // 更新组件数据（可选）
+                return data.ip; // 直接返回IP字符串
+            } catch (error) {
+                console.error('获取IP失败:', error);
+                return 'Unknown'; // 返回默认值
+            }
+        },
+        // 添加设备信息格式化方法
+        getDeviceInfo() {
+            const ua = navigator.userAgent;
+            if (ua.match(/Android/i)) return 'Android';
+            if (ua.match(/iPhone|iPad|iPod/i)) return 'iOS';
+            if (ua.match(/Windows/i)) return 'Windows';
+            if (ua.match(/Macintosh/i)) return 'Mac';
+            if (ua.match(/Linux/i)) return 'Linux';
+            return 'Unknown Device';
         },
 
         // 用户认证方法
@@ -149,7 +193,12 @@ export default {
         generateToken(user) {
             return btoa(`${user.id}:${user.username}:${Date.now()}`);
         }
+    },
+
+    created() {
+        this.getIPAddress();
     }
+
 };
 </script>
 
@@ -171,9 +220,10 @@ export default {
 
 body {
 
-    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
-    color: var(--white);
-    margin: 0%;
+    .login-title {
+        font-size: 24px;
+    }
+
     padding: 0;
 }
 </style>

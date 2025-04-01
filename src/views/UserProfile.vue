@@ -325,51 +325,106 @@ export default {
         },
         async loadUserInfo() {
             // 1. 从localStorage加载基本信息
-            const user = JSON.parse(localStorage.getItem('user')) || {}
+            const userData = JSON.parse(localStorage.getItem('user')) || {};
 
-            // 2. 设置基本信息（不包含头像）
-            this.userInfo = { ...user, avatar: null }
-            this.profileForm = { ...user, avatar: null }
+            // 2. 获取登录历史
+            const loginHistory = JSON.parse(localStorage.getItem('loginHistory')) || [];
 
-            // 3. 确保数据库已初始化
-            if (!this.db) {
-                console.warn('IndexedDB 尚未初始化')
-                return
+            // Filter login records for the current user
+            const currentUserId = this.userInfo.id;
+            const userLoginHistory = loginHistory.filter(login => login.userId === currentUserId);
+
+            // 3. 确定最后登录时间
+            let lastLogin = 'N/A';
+            if (userData.lastLogin) {
+                lastLogin = userData.lastLogin;
+                console.log('最后登录时间：', lastLogin)
+            } else if (userData.currentLogin) {
+                lastLogin = userData.currentLogin;
+            } else if (loginHistory.length > 0) {
+                // 从登录历史中获取最后一条记录
+                lastLogin = loginHistory[loginHistory.length - 1].timestamp;
             }
 
-            // 4. 从IndexedDB加载头像
-            if (user.id) {
+            // 4. 设置基本信息
+            this.userInfo = {
+                ...userData,
+                avatar: null,
+                lastLogin: lastLogin
+            };
+            this.profileForm = { ...this.userInfo };
+
+            // 5. 从IndexedDB加载头像
+            if (this.db && userData.id) {
                 try {
-                    const avatar = await this.getAvatarFromDB(user.id)
+                    const avatar = await this.getAvatarFromDB(userData.id);
                     if (avatar) {
-                        this.userInfo.avatar = avatar
-                        this.profileForm.avatar = avatar
-                        return
+                        this.userInfo.avatar = avatar;
+                        this.profileForm.avatar = avatar;
+                        return;
                     }
                 } catch (error) {
-                    console.error('从IndexedDB加载头像失败:', error)
+                    console.error('从IndexedDB加载头像失败:', error);
                 }
             }
 
-            // 5. 最终回退逻辑
-            this.userInfo.avatar = user.avatar || require('@/assets/default-avatar.svg')
-            this.profileForm.avatar = user.avatar || require('@/assets/default-avatar.svg')
+            // 6. 最终回退逻辑
+            this.userInfo.avatar = userData.avatar || require('@/assets/default-avatar.svg');
+            this.profileForm.avatar = userData.avatar || require('@/assets/default-avatar.svg');
+        },
+
+        formatTime(row, column, cellValue) {
+            // 处理直接调用的情况（如 formatTime(userInfo.lastLogin)）
+            if (arguments.length === 1) {
+                cellValue = row;
+            }
+
+            if (!cellValue || cellValue === 'N/A') return 'N/A';
+
+            try {
+                // 处理可能是字符串或Date对象的情况
+                const date = cellValue instanceof Date ? cellValue : new Date(cellValue);
+                // 检查日期是否有效
+                if (isNaN(date.getTime())) {
+                    console.error('无效的日期:', cellValue);
+                    return 'N/A';
+                }
+                return format(date, 'yyyy-MM-dd HH:mm:ss');
+            } catch (e) {
+                console.error('日期格式化错误:', e, '原始值:', cellValue);
+                return 'N/A';
+            }
         },
 
         loadActivityData() {
-            this.loading = true
+            this.loading = true;
             // 模拟加载数据
             setTimeout(() => {
                 if (this.activeTab === 'login') {
-                    this.activityData = [
-                        { timestamp: new Date(), ip: '192.168.1.100', device: 'Windows 10 / Chrome' },
-                        { timestamp: new Date(Date.now() - 86400000), ip: '192.168.1.101', device: 'Mac OS / Safari' },
-                        { timestamp: new Date(Date.now() - 172800000), ip: '192.168.1.100', device: 'Windows 10 / Chrome' }
-                    ]
+                    // 从localStorage获取所有登录记录
+                    const loginHistory = JSON.parse(localStorage.getItem('loginHistory')) || [];
+
+                    // Filter login records for the current user
+                    const currentUserId = this.userInfo.id;
+                    const userLoginHistory = loginHistory.filter(login => login.userId === currentUserId);
+
+                    const allLogins = [...userLoginHistory];
+
+                    // 按时间排序
+                    this.activityData = allLogins
+                        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+                        .map(item => ({
+                            ...item,
+                            timestamp: item.timestamp instanceof Date ? item.timestamp : new Date(item.timestamp)
+                        }));
+
                 } else {
                     // 从本地存储获取操作记录
-                    const operations = JSON.parse(localStorage.getItem('operations')) || []
-                    this.activityData = operations
+                    const operations = JSON.parse(localStorage.getItem('operations')) || [];
+
+                    // Filter operations for the current user
+                    const userOperations = operations.filter(op => op.operator === this.userInfo.username);
+                    this.activityData = userOperations
                         .filter(op => op.operator === this.userInfo.username)
                         .map(op => ({
                             timestamp: op.timestamp,
@@ -377,23 +432,24 @@ export default {
                             details: `${op.type}商品 ${op.productId} (数量: ${op.quantity})`,
                             warehouse: op.sourceWarehouse || op.targetWarehouse || 'N/A'
                         }))
-                        .slice(0, 20) // 只显示最近的20条
+                        .slice(0, 20); // 只显示最近的20条
                 }
-                this.loading = false
-            }, 500)
+                this.loading = false;
+            }, 500);
         },
 
+        // 添加设备信息格式化方法
+        getDeviceInfo() {
+            const ua = navigator.userAgent;
+            if (ua.match(/Android/i)) return 'Android';
+            if (ua.match(/iPhone|iPad|iPod/i)) return 'iOS';
+            if (ua.match(/Windows/i)) return 'Windows';
+            if (ua.match(/Macintosh/i)) return 'Mac';
+            if (ua.match(/Linux/i)) return 'Linux';
+            return 'Unknown Device';
+        },
         handleTabChange() {
             this.loadActivityData()
-        },
-
-        formatTime(row, column, cellValue) {
-            if (!cellValue) return 'N/A';
-            try {
-                return format(new Date(cellValue), 'yyyy-MM-dd HH:mm:ss');
-            } catch (e) {
-                return 'Invalid Date';
-            }
         },
 
         getRoleTagType(role) {
