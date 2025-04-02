@@ -76,7 +76,8 @@ function getDefaultRouteForUser(user) {
 }
 
 router.beforeEach((to, from, next) => {
-  const token = localStorage.getItem('token');
+  // 获取本地存储中的 token 和 user,若没有则从sessionStorage中获取
+  const token = localStorage.getItem('token') || sessionStorage.getItem('token');
   const user = JSON.parse(localStorage.getItem('user'));
 
   // 未登录且访问非登录页

@@ -329,6 +329,8 @@ export default {
       localStorage.removeItem('user');
       localStorage.removeItem('username');
       localStorage.removeItem('selectMenu');
+      sessionStorage.removeItem('token');
+    
       this.$router.replace('/login').catch(() => { });
       this.$message.success('退出登录成功');
     },

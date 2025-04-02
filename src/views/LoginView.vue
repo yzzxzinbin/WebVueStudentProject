@@ -87,10 +87,11 @@ export default {
                     // 更新用户最后登录时间
                     user.lastLogin = new Date().toISOString();
                     localStorage.setItem("user", JSON.stringify(user));
-                    localStorage.setItem("token", this.generateToken(user));
 
                     if (this.rememberMe) {
-                        localStorage.setItem("rememberMe", "true");
+                        localStorage.setItem("token", this.generateToken(user));
+                    }else {
+                        sessionStorage.setItem("token", this.generateToken(user));
                     }
 
                     this.$message.success(`欢迎回来，${user.name || user.username}`);
@@ -253,6 +254,19 @@ body {
 
     padding: 0;
 }
+
+.el-checkbox__inner {
+    transform: translateY(2px);
+    border-width: 2px !important;
+    border-color: rgba(0, 0, 0, 0.3) !important;
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    margin-right: 6px;
+}
+
+.el-checkbox__inner::after {
+    border-color: var(--primary-color) !important;
+    border-width: 2px;
+}
 </style>
 
 
@@ -320,13 +334,11 @@ body {
     font-size: 28px;
     font-weight: 600;
     margin-bottom: 8px;
-    /* color: var(--white); */
     letter-spacing: 1px;
 }
 
 .login-header .subtitle {
     font-size: 14px;
-    /* color: var(--light-text); */
     opacity: 0.9;
 }
 
@@ -345,11 +357,18 @@ body {
     margin-bottom: 10px;
     font-size: 14px;
     font-weight: 500;
-    /* color: var(--light-text); */
+
 }
 
 .input-wrapper {
     position: relative;
+}
+
+.input-field:-webkit-autofill {
+    -webkit-box-shadow: 0 0 0px 1000px rgba(255, 255, 255, 0.1) inset;
+    /* 强制背景色为白色 */
+    transition: background-color 50000s ease-in-out 0s;
+    /* 防止浏览器重新渲染背景色 */
 }
 
 .input-field {
@@ -360,18 +379,25 @@ body {
     border-radius: 8px;
     transition: var(--transition);
     background-color: rgba(255, 255, 255, 0.1);
-    color: var(--white);
+    color: rgba(0, 0, 0, 0.4);
 }
 
 .input-field:focus {
     outline: none;
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(74, 107, 255, 0.2);
+    box-shadow: 0 0 0 4px rgba(74, 107, 255, 0.2);
     background-color: rgba(255, 255, 255, 0.15);
+    color: black;
+    transition:
+        border-color 0.3s ease,
+        box-shadow 0.3s ease,
+        background-color 0.3s ease,
+        color 0.3s ease;
 }
 
 .input-field::placeholder {
-    color: rgba(255, 255, 255, 0.5);
+    color: rgba(0, 0, 0, 0.4);
+    transition: all 0.5s ease;
 }
 
 .input-icon {
@@ -379,8 +405,9 @@ body {
     left: 14px;
     top: 50%;
     transform: translateY(-50%);
-    /* color: var(--light-text); */
+    color: var(--shadow);
     transition: var(--transition);
+    transition: all 0.5s cubic-bezier(0.645, 0.045, 0.355, 1);
 }
 
 .input-field:focus+.input-icon {
@@ -404,10 +431,12 @@ body {
 }
 
 .remember-me input {
-    margin-right: 8px;
+    margin-right: 12px;
     cursor: pointer;
     accent-color: var(--primary-color);
 }
+
+
 
 .forgot-password {
     color: var(--primary-color);
@@ -490,72 +519,6 @@ body {
     z-index: 2;
 }
 
-/* 社交登录 */
-.social-login {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    margin-bottom: 24px;
-}
-
-.social-button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 12px;
-    font-size: 14px;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    background-color: rgba(255, 255, 255, 0.05);
-    cursor: pointer;
-    transition: var(--transition);
-    color: var(--white);
-}
-
-.social-button svg {
-    margin-right: 8px;
-}
-
-.social-button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-}
-
-.social-button.wechat {
-    color: var(--wechat-green);
-    border-color: rgba(7, 193, 96, 0.3);
-}
-
-.social-button.wechat:hover {
-    background-color: rgba(7, 193, 96, 0.1);
-}
-
-.social-button.alipay {
-    color: var(--alipay-blue);
-    border-color: rgba(22, 119, 255, 0.3);
-}
-
-.social-button.alipay:hover {
-    background-color: rgba(22, 119, 255, 0.1);
-}
-
-/* 注册链接 */
-.signup-link {
-    text-align: center;
-    font-size: 14px;
-    /* color: var(--light-text); */
-}
-
-.signup-link a {
-    color: var(--primary-color);
-    text-decoration: none;
-    font-weight: 500;
-    transition: var(--transition);
-}
-
-.signup-link a:hover {
-    text-decoration: underline;
-}
 
 /* 响应式设计 */
 @media (max-width: 480px) {
