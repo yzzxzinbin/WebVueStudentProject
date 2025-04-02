@@ -11,22 +11,28 @@
                 <div class="form-group">
                     <label for="username">用户名</label>
                     <div class="input-wrapper">
-                        <input type="text" id="username" v-model="username" placeholder="请输入用户名" required
-                            class="input-field" />
-                        <span class="input-icon">
-                            <i class="el-icon-user"></i>
-                        </span>
+                        <el-input
+                            id="username"
+                            v-model="username"
+                            placeholder="请输入用户名"
+                            prefix-icon="el-icon-user"
+                            class="input-field"
+                            clearable
+                        />
                     </div>
                 </div>
 
                 <div class="form-group">
                     <label for="password">密码</label>
                     <div class="input-wrapper">
-                        <input type="password" id="password" v-model="password" placeholder="请输入密码" required
-                            class="input-field" />
-                        <span class="input-icon">
-                            <i class="el-icon-lock"></i>
-                        </span>
+                        <el-input
+                            id="password"
+                            v-model="password"
+                            placeholder="请输入密码"
+                            prefix-icon="el-icon-lock"
+                            show-password
+                            class="input-field"
+                        />
                     </div>
                 </div>
 
@@ -38,10 +44,14 @@
                     <a href="#" class="forgot-password">忘记密码?</a>
                 </div>
 
-                <button type="submit" class="login-button">
-                    <span v-if="!isLoading">登 录</span>
-                    <span v-else class="loading-spinner"></span>
-                </button>
+                <el-button
+                    type="primary"
+                    class="login-button"
+                    :loading="isLoading"
+                    native-type="submit"
+                >
+                    登 录
+                </el-button>
             </form>
         </div>
     </div>
@@ -177,6 +187,7 @@ export default {
                         resolve(user);
                     } else {
                         console.log('密码不匹配');
+                        this.$message.error('用户名或密码错误');
                         resolve(null);
                     }
                 }, 300);
@@ -364,53 +375,37 @@ body {
     position: relative;
 }
 
-.input-field:-webkit-autofill {
-    -webkit-box-shadow: 0 0 0px 1000px rgba(255, 255, 255, 0.1) inset;
-    /* 强制背景色为白色 */
-    transition: background-color 50000s ease-in-out 0s;
-    /* 防止浏览器重新渲染背景色 */
-}
+
 
 .input-field {
     width: 100%;
-    padding: 14px 16px 14px 44px;
-    font-size: 15px;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
     transition: var(--transition);
-    background-color: rgba(255, 255, 255, 0.1);
-    color: rgba(0, 0, 0, 0.4);
 }
 
-.input-field:focus {
+.el-input /deep/ .el-input__inner {
+    background-color: rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 14px 16px 14px 44px;
+    font-size: 15px;
+    color: rgba(0, 0, 0, 0.4);
+    transition: all 0.3s ease;
+}
+
+.el-input /deep/ .el-input__inner:focus {
     outline: none;
     border-color: var(--primary-color);
     box-shadow: 0 0 0 4px rgba(74, 107, 255, 0.2);
     background-color: rgba(255, 255, 255, 0.15);
     color: black;
-    transition:
-        border-color 0.3s ease,
-        box-shadow 0.3s ease,
-        background-color 0.3s ease,
-        color 0.3s ease;
 }
 
-.input-field::placeholder {
-    color: rgba(0, 0, 0, 0.4);
-    transition: all 0.5s ease;
-}
-
-.input-icon {
-    position: absolute;
+.el-input /deep/ .el-input__prefix {
     left: 14px;
-    top: 50%;
-    transform: translateY(-50%);
     color: var(--shadow);
-    transition: var(--transition);
-    transition: all 0.5s cubic-bezier(0.645, 0.045, 0.355, 1);
 }
 
-.input-field:focus+.input-icon {
+.el-input.is-focus /deep/ .el-input__prefix {
     color: var(--primary-color);
 }
 
@@ -476,21 +471,7 @@ body {
     box-shadow: 0 6px 16px rgba(74, 107, 255, 0.4);
 }
 
-/* 加载动画 */
-.loading-spinner {
-    width: 22px;
-    height: 22px;
-    border: 3px solid rgba(255, 255, 255, 0.3);
-    border-radius: 50%;
-    border-top-color: var(--white);
-    animation: spin 1s ease-in-out infinite;
-}
-
-@keyframes spin {
-    to {
-        transform: rotate(360deg);
-    }
-}
+/* 加载动画不再需要，Element UI 按钮有内置加载状态 */
 
 /* 分隔线 */
 .divider {

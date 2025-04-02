@@ -661,7 +661,8 @@ export default {
         // 监听路由变化
         '$route'(to) {
             this.targetUserId = to.query.userId;
-            this.isViewingOtherUser = !!this.targetUserId;
+            const currentUser = JSON.parse(localStorage.getItem('user')) || {};
+            this.isViewingOtherUser = this.targetUserId && this.targetUserId !== currentUser.id;
             this.loadUserInfo();
         }
     }

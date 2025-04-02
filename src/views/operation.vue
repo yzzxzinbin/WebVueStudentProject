@@ -21,9 +21,14 @@
               </el-col>
               <el-col :span="24">
                 <el-form-item label="商品ID" prop="productId">
-                  <el-autocomplete v-model="operationForm.productId" @clear="operationForm.productId = ''"
-                    :fetch-suggestions="queryProduct" placeholder="请输入商品ID" @select="handleProductSelect"
-                    :disabled="!operationForm.type"></el-autocomplete>
+                  <el-autocomplete 
+                    v-model="operationForm.productId" 
+                    @clear="operationForm.productId = ''"
+                    :fetch-suggestions="queryProduct" 
+                    placeholder="请输入商品ID" 
+                    @select="handleProductSelect"
+                    :disabled="!operationForm.type">
+                  </el-autocomplete>
                 </el-form-item>
               </el-col>
               <el-col :span="24">
@@ -448,6 +453,16 @@ export default {
           behavior: 'smooth'
         });
       }
+    },
+    // 合并设备信息方法，确保在多个文件中使用相同的实现
+    getDeviceInfo() {
+      const ua = navigator.userAgent;
+      if (ua.match(/Android/i)) return 'Android';
+      if (ua.match(/iPhone|iPad|iPod/i)) return 'iOS';
+      if (ua.match(/Windows/i)) return 'Windows';
+      if (ua.match(/Macintosh/i)) return 'Mac';
+      if (ua.match(/Linux/i)) return 'Linux';
+      return 'Unknown Device';
     }
   },
   created() {
@@ -463,10 +478,12 @@ export default {
   padding: 8px;
 }
 
-.form-card {
+/* 简化或合并相似样式 */
+.form-card, .table-card {
   border-radius: 8px;
   background-color: rgba(245, 245, 250, 1);
   backdrop-filter: blur(10px);
+  margin-bottom: 20px;
 }
 
 .form-header {
@@ -482,16 +499,6 @@ export default {
   margin: 0 auto;
 }
 
-.table-card {
-  margin-top: 20px;
-  /* 动态高度调整 */
-  display: flex;
-  flex-direction: column;
-  background-color: rgba(245, 245, 250, 1);
-  backdrop-filter: blur(10px);
-  border-radius: 8px;
-}
-
 .el-table {
   flex: 1;
   height: calc(99vh - 670px);
@@ -499,7 +506,6 @@ export default {
   border-radius: 12px;
   margin-left: 18px;
   max-width: 98%;
-
 }
 
 .table-header {

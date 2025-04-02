@@ -343,7 +343,12 @@ export default {
      */
     handleSearch() {
       console.log('搜索内容:', this.searchQuery);
-    }
+    },
+
+    // 确保密码哈希函数在整个应用中使用相同的实现
+    hashPassword(password) {
+      return password.split('').reverse().join('') + password.length;
+    },
   },
   async created() {
     //初始化IndexedDB
@@ -385,7 +390,10 @@ export default {
     }
   },
   beforeDestroy() {
-    this.$eventBus.$off('avatar-updated')
+    // 确保所有事件监听都被正确清理
+    if (this.userInfo && this.userInfo.id) {
+      this.$eventBus.$off(`avatar-updated-${this.userInfo.id}`);
+    }
   }
 };
 </script>
@@ -706,5 +714,11 @@ span {
   height: 40px;
   background-color: #dcdcdc;
   margin-left: 18px;
+}
+
+/* 简化相似的样式 */
+.el-menu-item, .el-submenu__title {
+  height: 56px;
+  line-height: 56px;
 }
 </style>

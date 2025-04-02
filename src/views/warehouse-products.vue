@@ -24,7 +24,7 @@
         <span class="table-title">仓库商品列表</span>
         <el-tag type="info">共 {{ totalFiltered }} 条记录</el-tag>
       </div>
-      <el-table ref="table" :data="paginatedProducts" height="tableHeight" stripe border highlight-current-row
+      <el-table ref="table" :data="paginatedProducts" height="calc(99vh - 400px)" stripe border highlight-current-row
         style="width: 100%" v-loading="loading">
         <el-table-column prop="id" label="商品ID" width="100" sortable align="center"></el-table-column>
         <el-table-column prop="name" label="商品名称" width="250" sortable></el-table-column>
@@ -56,54 +56,6 @@
         </el-pagination>
       </div>
     </el-card>
-    <!-- 修改仓库信息弹框 -->
-    <el-dialog title="修改仓库信息" :visible.sync="editDialogVisible" width="650px" center>
-      <el-form :model="editForm" label-width="80px">
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="仓库ID">
-              <el-input v-model="editForm.id" disabled></el-input>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="仓库名称">
-              <el-input v-model="editForm.name"></el-input>
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="状态">
-              <el-select v-model="editForm.status" placeholder="选择状态">
-                <el-option label="启用" value="启用"></el-option>
-                <el-option label="停用" value="停用"></el-option>
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="最大容量">
-              <el-input v-model="editForm.capacity" type="number"></el-input>
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="地点">
-              <el-input v-model="editForm.location"></el-input>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="负责人">
-              <el-input v-model="editForm.manager"></el-input>
-            </el-form-item>
-          </el-col>
-        </el-row>
-      </el-form>
-      <div slot="footer" class="dialog-footer">
-        <el-button @click="editDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="saveEdit">保存</el-button>
-      </div>
-    </el-dialog>
   </div>
 </template>
 
@@ -203,17 +155,9 @@ export default {
     handleCurrentChange(page) {
       this.currentPage = page;
     },
-    handleSortChange({ prop, order }) {
-      if (order === 'ascending') {
-        this.warehouses.sort((a, b) => (a[prop] > b[prop] ? 1 : -1));
-      } else if (order === 'descending') {
-        this.warehouses.sort((a, b) => (a[prop] < b[prop] ? 1 : -1));
-      }
-    },
     loadWarehouses() {
       const savedWarehouses = localStorage.getItem('warehouses');
       this.warehouses = savedWarehouses ? JSON.parse(savedWarehouses) : [];
-      this.total = this.warehouses.length;
     },
     loadAllProducts() {
       const savedProducts = localStorage.getItem('products');
@@ -276,12 +220,6 @@ export default {
 </script>
 
 <style scoped>
-/* 主容器样式 */
-.user {
-  padding: 8px;
-  border-radius: 20% !important;
-}
-
 /* 搜索区域样式 */
 .search-card {
   padding: 8px;

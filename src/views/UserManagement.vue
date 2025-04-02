@@ -256,7 +256,8 @@ export default {
                 email: '',
                 phone: '',
                 department: '',
-                status: 'active'
+                status: 'active',
+                authorizedWarehouses: [] // 新增字段
             };
         },
 
@@ -469,7 +470,6 @@ export default {
 /* 主容器样式 */
 .user {
     padding: 8px;
-    border-radius: 20% !important;
 }
 
 /* 搜索区域样式 */

@@ -298,6 +298,15 @@ export default {
                 }
             };
             input.click();
+        },
+        formatDate(dateString) {
+            if (!dateString) return '';
+            try {
+                const date = new Date(dateString);
+                return date.toISOString().split('T')[0];
+            } catch (e) {
+                return dateString;
+            }
         }
     },
     created() {
@@ -310,7 +319,6 @@ export default {
 /* 主容器样式 */
 .user {
     padding: 8px;
-    border-radius: 20% !important;
 }
 
 /* 搜索区域样式 */
@@ -402,7 +410,6 @@ export default {
     transform: translateY(-2px);
 }
 
-
 /* 分页样式调整 */
 .pagination {
     margin: 0;
@@ -426,13 +433,5 @@ export default {
 
 .el-table .el-table__header-wrapper th .cell {
     white-space: nowrap;
-}
-
-/* 页面标题样式 (模板中没有使用) */
-.page-title {
-    font-size: 24px;
-    font-weight: bold;
-    margin-bottom: 20px;
-    color: #333;
 }
 </style>

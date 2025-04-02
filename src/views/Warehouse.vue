@@ -324,7 +324,6 @@ export default {
 /* 主容器样式 */
 .user {
     padding: 8px;
-    border-radius: 20% !important;
 }
 
 /* 搜索区域样式 */
@@ -456,13 +455,5 @@ export default {
 
 .el-table .el-table__header-wrapper th .cell {
     white-space: nowrap;
-}
-
-/* 页面标题样式 (模板中没有使用) */
-.page-title {
-    font-size: 24px;
-    font-weight: bold;
-    margin-bottom: 20px;
-    color: #333;
 }
 </style>

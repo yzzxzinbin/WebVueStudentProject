@@ -626,21 +626,21 @@ export default {
         });
       }
     },
-    initTrendChart() {
-      const container = this.$refs.trendChart;
-      if (!container) return;
-
-      // 强制重绘
-      container.style.display = 'none';
-      container.offsetHeight; // 触发重排
-      container.style.display = 'block';
-      if (!this.$refs.trendChart) {
-        console.error('Trend Chart container not found');
-        return;
-      }
-      console.log('Container dimensions:', this.$refs.trendChart.clientWidth, this.$refs.trendChart.clientHeight);
+    initCharts() {
+      this.charts.product = echarts.init(this.$refs.productChart);
+      this.charts.heatmap = echarts.init(this.$refs.heatmapChart);
       this.charts.trend = echarts.init(this.$refs.trendChart);
+      this.charts.gauge = echarts.init(this.$refs.gaugeChart);
+      this.charts.scatter3d = echarts.init(this.$refs.scatter3dChart);
+      
+      this.updateCharts();
+    },
+    updateCharts() {
+      this.updateProductChart();
+      this.updateHeatmapChart();
       this.updateTrendChart();
+      this.updateGaugeChart();
+      this.updateScatter3DChart();
     },
     updateTrendChart() {
       if (!this.charts.trend) return
@@ -699,10 +699,6 @@ export default {
 
       this.charts.trend.setOption(option)
       this.loading.trend = false
-    },
-    initGaugeChart() {
-      this.charts.gauge = echarts.init(this.$refs.gaugeChart)
-      this.updateGaugeChart()
     },
     updateGaugeChart() {
       if (!this.charts.gauge) return;
@@ -806,17 +802,6 @@ export default {
       if (rate < 30) return '#67C23A';  // 绿色
       if (rate < 70) return '#E6A23C';  // 黄色
       return '#F56C6C';                 // 红色
-    },
-    initCharts() {
-      this.charts.product = echarts.init(this.$refs.productChart)
-      this.charts.heatmap = echarts.init(this.$refs.heatmapChart)
-      this.updateCharts()
-    },
-    updateCharts() {
-      this.updateProductChart()
-      this.updateHeatmapChart()
-      this.updateTrendChart()
-      this.updateGaugeChart()
     },
     updateProductChart() {
       if (!this.charts.product) return
@@ -1027,16 +1012,10 @@ export default {
         if (chart) chart.resize();
       });
     },
-    initScatter3DChart() {
-      this.charts.scatter3d = echarts.init(this.$refs.scatter3dChart);
-      this.updateScatter3DChart();
-    },
-
     refresh3DChart() {
       this.loading.scatter3d = true;
       this.updateScatter3DChart();
     },
-
     updateScatter3DChart() {
       if (!this.charts.scatter3d) return;
 
@@ -1271,9 +1250,6 @@ export default {
     this.loadData();
     this.$nextTick(() => {
       this.initCharts();
-      this.initTrendChart();
-      this.initGaugeChart();
-      this.initScatter3DChart(); // 新增
     });
     window.addEventListener('resize', this.handleResize);
   },
