@@ -1,4 +1,15 @@
 <template>
+    <!--
+        @Template_Desc 商品列表页面
+        提供搜索、分页、添加/编辑商品等功能
+        @Element_Desc .user 页面最外层容器
+        @Element_Desc .search-card 搜索区域卡片
+        @Element_Desc .search-group 搜索输入与按钮的容器
+        @Element_Desc .table-card 表格卡片
+        @Element_Desc .table-header 表格标题区域
+        @Element_Desc .table-footer 表格底部区域，包含返回顶部按钮和分页组件
+        @Element_Desc el-dialog 添加商品信息、修改商品信息的弹窗
+    -->
     <div class="user">
         <el-card shadow="hover" class="search-card">
             <div class="search-group">
@@ -177,6 +188,15 @@ export default {
         };
     },
     computed: {
+        /**
+         * @Function_Para 过滤商品数据
+         *   无参数
+         * @Function_Meth 根据搜索条件筛选商品列表:
+         *   - 如果未指定搜索字段或查询内容，返回全部商品
+         *   - 否则返回指定字段包含查询内容的商品
+         * @Function_API 无外部API调用
+         * @Function_Caller 表格显示、总数统计会使用
+         */
         filteredProducts() {
             if (!this.selectedField || !this.searchQuery) {
                 return this.products;
@@ -185,16 +205,43 @@ export default {
                 product[this.selectedField]?.toString().includes(this.searchQuery)
             );
         },
+
+        /**
+         * @Function_Para 分页处理商品数据
+         *   无参数
+         *   Template引用: 表格的:data属性
+         * @Function_Meth 根据当前页码和页大小截取商品数据
+         * @Function_API 无外部API调用
+         * @Function_Caller 表格的:data属性，用于分页
+         */
         paginatedProducts() {
             const start = (this.currentPage - 1) * this.pageSize;
             const end = start + this.pageSize;
             return this.filteredProducts.slice(start, end);
         },
+
+        /**
+         * @Function_Para 获取过滤后的总记录数
+         *   无参数
+         *   Template引用: 表格头部的记录数标签
+         * @Function_Meth 返回过滤后的商品总数，用于分页显示
+         * @Function_API 无外部API调用
+         * @Function_Caller 分页组件显示总数
+         */
         totalFiltered() {
             return this.filteredProducts.length; // 动态计算筛选后的总记录数
         }
     },
     methods: {
+        /**
+         * @Function_Para 滚动表格到顶部
+         *   无参数
+         *   Template引用: "返回顶部"按钮的点击事件
+         * @Function_Meth 平滑滚动表格视图到顶部
+         * @Function_API
+         *   - DOM API: 获取表格滚动容器并执行滚动
+         * @Function_Caller 被“返回顶部”按钮点击事件调用
+         */
         scrollToTop() {
             const tableWrapper = this.$refs.table.$el.querySelector('.el-table__body-wrapper');
             if (tableWrapper) {
@@ -204,16 +251,52 @@ export default {
                 });
             }
         },
+
+        /**
+         * @Function_Para 处理搜索
+         *   无参数
+         *   Template引用: 搜索框的@keyup.enter和搜索按钮的点击事件
+         * @Function_Meth 执行搜索并重置分页到第一页
+         * @Function_API 无外部API调用
+         * @Function_Caller 被搜索框回车或搜索按钮点击时调用
+         */
         handleSearch() {
             this.currentPage = 1;
         },
+
+        /**
+         * @Function_Para 处理页大小变化
+         *   @param {number} size - 新的页大小
+         *   Template引用: 分页控件的@size-change事件
+         * @Function_Meth 更新每页显示记录数，并重置为第一页
+         * @Function_API 无外部API调用
+         * @Function_Caller 被分页组件@size-change调用
+         */
         handleSizeChange(size) {
             this.pageSize = size;
             this.currentPage = 1;
         },
+
+        /**
+         * @Function_Para 处理页码变化
+         *   @param {number} page - 新的页码
+         *   Template引用: 分页控件的@current-change事件
+         * @Function_Meth 更新当前页码
+         * @Function_API 无外部API调用
+         * @Function_Caller 被分页组件@current-change调用
+         */
         handleCurrentChange(page) {
             this.currentPage = page;
         },
+
+        /**
+         * @Function_Para 处理表格排序变化
+         *   @param {Object} params - 排序参数，包含prop和order
+         *   Template引用: 表格的@sort-change事件
+         * @Function_Meth 根据排序字段和顺序对商品数据进行排序
+         * @Function_API 无外部API调用
+         * @Function_Caller 被@sort-change事件调用
+         */
         handleSortChange({ prop, order }) {
             if (order === 'ascending') {
                 this.products.sort((a, b) => (a[prop] > b[prop] ? 1 : -1));
@@ -221,6 +304,21 @@ export default {
                 this.products.sort((a, b) => (a[prop] < b[prop] ? 1 : -1));
             }
         },
+
+        /**
+         * @Function_Para 导出数据
+         *   无参数
+         *   Template引用: "导出"按钮的点击事件
+         * @Function_Meth 将商品数据导出为JSON文件:
+         *   1. 将数据转换为JSON字符串
+         *   2. 创建Blob对象和下载链接
+         *   3. 触发文件下载
+         * @Function_API
+         *   - Blob API: 创建文件数据
+         *   - URL API: 创建对象URL
+         *   - DOM API: 创建下载链接
+         * @Function_Caller 被“导出”按钮点击事件调用
+         */
         exportData() {
             const dataStr = JSON.stringify(this.products, null, 2);
             const blob = new Blob([dataStr], { type: 'application/json' });
@@ -231,19 +329,59 @@ export default {
             link.click();
             URL.revokeObjectURL(url);
         },
+
+        /**
+         * @Function_Para 加载商品数据
+         *   无参数
+         * @Function_Meth 从localStorage加载商品数据并存入组件状态
+         * @Function_API
+         *   - localStorage API: 读取商品数据
+         * @Function_Caller 在组件created时调用
+         */
         loadProducts() {
             const savedProducts = localStorage.getItem('products');
             this.products = savedProducts ? JSON.parse(savedProducts) : [];
             this.total = this.products.length;
         },
+
+        /**
+         * @Function_Para 保存商品数据
+         *   无参数
+         * @Function_Meth 将商品数据保存到localStorage并更新总数
+         * @Function_API
+         *   - localStorage API: 保存商品数据
+         * @Function_Caller 在添加或编辑后调用
+         */
         saveProducts() {
             localStorage.setItem('products', JSON.stringify(this.products));
             this.total = this.products.length;
         },
+
+        /**
+         * @Function_Para 编辑商品
+         *   @param {Object} product - 要编辑的商品对象
+         *   Template引用: 表格操作列的"修改"按钮
+         * @Function_Meth 准备编辑商品的表单数据并显示编辑对话框
+         * @Function_API 无外部API调用
+         * @Function_Caller 表格中“修改”按钮点击事件
+         */
         editProduct(product) {
             this.editForm = { ...product };
             this.editDialogVisible = true;
         },
+
+        /**
+         * @Function_Para 保存编辑
+         *   无参数
+         *   Template引用: 编辑对话框的"保存"按钮
+         * @Function_Meth 保存编辑后的商品信息:
+         *   1. 在商品数组中查找并更新对应商品
+         *   2. 保存更新后的数据并显示成功消息
+         * @Function_API
+         *   - localStorage API: 通过saveProducts方法保存数据
+         *   - Element UI Message: 显示操作结果
+         * @Function_Caller 编辑对话框“保存”按钮点击事件
+         */
         saveEdit() {
             const index = this.products.findIndex(product => product.id === this.editForm.id);
             if (index !== -1) {
@@ -253,15 +391,49 @@ export default {
             }
             this.editDialogVisible = false;
         },
+
+        /**
+         * @Function_Para 删除商品
+         *   @param {string} id - 要删除的商品ID
+         *   Template引用: 表格操作列的"删除"按钮
+         * @Function_Meth 从商品列表中删除指定商品并保存
+         * @Function_API
+         *   - localStorage API: 通过saveProducts方法保存数据
+         *   - Element UI Message: 显示操作结果
+         * @Function_Caller 表格中“删除”按钮点击事件
+         */
         deleteProduct(id) {
             this.products = this.products.filter(product => product.id !== id);
             this.saveProducts();
             this.$message.success('删除成功');
         },
+
+        /**
+         * @Function_Para 打开添加对话框
+         *   无参数
+         *   Template引用: "添加"按钮的点击事件
+         * @Function_Meth 初始化添加表单并显示添加对话框
+         * @Function_API
+         *   - Date API: 生成当前时间作为创建时间
+         * @Function_Caller “添加”按钮点击事件
+         */
         openAddDialog() {
             this.addForm = { id: '', name: '', features: '', price: '', type: '', supplier: '', createdAt: new Date().toISOString() };
             this.addDialogVisible = true;
         },
+
+        /**
+         * @Function_Para 保存新增商品
+         *   无参数
+         *   Template引用: 添加对话框的"保存"按钮
+         * @Function_Meth 验证并保存新增商品信息:
+         *   1. 检查必填字段
+         *   2. 将新商品添加到数组并保存
+         * @Function_API
+         *   - localStorage API: 通过saveProducts方法保存数据
+         *   - Element UI Message: 显示操作结果
+         * @Function_Caller 添加对话框“保存”按钮事件
+         */
         saveAdd() {
             if (!this.addForm.id || !this.addForm.name) {
                 this.$message.error('请填写完整信息');
@@ -272,6 +444,20 @@ export default {
             this.$message.success('添加成功');
             this.addDialogVisible = false;
         },
+
+        /**
+         * @Function_Para 导入数据
+         *   无参数
+         *   Template引用: "导入"按钮的点击事件
+         * @Function_Meth 从JSON文件导入商品数据:
+         *   1. 打开文件选择对话框
+         *   2. 读取选择的JSON文件
+         *   3. 解析数据并添加到商品列表
+         * @Function_API
+         *   - File API: 读取文件内容
+         *   - Element UI Message: 显示操作结果
+         * @Function_Caller “导入”按钮点击事件
+         */
         importData() {
             const input = document.createElement('input');
             input.type = 'file';
@@ -299,6 +485,15 @@ export default {
             };
             input.click();
         },
+
+        /**
+         * @Function_Para 格式化日期
+         *   @param {string} dateString - 日期字符串
+         * @Function_Meth 将日期字符串格式化为YYYY-MM-DD格式
+         * @Function_API
+         *   - Date API: 日期对象创建和格式化
+         * @Function_Caller 可能在表格日期显示中被调用
+         */
         formatDate(dateString) {
             if (!dateString) return '';
             try {
@@ -316,12 +511,23 @@ export default {
 </script>
 
 <style scoped>
+/* filepath: k:\test program\WebTech\HTML\ms\src\views\ProductList.vue */
+
+/*
+  @Style_Desc 整个商品列表页面的基本布局样式
+  @Selector .user 页面外层容器
+  @Selector .search-card, .search-group, .table-card, .table-header, .table-footer
+             与搜索、表格整体布局功能相关
+  @Selector .action-button 用于修饰添加、导入、导出按钮
+*/
 /* 主容器样式 */
+/* 设置商品列表页面的基本内边距 */
 .user {
     padding: 8px;
 }
 
 /* 搜索区域样式 */
+/* 设置顶部搜索卡片的背景、圆角和间距 */
 .search-card {
     padding: 8px;
     border-radius: 8px;
@@ -329,7 +535,8 @@ export default {
     background-color: rgb(245, 245, 250);
 }
 
-/* 搜索框组样式 - 包含选择框、输入框和操作按钮 */
+/* 搜索框组样式 */
+/* 使用Flexbox布局组织搜索组件的水平排列和间距 */
 .search-group {
     display: flex;
     align-items: center;
@@ -361,7 +568,7 @@ export default {
     background-color: rgb(245, 245, 250);
 }
 
-/* 表格头部样式 - 包含标题和统计标签 */
+/* 表格头部样式 */
 .table-header {
     padding: 16px;
     background: rgb(250, 250, 250);
@@ -385,7 +592,7 @@ export default {
     border-radius: 0px 0px 8px 8px;
 }
 
-/* 表格底部样式 - 包含分页和返回顶部按钮 */
+/* 表格底部样式 */
 .table-footer {
     display: flex;
     justify-content: space-between;

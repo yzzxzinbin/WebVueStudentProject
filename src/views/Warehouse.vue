@@ -1,4 +1,18 @@
 <template>
+    <!--
+      @Template_Desc 仓库管理页面主体
+        包含搜索区域、表格区域以及添加/编辑对话框
+      @Element_Desc .user 页面最外层容器，对整个仓库管理页面进行包裹和布局
+      @Element_Desc .search-card 搜索区域卡片，包含搜索框和操作按钮
+      @Element_Desc .search-group 搜索框组，用于水平排列搜索条件
+      @Element_Desc .field-select 字段选择下拉框
+      @Element_Desc .search-box 搜索输入框
+      @Element_Desc .action-buttons 操作按钮组，包含添加、导入、导出按钮
+      @Element_Desc .table-card 表格区域卡片，包含仓库列表表格和分页控件
+      @Element_Desc .table-header 表格头部，包含标题和记录数标签
+      @Element_Desc .table-footer 表格底部，包含分页控件和返回顶部按钮
+      @Element_Desc .dialog-footer 对话框底部，包含操作按钮
+    -->
     <div class="user">
         <el-card shadow="hover" class="search-card">
             <div class="search-group">
@@ -178,6 +192,15 @@ export default {
         };
     },
     computed: {
+        /**
+         * @Function_Para 过滤仓库数据
+         *   无参数
+         * @Function_Meth 根据搜索条件过滤仓库列表:
+         *   - 如果未指定搜索字段或查询内容，返回全部仓库
+         *   - 否则返回指定字段包含查询内容的仓库
+         * @Function_API 无外部API调用
+         * @Function_Caller 被模板的computed属性或组件自身方法引用，用于动态获取筛选后的仓库数组
+         */
         filteredWarehouses() {
             if (!this.selectedField || !this.searchQuery) {
                 return this.warehouses;
@@ -186,16 +209,40 @@ export default {
                 warehouse[this.selectedField]?.toString().includes(this.searchQuery)
             );
         },
+
+        /**
+         * @Function_Para 分页处理仓库数据
+         *   无参数
+         *   Template引用: 表格的:data属性
+         * @Function_Meth 根据当前页码和页大小截取仓库数据
+         * @Function_API 无外部API调用
+         */
         paginatedWarehouses() {
             const start = (this.currentPage - 1) * this.pageSize;
             const end = start + this.pageSize;
             return this.filteredWarehouses.slice(start, end);
         },
+
+        /**
+         * @Function_Para 获取过滤后的总记录数
+         *   无参数
+         *   Template引用: 表格头部的记录数标签
+         * @Function_Meth 返回过滤后的仓库总数
+         * @Function_API 无外部API调用
+         */
         totalFiltered() {
             return this.filteredWarehouses.length;
         }
     },
     methods: {
+        /**
+         * @Function_Para 滚动表格到顶部
+         *   无参数
+         * @Function_Caller 被模板中的"返回顶部"按钮的 @click 事件调用
+         * @Function_Meth 平滑滚动表格视图到顶部
+         * @Function_API
+         *   - DOM API: 获取表格滚动容器并执行滚动
+         */
         scrollToTop() {
             const tableWrapper = this.$refs.table.$el.querySelector('.el-table__body-wrapper');
             if (tableWrapper) {
@@ -205,16 +252,48 @@ export default {
                 });
             }
         },
+
+        /**
+         * @Function_Para 处理搜索
+         *   无参数
+         * @Function_Caller 被模板中的搜索框的 @keyup.enter 和搜索按钮的 @click 事件调用
+         * @Function_Meth 执行搜索并重置分页到第一页
+         * @Function_API 无外部API调用
+         */
         handleSearch() {
             this.currentPage = 1;
         },
+
+        /**
+         * @Function_Para 处理页大小变化
+         *   @param {number} size - 新的页大小
+         * @Function_Caller 被模板中的分页控件的 @size-change 事件调用
+         * @Function_Meth 更新每页显示记录数，并重置为第一页
+         * @Function_API 无外部API调用
+         */
         handleSizeChange(size) {
             this.pageSize = size;
             this.currentPage = 1;
         },
+
+        /**
+         * @Function_Para 处理页码变化
+         *   @param {number} page - 新的页码
+         * @Function_Caller 被模板中的分页控件的 @current-change 事件调用
+         * @Function_Meth 更新当前页码
+         * @Function_API 无外部API调用
+         */
         handleCurrentChange(page) {
             this.currentPage = page;
         },
+
+        /**
+         * @Function_Para 处理表格排序变化
+         *   @param {Object} params - 排序参数，包含prop和order
+         * @Function_Caller 被模板中的表格的 @sort-change 事件调用
+         * @Function_Meth 根据排序字段和顺序对仓库数据进行排序
+         * @Function_API 无外部API调用
+         */
         handleSortChange({ prop, order }) {
             if (order === 'ascending') {
                 this.warehouses.sort((a, b) => (a[prop] > b[prop] ? 1 : -1));
@@ -222,6 +301,17 @@ export default {
                 this.warehouses.sort((a, b) => (a[prop] < b[prop] ? 1 : -1));
             }
         },
+
+        /**
+         * @Function_Para 导出数据
+         *   无参数
+         * @Function_Caller 被模板中的"导出"按钮的 @click 事件调用
+         * @Function_Meth 将仓库数据导出为JSON文件
+         * @Function_API
+         *   - Blob API: 创建文件数据
+         *   - URL API: 创建对象URL
+         *   - DOM API: 创建下载链接
+         */
         exportData() {
             const dataStr = JSON.stringify(this.warehouses, null, 2);
             const blob = new Blob([dataStr], { type: 'application/json' });
@@ -232,6 +322,15 @@ export default {
             link.click();
             URL.revokeObjectURL(url);
         },
+
+        /**
+         * @Function_Para 加载仓库数据
+         *   无参数
+         * @Function_Caller 被组件的 created 生命周期钩子调用
+         * @Function_Meth 从localStorage加载仓库数据
+         * @Function_API
+         *   - localStorage API: 读取仓库数据
+         */
         loadWarehouses() {
             const savedWarehouses = localStorage.getItem('warehouses');
             this.warehouses = savedWarehouses ? JSON.parse(savedWarehouses).map(warehouse => ({
@@ -240,6 +339,15 @@ export default {
             })) : [];
             this.total = this.warehouses.length;
         },
+
+        /**
+         * @Function_Para 保存仓库数据
+         *   无参数
+         * @Function_Caller 被 saveEdit 和 saveAdd 方法调用
+         * @Function_Meth 将仓库数据保存到localStorage
+         * @Function_API
+         *   - localStorage API: 保存仓库数据
+         */
         saveWarehouses() {
             const normalizedWarehouses = this.warehouses.map(warehouse => ({
                 ...warehouse,
@@ -248,10 +356,27 @@ export default {
             localStorage.setItem('warehouses', JSON.stringify(normalizedWarehouses));
             this.total = this.warehouses.length;
         },
+
+        /**
+         * @Function_Para 编辑仓库
+         *   @param {Object} warehouse - 要编辑的仓库对象
+         * @Function_Caller 被模板中的表格操作列的"修改"按钮的 @click 事件调用
+         * @Function_Meth 打开编辑对话框并填充仓库数据
+         * @Function_API 无外部API调用
+         */
         editWarehouse(warehouse) {
             this.editForm = { ...warehouse };
             this.editDialogVisible = true;
         },
+
+        /**
+         * @Function_Para 保存编辑
+         *   无参数
+         * @Function_Caller 被模板中的编辑对话框的"保存"按钮的 @click 事件调用
+         * @Function_Meth 保存编辑后的仓库信息
+         * @Function_API
+         *   - Element UI Message: 显示操作结果
+         */
         saveEdit() {
             const index = this.warehouses.findIndex(warehouse => warehouse.id === this.editForm.id);
             if (index !== -1) {
@@ -264,15 +389,41 @@ export default {
             }
             this.editDialogVisible = false;
         },
+
+        /**
+         * @Function_Para 删除仓库
+         *   @param {string} id - 要删除的仓库ID
+         * @Function_Caller 被模板中的表格操作列的"删除"按钮的 @click 事件调用
+         * @Function_Meth 从仓库列表中删除指定仓库并保存
+         * @Function_API
+         *   - Element UI Message: 显示操作结果
+         */
         deleteWarehouse(id) {
             this.warehouses = this.warehouses.filter(warehouse => warehouse.id !== id);
             this.saveWarehouses();
             this.$message.success('删除成功');
         },
+
+        /**
+         * @Function_Para 打开添加对话框
+         *   无参数
+         * @Function_Caller 被模板中的"添加"按钮的 @click 事件调用
+         * @Function_Meth 初始化添加表单并显示添加对话框
+         * @Function_API 无外部API调用
+         */
         openAddDialog() {
             this.addForm = { id: '', name: '', status: '', capacity: '', location: '', manager: '' };
             this.addDialogVisible = true;
         },
+
+        /**
+         * @Function_Para 保存新增仓库
+         *   无参数
+         * @Function_Caller 被模板中的添加对话框的"保存"按钮的 @click 事件调用
+         * @Function_Meth 验证并保存新增仓库信息
+         * @Function_API
+         *   - Element UI Message: 显示操作结果
+         */
         saveAdd() {
             if (!this.addForm.id || !this.addForm.name) {
                 this.$message.error('请填写完整信息');
@@ -286,6 +437,16 @@ export default {
             this.$message.success('添加成功');
             this.addDialogVisible = false;
         },
+
+        /**
+         * @Function_Para 导入数据
+         *   无参数
+         * @Function_Caller 被模板中的"导入"按钮的 @click 事件调用
+         * @Function_Meth 从JSON文件导入仓库数据
+         * @Function_API
+         *   - File API: 读取文件内容
+         *   - Element UI Message: 显示操作结果
+         */
         importData() {
             const input = document.createElement('input');
             input.type = 'file';
@@ -322,11 +483,19 @@ export default {
 
 <style scoped>
 /* 主容器样式 */
+/* 
+  @Style_Desc 页面最外层容器样式
+  @Selector .user 页面最外层容器
+*/
 .user {
     padding: 8px;
 }
 
 /* 搜索区域样式 */
+/* 
+  @Style_Desc 搜索区域卡片的背景、圆角和间距
+  @Selector .search-card 搜索区域卡片
+*/
 .search-card {
     padding: 8px;
     border-radius: 8px;
@@ -334,7 +503,11 @@ export default {
     background-color: rgb(245, 245, 250);
 }
 
-/* 搜索框组样式 - 包含选择框、输入框和操作按钮 */
+/* 搜索框组样式 */
+/* 
+  @Style_Desc 搜索框组的水平排列和间距
+  @Selector .search-group 搜索框组
+*/
 .search-group {
     display: flex;
     align-items: center;

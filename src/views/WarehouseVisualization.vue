@@ -510,7 +510,20 @@ export default {
       }
     }
   },
+  
   computed: {
+    /**
+     * @Function_Para 生成指标卡片数据
+     *   无参数
+     *   Template引用: 顶部统计卡片的v-for循环
+     * @Function_Meth 根据当前数据生成四个关键指标的显示信息:
+     *   1. 仓库总数
+     *   2. 商品种类
+     *   3. 总库存量
+     *   4. 平均使用率
+     * @Function_Orgi 在template中通过v-for="(card, index) in metricCards"引用
+     * @Function_API 无外部API调用，使用其他计算属性
+     */
     metricCards() {
       return [
         {
@@ -543,17 +556,53 @@ export default {
         }
       ]
     },
+
+    /**
+     * @Function_Para 获取仓库总数
+     *   无参数
+     * @Function_Meth 返回系统中的仓库数量
+     * @Function_Orgi 被metricCards计算属性调用，生成第一个指标卡片数据
+     * @Function_API 无外部API调用
+     */
     warehouseCount() {
       return this.warehouses.length
     },
+
+    /**
+     * @Function_Para 获取商品类型数量
+     *   无参数
+     * @Function_Meth 计算系统中不重复的商品类型数量
+     * @Function_Orgi 被metricCards计算属性调用，生成第二个指标卡片数据
+     * @Function_API
+     *   - JavaScript Set: 用于去重计算
+     */
     productTypes() {
       const types = new Set()
       this.products.forEach(p => types.add(p.type))
       return types.size
     },
+
+    /**
+     * @Function_Para 计算总库存量
+     *   无参数
+     * @Function_Meth 累加所有仓库中的商品数量
+     * @Function_Orgi 被metricCards计算属性调用，生成第三个指标卡片数据
+     * @Function_API 无外部API调用
+     */
     totalStock() {
       return this.warehouseProducts.reduce((sum, p) => sum + p.quantity, 0)
     },
+
+    /**
+     * @Function_Para 计算平均使用率
+     *   无参数
+     * @Function_Meth 计算仓库的平均容量使用率:
+     *   - 单仓模式: 返回选中仓库的使用率
+     *   - 全局模式: 计算所有仓库的平均使用率
+     * @Function_Orgi 被metricCards计算属性调用，生成第四个指标卡片数据
+     *                同时在updateGaugeChart方法中使用显示仪表盘
+     * @Function_API 无外部API调用
+     */
     avgUsageRate() {
       // 如果有选中的仓库，只计算该仓库的使用率
       if (this.selectedWarehouse) {
@@ -570,6 +619,18 @@ export default {
         (sum, w) => sum + parseFloat(w.usageRate), 0);
       return (total / this.warehouseUsageRates.length).toFixed(1);
     },
+
+    /**
+     * @Function_Para 获取最近操作记录
+     *   无参数
+     *   Template引用: 操作记录表格的:data属性
+     * @Function_Meth 处理并格式化最近的操作记录:
+     *   1. 按时间排序
+     *   2. 获取前8条记录
+     *   3. 添加商品名称信息
+     * @Function_Orgi 在template中通过el-table的:data="recentOperations"属性引用
+     * @Function_API 无外部API调用
+     */
     recentOperations() {
       return [...this.operations]
         .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
@@ -579,10 +640,29 @@ export default {
           productName: this.products.find(p => p.id === op.productId)?.name || op.productId
         }))
     },
+
+    /**
+     * @Function_Para 根据当前选择过滤仓库商品
+     *   无参数
+     * @Function_Meth 根据选中的仓库筛选相关的商品数据
+     * @Function_Orgi 被updateProductChart方法调用，用于过滤商品分布图数据
+     * @Function_API 无外部API调用
+     */
     filteredWarehouseProducts() {
       if (!this.selectedWarehouse) return this.warehouseProducts
       return this.warehouseProducts.filter(p => p.warehouseId === this.selectedWarehouse)
     },
+
+    /**
+     * @Function_Para 计算各仓库使用率
+     *   无参数
+     * @Function_Meth 计算每个仓库的容量使用情况:
+     *   1. 计算每个仓库的商品总量
+     *   2. 根据仓库容量计算使用率百分比
+     *   3. 返回包含详细信息的对象数组
+     * @Function_Orgi 被avgUsageRate计算属性和updateGaugeChart方法调用
+     * @Function_API 无外部API调用
+     */
     warehouseUsageRates() {
       return this.warehouses.map(warehouse => {
         const productsInWarehouse = this.warehouseProducts.filter(
@@ -601,9 +681,22 @@ export default {
           capacity: warehouse.capacity
         };
       });
-    },
+    }
   },
+  
   methods: {
+    /**
+     * @Function_Para 加载数据
+     *   无参数
+     * @Function_Meth 从localStorage加载所有可视化所需数据:
+     *   1. 仓库数据
+     *   2. 商品数据
+     *   3. 仓库商品关联数据
+     *   4. 操作记录数据
+     * @Function_Orgi 在组件mounted生命周期中调用，以及refreshOperations方法中调用
+     * @Function_API
+     *   - localStorage API: 读取各类数据
+     */
     async loadData() {
       try {
         this.loading = { product: true, heatmap: true, trend: true, gauge: true, scatter3d: true };
@@ -626,6 +719,20 @@ export default {
         });
       }
     },
+
+    /**
+     * @Function_Para 初始化所有图表
+     *   无参数
+     * @Function_Meth 初始化所有可视化图表:
+     *   1. 商品分布图
+     *   2. 热力图
+     *   3. 趋势图
+     *   4. 仪表图
+     *   5. 3D散点图
+     * @Function_Orgi 在组件mounted生命周期钩子的$nextTick回调中调用
+     * @Function_API
+     *   - ECharts: 创建各类图表实例
+     */
     initCharts() {
       this.charts.product = echarts.init(this.$refs.productChart);
       this.charts.heatmap = echarts.init(this.$refs.heatmapChart);
@@ -635,6 +742,14 @@ export default {
       
       this.updateCharts();
     },
+
+    /**
+     * @Function_Para 更新所有图表
+     *   无参数
+     * @Function_Meth 触发所有图表的更新方法
+     * @Function_Orgi 多处被调用：initCharts方法、loadData方法、以及selectedWarehouse变化时
+     * @Function_API 无外部API调用
+     */
     updateCharts() {
       this.updateProductChart();
       this.updateHeatmapChart();
@@ -642,6 +757,17 @@ export default {
       this.updateGaugeChart();
       this.updateScatter3DChart();
     },
+
+    /**
+     * @Function_Para 更新趋势图表
+     *   无参数
+     *   Template引用: 由趋势天数选择器触发
+     * @Function_Meth 根据选择的时间范围(7天/30天)更新入库出库趋势图
+     * @Function_Orgi 在updateCharts方法中调用；通过template中趋势天数选择器的@change事件直接调用
+     * @Function_API
+     *   - date-fns format: 格式化日期
+     *   - ECharts: 配置和渲染图表
+     */
     updateTrendChart() {
       if (!this.charts.trend) return
       if (this.warehouses.length === 0 || this.warehouseProducts.length === 0) {
@@ -700,6 +826,18 @@ export default {
       this.charts.trend.setOption(option)
       this.loading.trend = false
     },
+
+    /**
+     * @Function_Para 更新仪表盘图表
+     *   无参数
+     *   Template引用: 由警戒值选择器触发
+     * @Function_Meth 更新仓库容量使用率仪表盘:
+     *   - 全局模式: 显示平均使用率
+     *   - 单仓模式: 显示选中仓库的使用率
+     * @Function_Orgi 在updateCharts方法中调用；通过template中警戒值选择器的@change事件直接调用
+     * @Function_API
+     *   - ECharts: 配置和渲染仪表盘
+     */
     updateGaugeChart() {
       if (!this.charts.gauge) return;
 
@@ -796,13 +934,36 @@ export default {
 
       this.charts.gauge.setOption(option);
     },
-    // 根据使用率返回颜色
+
+    /**
+     * @Function_Para 根据使用率返回颜色
+     *   @param {number} rate - 使用率百分比
+     * @Function_Meth 根据使用率返回对应的颜色代码:
+     *   - <30%: 绿色(安全)
+     *   - <70%: 黄色(警告)
+     *   - >=70%: 红色(危险)
+     * @Function_Orgi 被metricCards计算属性和updateGaugeChart方法调用，设置仪表盘颜色
+     * @Function_API 无外部API调用
+     */
     getUsageColor(rate) {
       rate = parseFloat(rate);
       if (rate < 30) return '#67C23A';  // 绿色
       if (rate < 70) return '#E6A23C';  // 黄色
       return '#F56C6C';                 // 红色
     },
+
+    /**
+     * @Function_Para 更新商品分布图表
+     *   无参数
+     *   Template引用: 由TopN选择器触发
+     * @Function_Meth 更新商品类型分布饼图:
+     *   1. 统计各类型商品数量
+     *   2. 按数量排序并截取前N项
+     *   3. 配置并渲染饼图
+     * @Function_Orgi 在updateCharts方法中调用；通过template中TopN选择器的@change事件直接调用
+     * @Function_API
+     *   - ECharts: 配置和渲染饼图
+     */
     updateProductChart() {
       if (!this.charts.product) return
 
@@ -888,6 +1049,18 @@ export default {
       }
       this.charts.product.setOption(option)
     },
+
+    /**
+     * @Function_Para 更新热力图
+     *   无参数
+     * @Function_Meth 更新操作活动热力图:
+     *   1. 准备热力图数据(按日期统计操作次数)
+     *   2. 计算日期范围
+     *   3. 配置并渲染热力图
+     * @Function_Orgi 在updateCharts方法中调用
+     * @Function_API
+     *   - ECharts: 配置和渲染热力图
+     */
     updateHeatmapChart() {
       if (!this.charts.heatmap) return
 
@@ -950,6 +1123,15 @@ export default {
 
       this.charts.heatmap.setOption(option)
     },
+
+    /**
+     * @Function_Para 准备热力图数据
+     *   无参数
+     * @Function_Meth 将操作记录转换为热力图所需的数据格式:
+     *   按日期统计操作次数，返回[日期,次数]格式的数组
+     * @Function_Orgi 被updateHeatmapChart方法调用
+     * @Function_API 无外部API调用
+     */
     prepareHeatmapData() {
       // Group operations by date
       const dateCounts = {}
@@ -965,6 +1147,16 @@ export default {
         return [dateStr, count]
       })
     },
+
+    /**
+     * @Function_Para 获取热力图日期范围
+     *   无参数
+     * @Function_Meth 计算热力图应显示的日期范围:
+     *   基于操作记录的最早和最晚日期，扩展到完整月份
+     * @Function_Orgi 被updateHeatmapChart方法调用
+     * @Function_API
+     *   - date-fns format: 格式化日期
+     */
     getHeatmapRange() {
       if (this.operations.length === 0) {
         const now = new Date()
@@ -983,6 +1175,16 @@ export default {
 
       return [format(startDate, 'yyyy-MM-dd'), format(endDate, 'yyyy-MM-dd')]
     },
+
+    /**
+     * @Function_Para 显示空图表
+     *   @param {Object} chartInstance - ECharts实例
+     *   @param {string} text - 显示的文本
+     * @Function_Meth 为没有数据的图表显示友好提示
+     * @Function_Orgi 被多个图表更新方法调用，当数据为空时显示提示信息
+     * @Function_API
+     *   - ECharts: 配置图表
+     */
     showEmptyChart(chartInstance, text) {
       chartInstance.setOption({
         graphic: {
@@ -998,24 +1200,84 @@ export default {
         }
       })
     },
+
+    /**
+     * @Function_Para 刷新操作数据
+     *   无参数
+     *   Template引用: 刷新按钮的点击事件
+     * @Function_Meth 重新加载所有数据并更新图表
+     * @Function_Orgi 通过template中刷新按钮的@click事件调用
+     * @Function_API 无外部API调用
+     */
     refreshOperations() {
       this.loadData()
     },
+
+    /**
+     * @Function_Para 格式化时间戳
+     *   @param {string} timestamp - ISO格式时间戳
+     *   Template引用: 操作记录表格的时间列
+     * @Function_Meth 将时间戳格式化为可读的日期时间格式
+     * @Function_Orgi 在template中通过表格格式化器调用: formatTime(scope.row.timestamp)
+     * @Function_API
+     *   - date-fns format: 格式化日期
+     */
     formatTime(timestamp) {
       return format(new Date(timestamp), 'yyyy-MM-dd HH:mm')
     },
+
+    /**
+     * @Function_Para 表格行样式类名生成器
+     *   @param {Object} row - 表格行数据
+     *   Template引用: 表格的:row-class-name属性
+     * @Function_Meth 根据操作类型(正/负)返回对应的CSS类名
+     * @Function_Orgi 在template中通过表格的:row-class-name属性调用
+     * @Function_API 无外部API调用
+     */
     tableRowClassName({ row }) {
       return row.quantity >= 0 ? 'positive-row' : 'negative-row'
     },
+
+    /**
+     * @Function_Para 处理窗口大小调整
+     *   无参数
+     * @Function_Meth 当浏览器窗口大小变化时调整所有图表大小
+     * @Function_Orgi 作为window的resize事件监听器在mounted钩子中注册
+     * @Function_API
+     *   - ECharts: 调整图表大小
+     */
     handleResize() {
       Object.values(this.charts).forEach(chart => {
         if (chart) chart.resize();
       });
     },
+
+    /**
+     * @Function_Para 刷新3D图表
+     *   无参数
+     *   Template引用: 3D图表刷新按钮
+     * @Function_Meth 重新加载并渲染3D散点图
+     * @Function_Orgi 通过template中3D图表刷新按钮的@click事件调用
+     * @Function_API 无外部API调用
+     */
     refresh3DChart() {
       this.loading.scatter3d = true;
       this.updateScatter3DChart();
     },
+
+    /**
+     * @Function_Para 更新3D散点图
+     *   无参数
+     * @Function_Meth 生成并渲染仓库库存变化的3D可视化:
+     *   1. 准备3D数据点
+     *   2. 验证数据有效性
+     *   3. 配置并渲染3D图表
+     * @Function_Orgi 在updateCharts方法中调用；通过refresh3DChart方法调用；
+     *                以及通过template中缩放滑块和自动旋转开关事件直接调用
+     * @Function_API
+     *   - ECharts-GL: 配置和渲染3D图表
+     *   - date-fns format: 格式化日期
+     */
     updateScatter3DChart() {
       if (!this.charts.scatter3d) return;
 
@@ -1131,6 +1393,16 @@ export default {
 
     },
 
+    /**
+     * @Function_Para 准备3D散点图数据
+     *   无参数
+     * @Function_Meth 构建3D散点图所需的数据:
+     *   1. 从操作记录重建库存历史变化
+     *   2. 生成仓库、时间、库存量三维数据点
+     * @Function_Orgi 被updateScatter3DChart方法调用
+     * @Function_API
+     *   - localStorage API: 读取操作和仓库数据
+     */
     prepareScatter3DData() {
       const operations = JSON.parse(localStorage.getItem('operations')) || [];
       const warehouses = JSON.parse(localStorage.getItem('warehouses')) || [];
@@ -1235,17 +1507,43 @@ export default {
 
       return result;
     },
-    // 处理缩放滑块变化
+
+    /**
+     * @Function_Para 处理缩放比例变化
+     *   @param {number} value - 缩放百分比
+     *   Template引用: 缩放滑块的@change事件
+     * @Function_Meth 调整3D图表的视距
+     * @Function_Orgi 通过template中缩放滑块的@change事件调用
+     * @Function_API 无外部API调用
+     */
     handleZoomChange(value) {
       this.scatter3dZoom = value;
       this.updateScatter3DChart();
     },
 
-    // 处理自动旋转切换
+    /**
+     * @Function_Para 处理自动旋转切换
+     *   无参数
+     *   Template引用: 自动旋转复选框的@change事件
+     * @Function_Meth 切换3D图表的自动旋转功能
+     * @Function_Orgi 通过template中自动旋转复选框的@change事件调用
+     * @Function_API 无外部API调用
+     */
     handleAutoRotateChange() {
       this.updateScatter3DChart();
     }
   },
+  
+  /**
+   * @Function_Para 组件挂载完成钩子
+   * @Function_Meth 组件挂载后初始化数据和图表:
+   *   1. 加载所有数据
+   *   2. 等待DOM更新后初始化图表
+   *   3. 添加窗口大小调整事件监听
+   * @Function_API
+   *   - Vue nextTick: 等待DOM更新
+   *   - Window API: 添加resize事件监听
+   */
   mounted() {
     this.loadData();
     this.$nextTick(() => {
@@ -1253,6 +1551,16 @@ export default {
     });
     window.addEventListener('resize', this.handleResize);
   },
+  
+  /**
+   * @Function_Para 组件销毁前钩子
+   * @Function_Meth 组件销毁前清理资源:
+   *   1. 移除窗口大小调整事件监听
+   *   2. 释放所有图表实例
+   * @Function_API
+   *   - Window API: 移除resize事件监听
+   *   - ECharts: 销毁图表实例
+   */
   beforeDestroy() {
     window.removeEventListener('resize', this.handleResize);
     Object.values(this.charts).forEach(chart => {

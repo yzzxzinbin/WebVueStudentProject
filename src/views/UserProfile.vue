@@ -1,4 +1,16 @@
 <template>
+    <!--
+        @Template_Desc 用户个人中心页面
+        包含用户信息展示、活动记录、修改密码、编辑个人档案等功能
+        @Element_Desc .user-profile 页面最外层容器
+        @Element_Desc .profile-card 用户信息卡片
+        @Element_Desc .activity-card 用户活动记录卡片
+        @Element_Desc .avatar-section 用户头像区域
+        @Element_Desc .info-section 用户信息区域
+        @Element_Desc .action-buttons 操作按钮区域
+        @Element_Desc .activity-table 活动记录表格
+        @Element_Desc el-dialog 修改密码、编辑个人档案、编辑单个字段的弹窗
+    -->
     <div class="user-profile">
         <!-- 用户信息卡片 - 优化后的布局 -->
         <el-card shadow="hover" class="profile-card">
@@ -229,6 +241,14 @@ import { format } from 'date-fns'
 export default {
     name: 'UserProfile',
     data() {
+        /**
+         * @Function_Para 密码确认验证函数
+         *   @param {Object} rule - 验证规则对象
+         *   @param {string} value - 输入的确认密码值
+         *   @param {Function} callback - 验证回调函数
+         * @Function_Meth 验证确认密码是否与新密码一致
+         * @Function_API 无外部API调用
+         */
         const validatePassword = (rule, value, callback) => {
             if (value !== this.passwordForm.newPassword) {
                 callback(new Error('两次输入的密码不一致'))
@@ -285,6 +305,19 @@ export default {
             }
         }
     },
+    
+    /**
+     * @Function_Para 组件创建生命周期钩子
+     * @Function_Meth 初始化组件:
+     *   1. 检查路由参数，确定是否查看他人主页
+     *   2. 初始化IndexedDB
+     *   3. 加载用户信息和活动数据
+     *   4. 清理旧头像数据
+     * @Function_API
+     *   - Vue Router: 获取路由参数
+     *   - localStorage: 获取用户数据
+     *   - IndexedDB: 初始化数据库
+     */
     async created() {
         // 检查路由参数中是否有 userId
         this.targetUserId = this.$route.query.userId;
@@ -298,7 +331,15 @@ export default {
     },
 
     methods: {
-        // 初始化头像专用数据库
+        /**
+         * @Function_Para 初始化头像数据库
+         *   无参数
+         * @Function_Meth 创建和初始化用于存储用户头像的IndexedDB数据库
+         * @Function_API
+         *   - IndexedDB API: 创建/打开数据库和对象存储
+         *   - Promise API: 提供异步处理能力
+         * @Function_Caller 被组件created生命周期调用
+         */
         initAvatarDB() {
             return new Promise((resolve, reject) => {
                 const request = indexedDB.open('AvatarDB', 1)
@@ -322,7 +363,15 @@ export default {
             })
         },
 
-        // 保存头像到IndexedDB
+        /**
+         * @Function_Para 保存头像到数据库
+         *   @param {string} userId - 用户ID
+         *   @param {string} avatarData - Base64编码的头像数据
+         * @Function_Meth 将头像数据保存到IndexedDB
+         * @Function_API
+         *   - IndexedDB API: 事务处理和数据存储
+         * @Function_Caller 被handleAvatarChange方法调用
+         */
         async saveAvatarToDB(userId, avatarData) {
             if (!this.db) return false
 
@@ -337,7 +386,14 @@ export default {
             })
         },
 
-        // 从IndexedDB读取头像
+        /**
+         * @Function_Para 从数据库读取头像
+         *   @param {string} userId - 用户ID
+         * @Function_Meth 从IndexedDB检索指定用户的头像数据
+         * @Function_API
+         *   - IndexedDB API: 事务处理和数据读取
+         * @Function_Caller 被loadUserInfo方法调用
+         */
         async getAvatarFromDB(userId) {
             if (!this.db) return null
 
@@ -352,7 +408,21 @@ export default {
             })
         },
 
-        // 修改后的头像上传方法
+        /**
+         * @Function_Para 处理头像上传变更
+         *   @param {Object} file - 文件对象
+         *   Template引用: el-upload组件的:on-change事件
+         * @Function_Meth 处理用户头像更新:
+         *   1. 读取选择的图片文件
+         *   2. 转换为Base64编码
+         *   3. 保存到IndexedDB
+         *   4. 更新界面显示和通知其他组件
+         * @Function_API
+         *   - FileReader API: 读取文件内容
+         *   - IndexedDB API: 保存头像数据
+         *   - Vue事件总线: 通知头像更新
+         * @Function_Caller 被头像上传组件的:on-change事件调用
+         */
         async handleAvatarChange(file) {
             const reader = new FileReader()
             reader.onload = async (e) => {
@@ -377,6 +447,20 @@ export default {
             }
             reader.readAsDataURL(file.raw)
         },
+
+        /**
+         * @Function_Para 加载用户信息
+         *   无参数
+         * @Function_Meth 获取并组装用户信息:
+         *   1. 从localStorage获取基本信息
+         *   2. 根据查看模式(自己/他人)获取相应用户数据
+         *   3. 从IndexedDB加载用户头像
+         * @Function_API
+         *   - localStorage API: 读取用户数据
+         *   - IndexedDB API: 读取头像数据
+         *   - Vue Router: 处理路由重定向
+         * @Function_Caller 被组件created生命周期和路由监听器调用
+         */
         async loadUserInfo() {
             // 1. 从localStorage加载当前用户基本信息
             const currentUserData = JSON.parse(localStorage.getItem('user')) || {};
@@ -421,6 +505,19 @@ export default {
             this.profileForm.avatar = require('@/assets/default-avatar.svg');
         },
 
+        /**
+         * @Function_Para 更新用户资料
+         *   无参数，通过this.profileForm获取表单数据
+         *   Template引用: 编辑个人档案对话框的保存按钮点击事件
+         * @Function_Meth 保存用户资料更新:
+         *   1. 验证权限(自己的资料或管理员)
+         *   2. 更新localStorage中的用户数据
+         *   3. 如果是当前用户，同步更新当前登录会话信息
+         * @Function_API
+         *   - localStorage API: 读写用户数据
+         *   - Element UI Message: 显示操作结果
+         * @Function_Caller 被编辑个人档案对话框的保存按钮调用
+         */
         updateProfile() {
             if (this.isViewingOtherUser && !this.isAdmin()) {
                 this.$message.warning('您没有权限修改其他用户信息');
@@ -460,11 +557,28 @@ export default {
             this.profileDialogVisible = false;
         },
 
+        /**
+         * @Function_Para 检查当前用户是否管理员
+         *   无参数
+         * @Function_Meth 验证当前登录用户是否为管理员角色
+         * @Function_API
+         *   - localStorage API: 读取用户角色信息
+         */
         isAdmin() {
             const currentUser = JSON.parse(localStorage.getItem('user')) || {};
             return currentUser.role === 'admin';
         },
 
+        /**
+         * @Function_Para 格式化时间
+         *   多态函数，可接受:
+         *   1. 单参数形式: formatTime(timestamp)
+         *   2. 表格列格式化器形式: formatTime(row, column, cellValue)
+         *   Template引用: el-table-column的:formatter属性
+         * @Function_Meth 统一格式化日期时间显示
+         * @Function_API
+         *   - date-fns format: 格式化日期
+         */
         formatTime(row, column, cellValue) {
             // 处理直接调用的情况（如 formatTime(userInfo.lastLogin)）
             if (arguments.length === 1) {
@@ -488,6 +602,16 @@ export default {
             }
         },
 
+        /**
+         * @Function_Para 加载活动数据
+         *   无参数
+         * @Function_Meth 根据当前选择的标签页加载对应的活动数据:
+         *   - 登录历史
+         *   - 操作记录
+         *   - 授权仓库
+         * @Function_API
+         *   - localStorage API: 读取各类活动数据
+         */
         loadActivityData() {
             this.loading = true;
             // 预先设置空数据避免表格高度变化
@@ -544,7 +668,13 @@ export default {
             }, 500); // 缩短加载时间
         },
 
-        // 添加设备信息格式化方法
+        /**
+         * @Function_Para 获取设备信息
+         *   无参数
+         * @Function_Meth 分析用户代理字符串识别用户设备类型
+         * @Function_API
+         *   - navigator.userAgent: 获取浏览器用户代理信息
+         */
         getDeviceInfo() {
             const ua = navigator.userAgent;
             if (ua.match(/Android/i)) return 'Android';
@@ -554,20 +684,49 @@ export default {
             if (ua.match(/Linux/i)) return 'Linux';
             return 'Unknown Device';
         },
+
+        /**
+         * @Function_Para 处理标签页切换
+         *   无参数
+         *   Template引用: el-tabs的@tab-click事件
+         * @Function_Meth 切换活动标签页时重新加载对应数据
+         * @Function_API 无外部API调用
+         */
         handleTabChange() {
             this.loadActivityData()
         },
 
+        /**
+         * @Function_Para 获取角色标签类型
+         *   @param {string} role - 用户角色
+         *   Template引用: 个人信息卡片中的el-tag的:type属性
+         * @Function_Meth 根据用户角色返回对应的标签样式类型
+         * @Function_API 无外部API调用
+         */
         getRoleTagType(role) {
             return role === 'admin' ? 'danger' :
                 role === 'manager' ? 'warning' : 'success'
         },
 
+        /**
+         * @Function_Para 格式化角色显示
+         *   @param {string} role - 用户角色
+         *   Template引用: 个人信息卡片中的角色显示
+         * @Function_Meth 将英文角色名转换为中文显示
+         * @Function_API 无外部API调用
+         */
         formatRole(role) {
             return role === 'admin' ? '管理员' :
                 role === 'manager' ? '经理' : '操作员'
         },
 
+        /**
+         * @Function_Para 获取操作类型标签样式
+         *   @param {string} type - 操作类型
+         *   Template引用: 操作记录表格中的操作类型标签
+         * @Function_Meth 根据操作类型返回对应的标签样式
+         * @Function_API 无外部API调用
+         */
         getOperationTagType(type) {
             const typeMap = {
                 '入库': 'success',
@@ -577,6 +736,15 @@ export default {
             return typeMap[type] || 'info'
         },
 
+        /**
+         * @Function_Para 显示密码修改对话框
+         *   无参数
+         *   Template引用: "修改密码"按钮的点击事件
+         * @Function_Meth 初始化并显示密码修改对话框
+         * @Function_API
+         *   - Vue Refs: 访问表单实例清除验证
+         * @Function_Caller 被"修改密码"按钮点击事件调用
+         */
         showPasswordDialog() {
             this.passwordForm = {
                 oldPassword: '',
@@ -589,16 +757,40 @@ export default {
             })
         },
 
+        /**
+         * @Function_Para 显示个人资料编辑对话框
+         *   无参数
+         *   Template引用: "编辑完整档案"按钮的点击事件
+         * @Function_Meth 显示编辑个人档案的对话框
+         * @Function_API 无外部API调用
+         * @Function_Caller 被"编辑完整档案"按钮点击事件调用
+         */
         showProfileDialog() {
             this.profileDialogVisible = true
         },
 
+        /**
+         * @Function_Para 编辑单个字段
+         *   @param {string} field - 要编辑的字段名
+         *   Template引用: 各信息项的编辑按钮
+         * @Function_Meth 初始化并显示单字段编辑对话框
+         * @Function_API 无外部API调用
+         * @Function_Caller 被各信息项的编辑按钮点击事件调用
+         */
         editField(field) {
             this.editFieldName = field
             this.fieldForm.value = this.userInfo[field] || ''
             this.fieldDialogVisible = true
         },
 
+        /**
+         * @Function_Para 保存编辑的字段
+         *   无参数
+         *   Template引用: 字段编辑对话框的保存按钮
+         * @Function_Meth 保存单个字段的编辑并更新用户资料
+         * @Function_API 无外部API调用
+         * @Function_Caller 被字段编辑对话框的保存按钮调用
+         */
         saveField() {
             this.userInfo[this.editFieldName] = this.fieldForm.value
             this.profileForm[this.editFieldName] = this.fieldForm.value
@@ -606,6 +798,19 @@ export default {
             this.fieldDialogVisible = false
         },
 
+        /**
+         * @Function_Para 更新密码
+         *   无参数
+         *   Template引用: 密码修改对话框的确定按钮
+         * @Function_Meth 验证并更新用户密码:
+         *   1. 验证表单数据
+         *   2. 验证原密码是否正确
+         *   3. 更新密码并保存
+         * @Function_API
+         *   - localStorage API: 读写用户数据
+         *   - Element UI Message: 显示操作结果
+         * @Function_Caller 被密码修改对话框的确定按钮调用
+         */
         updatePassword() {
             this.$refs.passwordForm.validate(valid => {
                 if (valid) {
@@ -634,6 +839,14 @@ export default {
             })
         },
 
+        /**
+         * @Function_Para 清理旧头像数据
+         *   无参数
+         * @Function_Meth 从localStorage中移除旧的头像数据,
+         *   迁移到IndexedDB后的清理工作
+         * @Function_API
+         *   - localStorage API: 读写用户数据
+         */
         async cleanupOldAvatars() {
             // 从localStorage移除头像
             const user = JSON.parse(localStorage.getItem('user')) || {}
@@ -652,11 +865,28 @@ export default {
                 localStorage.setItem('users', JSON.stringify(updatedUsers))
             }
         },
-        // 简单的密码哈希函数（与系统其他部分一致）
+
+        /**
+         * @Function_Para 密码哈希处理
+         *   @param {string} password - 原始密码
+         * @Function_Meth 执行简单的密码哈希处理
+         * @Function_API 仅使用JavaScript字符串操作
+         */
         hashPassword(password) {
             return password.split('').reverse().join('') + password.length
         }
     },
+    
+    /**
+     * @Function_Para 监听路由变化
+     * @Function_Meth 当路由参数变化时更新页面内容:
+     *   1. 更新目标用户ID
+     *   2. 重新判断是否查看他人主页
+     *   3. 重新加载用户信息
+     * @Function_API
+     *   - Vue Router: 监听路由变化
+     *   - localStorage: 获取当前用户信息
+     */
     watch: {
         // 监听路由变化
         '$route'(to) {
