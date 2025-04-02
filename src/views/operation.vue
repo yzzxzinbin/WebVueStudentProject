@@ -21,8 +21,8 @@
               </el-col>
               <el-col :span="24">
                 <el-form-item label="商品ID" prop="productId">
-                  <el-autocomplete v-model="operationForm.productId" :fetch-suggestions="queryProduct"
-                    placeholder="请输入商品ID" @select="handleProductSelect"
+                  <el-autocomplete v-model="operationForm.productId" @clear="operationForm.productId = ''"
+                    :fetch-suggestions="queryProduct" placeholder="请输入商品ID" @select="handleProductSelect"
                     :disabled="!operationForm.type"></el-autocomplete>
                 </el-form-item>
               </el-col>
@@ -35,9 +35,11 @@
               <el-col :span="24" v-if="operationForm.type !== '入库'">
                 <el-form-item label="源仓库" prop="sourceWarehouse">
                   <el-select v-model="operationForm.sourceWarehouse" placeholder="请选择源仓库"
-                    :disabled="!operationForm.productId">
-                    <el-option v-for="warehouse in warehouses" :key="warehouse.id" :label="warehouse.name"
+                    :disabled="!operationForm.productId" filterable clearable>
+                    <el-option v-for="warehouse in filteredSourceWarehouses" :key="warehouse.id" :label="warehouse.name"
                       :value="warehouse.id"></el-option>
+                    <el-option v-if="filteredSourceWarehouses.length === 0 && operationForm.productId" disabled value=""
+                      label=""></el-option>
                   </el-select>
                 </el-form-item>
               </el-col>
@@ -121,6 +123,20 @@ export default {
     };
   },
   computed: {
+    filteredSourceWarehouses() {
+      if (!this.operationForm.productId) return [];
+
+      const warehouseProducts = JSON.parse(localStorage.getItem('warehouseProducts')) || [];
+      // 获取包含当前商品且有库存的仓库ID列表
+      const availableWarehouseIds = warehouseProducts
+        .filter(p => p.id === this.operationForm.productId && p.quantity > 0)
+        .map(p => p.warehouseId);
+
+      // 返回匹配的仓库
+      return this.warehouses.filter(warehouse =>
+        availableWarehouseIds.includes(warehouse.id)
+      );
+    },
     paginatedLogs() {
       const start = (this.logCurrentPage - 1) * this.logPageSize;
       const end = start + this.logPageSize;
@@ -131,6 +147,7 @@ export default {
     }
   },
   methods: {
+
     // 加载仓库和商品数据
     loadWarehouses() {
       const savedWarehouses = localStorage.getItem('warehouses');
@@ -145,7 +162,8 @@ export default {
     handleTypeChange() {
       this.operationForm.sourceWarehouse = '';
       this.operationForm.targetWarehouse = '';
-
+      this.operationForm.productId = ''; // 清空商品ID以便重新选择
+      this.operationForm.targetWarehouse.placeholder = '';
       if (this.operationForm.type === '入库') {
         this.operationForm.sourceWarehouse = 'external'; // 标记为外部来源
       }
@@ -153,21 +171,44 @@ export default {
 
     // 商品搜索
     queryProduct(queryString, callback) {
-      const results = this.products
-        .filter(product =>
-          product.id.includes(queryString) ||
-          product.name.includes(queryString)
-        )
+      // 使用 Map 去重，确保每个ID只出现一次
+      const productMap = new Map();
+      this.products.forEach(product => {
+        if (!productMap.has(product.id)) {
+          productMap.set(product.id, product);
+        }
+      });
+
+      const query = queryString.toLowerCase(); // 转为小写方便比较
+      const results = Array.from(productMap.values())
+        .filter(product => {
+          // 同时匹配ID和名称
+          const idMatch = product.id.toLowerCase().includes(query);
+          const nameMatch = product.name.toLowerCase().includes(query);
+          return idMatch || nameMatch;
+        })
+        .sort((a, b) => {
+          // 优先显示ID匹配的结果
+          const aIdStarts = a.id.toLowerCase().startsWith(query);
+          const bIdStarts = b.id.toLowerCase().startsWith(query);
+          if (aIdStarts && !bIdStarts) return -1;
+          if (!aIdStarts && bIdStarts) return 1;
+          return 0;
+        })
         .map(product => ({
           value: product.id,
           label: `${product.id} - ${product.name}`
         }));
+
       callback(results);
     },
 
     // 商品选择
     handleProductSelect(item) {
       this.operationForm.productId = item.value;
+      this.$nextTick(() => {
+        this.$refs.operationFormRef.clearValidate('productId');
+      });
     },
 
     // 提交操作
@@ -446,7 +487,7 @@ export default {
   /* 动态高度调整 */
   display: flex;
   flex-direction: column;
-  background-color: rgba(245, 245, 250,1);
+  background-color: rgba(245, 245, 250, 1);
   backdrop-filter: blur(10px);
   border-radius: 8px;
 }
