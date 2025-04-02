@@ -351,9 +351,10 @@ export default {
     await this.loadUserInfo();
 
     //监听头像更新事件
-    this.$eventBus.$on('avatar-updated', (newAvatar) => {
+    const currentUserId = this.userInfo.id
+    this.$eventBus.$on(`avatar-updated-${currentUserId}`, (newAvatar) => {
       this.userInfo.avatar = newAvatar
-    });
+    })
     // 初始化时从本地存储获取当前激活菜单，默认为第一个菜单项
     const savedPath = localStorage.getItem('selectMenu');
     const defaultPath = this.menus[0].children?.length ? this.menus[0].children[0].path : this.menus[0].path;
@@ -459,7 +460,7 @@ body {
   font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
   /* 优先使用微软雅黑 */
   ;
-  font-size: 35px;
+  font-size: 28px;
   font-weight: bold;
   color: var(--text-light);
   letter-spacing: 1px;
@@ -706,6 +707,4 @@ span {
   background-color: #dcdcdc;
   margin-left: 18px;
 }
-
-
 </style>

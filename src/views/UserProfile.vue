@@ -286,14 +286,15 @@ export default {
         }
     },
     async created() {
-        // 检查路由参数中是否有userId
+        // 检查路由参数中是否有 userId
         this.targetUserId = this.$route.query.userId;
-        this.isViewingOtherUser = !!this.targetUserId;
+        const currentUser = JSON.parse(localStorage.getItem('user')) || {};
+        this.isViewingOtherUser = this.targetUserId && this.targetUserId !== currentUser.id;
 
-        await this.initAvatarDB() // 确保数据库初始化完成
-        await this.loadUserInfo() // 再加载用户信息
-        this.loadActivityData()
-        this.cleanupOldAvatars()
+        await this.initAvatarDB(); // 确保数据库初始化完成
+        await this.loadUserInfo(); // 再加载用户信息
+        this.loadActivityData();
+        this.cleanupOldAvatars();
     },
 
     methods: {
@@ -366,7 +367,7 @@ export default {
                         // 立即验证存储结果
                         const storedData = await this.getAvatarFromDB(this.userInfo.id)
                         console.log('读取已存储的头像:', storedData?.slice(0, 50) + '...')
-                        this.$eventBus.$emit('avatar-updated', avatarData) // 触发事件
+                        this.$eventBus.$emit(`avatar-updated-${this.userInfo.id}`, avatarData) // 触发事件
                         this.userInfo.avatar = avatarData
                         this.profileForm.avatar = avatarData
                     }
