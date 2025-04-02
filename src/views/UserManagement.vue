@@ -42,11 +42,15 @@
                 <el-table-column prop="email" label="邮箱" width="200"></el-table-column>
                 <el-table-column prop="department" label="部门" width="150"></el-table-column>
                 <el-table-column prop="lastLogin" label="最后登录" width="180" sortable></el-table-column>
-                <el-table-column label="操作" width="240" fixed="right" align="center" header-align="center">
+                <el-table-column label="操作" width="300" fixed="right" align="center" header-align="center">
                     <template slot-scope="scope">
                         <el-button size="mini" type="primary" @click="editUser(scope.row)">编辑</el-button>
                         <el-button size="mini" type="danger" @click="deleteUser(scope.row.id)">删除</el-button>
                         <el-button size="mini" type="info" @click="viewUserProfile(scope.row)">主页</el-button>
+                        <el-button size="mini" type="warning" @click="authorizeWarehouse(scope.row)"
+                            class="authorize-button">
+                            <i class="el-icon-key"></i> 授权
+                        </el-button>
                     </template>
                 </el-table-column>
             </el-table>
@@ -124,6 +128,23 @@
                 <el-button type="primary" @click="saveUser">保存</el-button>
             </span>
         </el-dialog>
+        <el-dialog title="授权仓库管理" :visible.sync="warehouseDialogVisible" width="60%">
+            <el-table :data="warehouses" ref="warehouseTable" style="width: 100%" border stripe
+                @selection-change="handleWarehouseSelectionChange">
+                <el-table-column type="selection" width="55">
+                </el-table-column>
+                <el-table-column prop="id" label="仓库ID" width="120">
+                </el-table-column>
+                <el-table-column prop="name" label="仓库名称">
+                </el-table-column>
+                <el-table-column prop="location" label="仓库位置">
+                </el-table-column>
+            </el-table>
+            <span slot="footer" class="dialog-footer">
+                <el-button @click="warehouseDialogVisible = false">取消</el-button>
+                <el-button type="primary" @click="saveWarehouseAuthorization">确认授权</el-button>
+            </span>
+        </el-dialog>
     </div>
 </template>
 
@@ -131,6 +152,10 @@
 export default {
     data() {
         return {
+            warehouseDialogVisible: false,
+            warehouses: [], // 所有仓库列表
+            selectedWarehouses: [], // 当前选中的仓库
+            currentAuthUser: null, // 当前正在设置授权的用户
             users: [],
             searchQuery: '',
             selectedField: '',
@@ -179,8 +204,13 @@ export default {
     created() {
         this.loadUsers();
         this.initAdminUser();
+        this.initWarehouses();
+
     },
     methods: {
+        initWarehouses() {
+            let warehouses = JSON.parse(localStorage.getItem('warehouses')) || [];
+        },
         viewUserProfile(user) {
             // 使用特殊路由参数跳转到用户主页
             this.$router.push({
@@ -348,7 +378,89 @@ export default {
                     behavior: 'smooth'
                 });
             }
+        },
+        authorizeWarehouse(user) {
+            if (!this.isCurrentUserAdmin()) {
+                this.$notify({
+                    title: '权限不足',
+                    message: '只有管理员可以设置仓库授权',
+                    type: 'warning',
+                    iconClass: 'el-icon-warning-outline'
+                });
+                return;
+            }
+
+            this.currentAuthUser = user;
+            this.loadWarehouses();
+            this.warehouseDialogVisible = true;
+        },
+
+        // 加载仓库列表
+        loadWarehouses() {
+            // 从localStorage获取仓库数据
+            this.warehouses = JSON.parse(localStorage.getItem('warehouses')) || [];
+
+            // 设置当前用户已授权的仓库
+            this.$nextTick(() => {
+                if (this.currentAuthUser.authorizedWarehouses) {
+                    this.currentAuthUser.authorizedWarehouses.forEach(warehouseId => {
+                        const warehouse = this.warehouses.find(w => w.id === warehouseId);
+                        if (warehouse) {
+                            this.$refs.warehouseTable.toggleRowSelection(warehouse, true);
+                        }
+                    });
+                }
+            });
+        },
+
+        // 处理仓库选择变化
+        handleWarehouseSelectionChange(selection) {
+            this.selectedWarehouses = selection;
+        },
+
+        // 保存授权设置
+        saveWarehouseAuthorization() {
+            const users = JSON.parse(localStorage.getItem('users')) || [];
+            const userIndex = users.findIndex(u => u.id === this.currentAuthUser.id);
+
+            if (userIndex !== -1) {
+                users[userIndex].authorizedWarehouses = this.selectedWarehouses.map(w => w.id);
+                localStorage.setItem('users', JSON.stringify(users));
+
+                this.$notify({
+                    title: '授权成功',
+                    message: `${this.currentAuthUser.name}的仓库授权已更新`,
+                    type: 'success',
+                    iconClass: 'el-icon-success'
+                });
+
+                this.loadUsers(); // 刷新用户列表
+                this.warehouseDialogVisible = false;
+            }
+        },
+
+        // 检查当前用户是否是管理员
+        isCurrentUserAdmin() {
+            const currentUser = JSON.parse(localStorage.getItem('user'));
+            return currentUser && currentUser.role === 'admin';
+        },
+
+        // 修改getDefaultUser方法
+        getDefaultUser() {
+            return {
+                id: '',
+                username: '',
+                password: '',
+                name: '',
+                role: 'operator',
+                email: '',
+                phone: '',
+                department: '',
+                status: 'active',
+                authorizedWarehouses: [] // 新增字段
+            };
         }
+
     }
 };
 </script>
@@ -472,5 +584,10 @@ export default {
 
 .el-table .el-table__header-wrapper th .cell {
     white-space: nowrap;
+}
+
+/* 授权按钮样式  */
+.authorize-button {
+    margin-left: 10px;
 }
 </style>

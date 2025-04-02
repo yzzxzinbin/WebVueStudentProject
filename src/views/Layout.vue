@@ -13,7 +13,8 @@
               d="M310.208 512.064a187.648 187.648 0 0 1 187.392-187.456 187.712 187.712 0 0 1 184.64 219.456h172.672a338.432 338.432 0 0 0-1.344-75.52l52.416-40.64a54.912 54.912 0 0 0 17.728-73.6l-76.48-132.544a54.976 54.976 0 0 0-72.704-21.44l-61.184 25.024a356.288 356.288 0 0 0-75.392-43.392l-8.96-65.664A54.784 54.784 0 0 0 574.208 64H420.992a54.592 54.592 0 0 0-54.784 52.288l-9.024 65.664a361.088 361.088 0 0 0-75.392 43.392l-61.312-25.024a54.784 54.784 0 0 0-72.576 21.44L71.36 354.496a54.848 54.848 0 0 0 17.984 73.472l52.224 40.64a348.544 348.544 0 0 0 0 87.04l-52.352 40.448a54.784 54.784 0 0 0-17.792 73.6l76.48 132.608c7.424 12.608 19.2 21.76 33.408 25.6a54.208 54.208 0 0 0 39.232-4.352l61.248-25.024c23.04 17.344 48.384 31.872 75.392 43.392l9.024 65.728a54.72 54.72 0 0 0 54.784 52.352h76.48v-260.48a187.584 187.584 0 0 1-187.264-187.456z"
               fill="#8A7CBF" p-id="3198"></path>
           </svg>
-          <span class="system-name">&nbsp; &lt;Warehouse System&gt; </span>
+          <div class="divider"></div>
+          <span class="system-name">&nbsp;仓库管理系统</span>
         </div>
         <el-input v-model="searchQuery" placeholder="请输入搜索内容" class="search-box" @input="handleSearch" clearable>
         </el-input>
@@ -84,6 +85,8 @@
 </template>
 
 <script>
+import { Divider } from 'element-ui';
+
 export default {
   data() {
     return {
@@ -330,7 +333,7 @@ export default {
       localStorage.removeItem('username');
       localStorage.removeItem('selectMenu');
       sessionStorage.removeItem('token');
-    
+
       this.$router.replace('/login').catch(() => { });
       this.$message.success('退出登录成功');
     },
@@ -453,7 +456,9 @@ body {
 
 /* 系统名称样式 */
 .system-name {
-  font-family: 'Courier New', monospace;
+  font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
+  /* 优先使用微软雅黑 */
+  ;
   font-size: 35px;
   font-weight: bold;
   color: var(--text-light);
@@ -694,4 +699,13 @@ span {
   align-items: center;
   width: 100%;
 }
+
+.divider {
+  width: 2px;
+  height: 40px;
+  background-color: #dcdcdc;
+  margin-left: 18px;
+}
+
+
 </style>

@@ -26,7 +26,7 @@
       </div>
       <el-table ref="table" :data="paginatedProducts" height="tableHeight" stripe border highlight-current-row
         style="width: 100%" v-loading="loading">
-        <el-table-column prop="id" label="商品ID" width="150" sortable></el-table-column>
+        <el-table-column prop="id" label="商品ID" width="100" sortable align="center"></el-table-column>
         <el-table-column prop="name" label="商品名称" width="250" sortable></el-table-column>
         <el-table-column prop="warehouseId" label="所属仓库" width="180" sortable>
           <template slot-scope="scope">

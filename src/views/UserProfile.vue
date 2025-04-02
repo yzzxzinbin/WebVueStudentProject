@@ -100,6 +100,7 @@
                 <el-tabs v-model="activeTab" @tab-click="handleTabChange" class="compact-tabs">
                     <el-tab-pane label="登录历史" name="login"></el-tab-pane>
                     <el-tab-pane label="操作记录" name="operations"></el-tab-pane>
+                    <el-tab-pane label="授权仓库" name="warehouses"></el-tab-pane>
                 </el-tabs>
             </div>
             <div class="activity-table">
@@ -126,6 +127,17 @@
                     <el-table-column v-if="activeTab === 'operations'" prop="details" label="操作详情">
                     </el-table-column>
                     <el-table-column v-if="activeTab === 'operations'" prop="warehouse" label="相关仓库" width="150">
+                    </el-table-column>
+                    <el-table-column v-if="activeTab === 'warehouses'" prop="name" label="仓库名称" width="180">
+                    </el-table-column>
+                    <el-table-column v-if="activeTab === 'warehouses'" prop="location" label="仓库位置">
+                    </el-table-column>
+                    <el-table-column v-if="activeTab === 'warehouses'" label="授权状态" width="120">
+                        <template slot-scope="{row}">
+                            <el-tag type="success" size="small" effect="light">
+                                已授权
+                            </el-tag>
+                        </template>
                     </el-table-column>
                 </el-table>
             </div>
@@ -493,7 +505,7 @@ export default {
                             ...item,
                             timestamp: item.timestamp instanceof Date ? item.timestamp : new Date(item.timestamp)
                         }));
-                } else {
+                } else if (this.activeTab === 'operations') {
                     const operations = JSON.parse(localStorage.getItem('operations')) || [];
                     const userOperations = operations.filter(op => op.operator === this.userInfo.username);
 
@@ -505,6 +517,18 @@ export default {
                             warehouse: op.sourceWarehouse || op.targetWarehouse || 'N/A'
                         }))
                         .slice(0, 20);
+                } else if (this.activeTab === 'warehouses') {
+                    // 只加载用户已授权的仓库
+                    const allWarehouses = JSON.parse(localStorage.getItem('warehouses')) || [];
+                    const authorizedIds = this.userInfo.authorizedWarehouses || [];
+
+                    // 只显示已授权的仓库
+                    this.activityData = allWarehouses.filter(warehouse =>
+                        authorizedIds.includes(warehouse.id)
+                    ).map(warehouse => ({
+                        ...warehouse,
+                        status: '已授权' // 添加状态字段
+                    }));
                 }
 
                 this.loading = false;
@@ -852,5 +876,4 @@ export default {
 .el-card .el-alert {
     background-color: rgba(240, 2, 2, 0.1);
 }
-
 </style>
