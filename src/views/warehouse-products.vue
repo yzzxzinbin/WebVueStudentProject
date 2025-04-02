@@ -27,15 +27,20 @@
       <el-table ref="table" :data="paginatedProducts" height="tableHeight" stripe border highlight-current-row
         style="width: 100%" v-loading="loading">
         <el-table-column prop="id" label="商品ID" width="150" sortable></el-table-column>
-        <el-table-column prop="name" label="商品名称" width="280" sortable></el-table-column>
-        <el-table-column prop="features" label="商品特性" width="350"></el-table-column>
+        <el-table-column prop="name" label="商品名称" width="250" sortable></el-table-column>
+        <el-table-column prop="warehouseId" label="所属仓库" width="180" sortable>
+          <template slot-scope="scope">
+            {{ getWarehouseName(scope.row.warehouseId) || '--' }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="features" label="商品特性" width="300"></el-table-column>
         <el-table-column prop="price" label="商品价格" width="160" sortable></el-table-column>
         <el-table-column prop="quantity" label="库存数量" width="150" sortable>
           <template slot-scope="scope">
             <span style="font-weight: bold">{{ scope.row.quantity }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="location" label="存放位置" min-width="200">
+        <el-table-column prop="location" label="存放位置" min-width="100">
           <template slot-scope="scope">
             <span>{{ scope.row.location || '--' }}</span>
           </template>
@@ -114,7 +119,8 @@ export default {
         { label: '商品特性', value: 'features' },
         { label: '商品价格', value: 'price' },
         { label: '库存数量', value: 'quantity' },
-        { label: '存放位置', value: 'location' }
+        { label: '存放位置', value: 'location' },
+        { label: '所属仓库', value: 'warehouseId' }
       ],
       warehouses: [], // 仓库列表
       products: [], // 当前仓库的商品列表
@@ -129,10 +135,33 @@ export default {
   },
   computed: {
     filteredProducts() {
-      if (!this.selectedField || !this.searchQuery) {
-        return this.products;
+      let productsToFilter = this.products;
+
+      if (!this.selectedWarehouse) {
+        const allWarehouseProducts = JSON.parse(localStorage.getItem('warehouseProducts')) || [];
+        productsToFilter = allWarehouseProducts.map(product => {
+          const productInfo = this.allProducts.find(p => p.id === product.id) || {};
+          return {
+            ...product,
+            features: productInfo.features || '',
+            price: productInfo.price || 0,
+            warehouseId: product.warehouseId
+          };
+        });
       }
-      return this.products.filter(product =>
+
+      if (!this.selectedField || !this.searchQuery) {
+        return productsToFilter;
+      }
+
+      // 添加对仓库字段的搜索支持
+      if (this.selectedField === 'warehouseId') {
+        return productsToFilter.filter(product =>
+          this.getWarehouseName(product.warehouseId).includes(this.searchQuery)
+        );
+      }
+
+      return productsToFilter.filter(product =>
         product[this.selectedField]?.toString().includes(this.searchQuery)
       );
     },
@@ -146,6 +175,12 @@ export default {
     }
   },
   methods: {
+    // 获取仓库名称
+    getWarehouseName(warehouseId) {
+      const warehouse = this.warehouses.find(w => w.id === warehouseId);
+      return warehouse ? warehouse.name : '';
+    },
+    // 滚动到顶部
     scrollToTop() {
       const tableWrapper = this.$refs.table.$el.querySelector('.el-table__body-wrapper');
       if (tableWrapper) {
@@ -185,23 +220,33 @@ export default {
       this.allProducts = savedProducts ? JSON.parse(savedProducts) : [];
     },
     loadProducts() {
-      if (!this.selectedWarehouse) {
-        this.products = [];
-        this.total = 0;
-        return;
-      }
       const allWarehouseProducts = JSON.parse(localStorage.getItem('warehouseProducts')) || [];
-      const warehouseProducts = allWarehouseProducts.filter(product => product.warehouseId === this.selectedWarehouse);
 
-      // 合并商品详细信息
-      this.products = warehouseProducts.map(product => {
-        const productInfo = this.allProducts.find(p => p.id === product.id) || {};
-        return {
-          ...product,
-          features: productInfo.features || '',
-          price: productInfo.price || 0
-        };
-      });
+      if (!this.selectedWarehouse) {
+        this.products = allWarehouseProducts.map(product => {
+          const productInfo = this.allProducts.find(p => p.id === product.id) || {};
+          return {
+            ...product,
+            features: productInfo.features || '',
+            price: productInfo.price || 0,
+            warehouseId: product.warehouseId // 确保包含仓库ID
+          };
+        });
+      } else {
+        const warehouseProducts = allWarehouseProducts.filter(
+          product => product.warehouseId === this.selectedWarehouse
+        );
+
+        this.products = warehouseProducts.map(product => {
+          const productInfo = this.allProducts.find(p => p.id === product.id) || {};
+          return {
+            ...product,
+            features: productInfo.features || '',
+            price: productInfo.price || 0,
+            warehouseId: product.warehouseId // 确保包含仓库ID
+          };
+        });
+      }
 
       this.total = this.products.length;
     },

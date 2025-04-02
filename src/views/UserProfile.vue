@@ -818,7 +818,7 @@ export default {
     border-color: rgba(0, 0, 0, 0.1);
     border-radius: 8px;
     flex-direction: column;
-    max-height: calc(99vh - 625px);
+    max-height: calc(99vh - 635px);
     overflow: auto;
     scrollbar-color: rgba(240, 249, 235, 0.4) transparent;
 }
