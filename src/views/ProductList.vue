@@ -21,12 +21,12 @@
                     @keyup.enter.native="handleSearch">
                     <el-button slot="append" icon="el-icon-search" @click="handleSearch"></el-button>
                 </el-input>
-                <el-button type="success" icon="el-icon-plus" @click="openAddDialog"
-                    class="action-button">添加</el-button>
-                <el-button type="primary" icon="el-icon-upload2" @click="importData"
-                    class="action-button">导入</el-button>
-                <el-button type="warning" icon="el-icon-download" @click="exportData"
-                    class="action-button">导出</el-button>
+                <el-button type="success" icon="el-icon-plus" @click="openAddDialog" class="action-button" 
+                    v-if="$permission.canCreateProduct()">添加</el-button>
+                <el-button type="primary" icon="el-icon-upload2" @click="importData" class="action-button" 
+                    v-if="$permission.canCreateProduct()">导入</el-button>
+                <el-button type="warning" icon="el-icon-download" @click="exportData" class="action-button" 
+                    v-if="$permission.canCreateProduct()">导出</el-button>
             </div>
         </el-card>
 
@@ -47,7 +47,8 @@
                 <el-table-column label="操作" width="180" fixed="right" align="center" header-align="center">
                     <template slot-scope="scope">
                         <el-button size="mini" type="primary" @click="editProduct(scope.row)">修改</el-button>
-                        <el-button size="mini" type="danger" @click="deleteProduct(scope.row.id)">删除</el-button>
+                        <el-button size="mini" type="danger" @click="deleteProduct(scope.row.id)" 
+                            v-if="$permission.canDeleteProduct()">删除</el-button>
                     </template>
                 </el-table-column>
             </el-table>
@@ -320,6 +321,10 @@ export default {
          * @Function_Caller 被“导出”按钮点击事件调用
          */
         exportData() {
+            if (!this.$permission.canCreateProduct()) {
+                this.$message.error('您没有导出商品数据的权限');
+                return;
+            }
             const dataStr = JSON.stringify(this.products, null, 2);
             const blob = new Blob([dataStr], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
@@ -403,9 +408,17 @@ export default {
          * @Function_Caller 表格中“删除”按钮点击事件
          */
         deleteProduct(id) {
-            this.products = this.products.filter(product => product.id !== id);
-            this.saveProducts();
-            this.$message.success('删除成功');
+            if (!this.$permission.canDeleteProduct()) {
+                this.$message.error('您没有删除商品的权限');
+                return;
+            }
+            this.$confirm('确定删除该商品吗？', '提示', {
+                type: 'warning'
+            }).then(() => {
+                this.products = this.products.filter(product => product.id !== id);
+                this.saveProducts();
+                this.$message.success('删除成功');
+            }).catch(() => {});
         },
 
         /**
@@ -418,6 +431,10 @@ export default {
          * @Function_Caller “添加”按钮点击事件
          */
         openAddDialog() {
+            if (!this.$permission.canCreateProduct()) {
+                this.$message.error('您没有创建商品的权限');
+                return;
+            }
             this.addForm = { id: '', name: '', features: '', price: '', type: '', supplier: '', createdAt: new Date().toISOString() };
             this.addDialogVisible = true;
         },
@@ -459,6 +476,10 @@ export default {
          * @Function_Caller “导入”按钮点击事件
          */
         importData() {
+            if (!this.$permission.canCreateProduct()) {
+                this.$message.error('您没有导入商品数据的权限');
+                return;
+            }
             const input = document.createElement('input');
             input.type = 'file';
             input.accept = '.json';

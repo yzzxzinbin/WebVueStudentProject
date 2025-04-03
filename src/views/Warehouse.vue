@@ -28,10 +28,10 @@
                 </div>
                 <div class="divider"></div>
                 <div class="action-buttons">
-                    <el-button type="success" icon="el-icon-plus" @click="openAddDialog"
-                        class="action-button">添加</el-button>
-                    <el-button type="primary" icon="el-icon-upload2" @click="importData"
-                        class="action-button">导入</el-button>
+                    <el-button type="success" icon="el-icon-plus" @click="openAddDialog" class="action-button" 
+                        v-if="$permission.canCreateWarehouse()">添加</el-button>
+                    <el-button type="primary" icon="el-icon-upload2" @click="importData" class="action-button" 
+                        v-if="$permission.canCreateWarehouse()">导入</el-button>
                     <el-button type="warning" icon="el-icon-download" @click="exportData"
                         class="action-button">导出</el-button>
                 </div>
@@ -53,8 +53,10 @@
                 <el-table-column prop="manager" label="负责人" width="150"></el-table-column>
                 <el-table-column label="操作" width="180" fixed="right" align="center" header-align="center">
                     <template slot-scope="scope">
-                        <el-button size="mini" type="primary" @click="editWarehouse(scope.row)">修改</el-button>
-                        <el-button size="mini" type="danger" @click="deleteWarehouse(scope.row.id)">删除</el-button>
+                        <el-button size="mini" type="primary" @click="editWarehouse(scope.row)" 
+                            v-if="$permission.canUpdateWarehouse(scope.row.id)">修改</el-button>
+                        <el-button size="mini" type="danger" @click="deleteWarehouse(scope.row.id)" 
+                            v-if="$permission.canDeleteWarehouse()">删除</el-button>
                     </template>
                 </el-table-column>
             </el-table>
@@ -198,16 +200,21 @@ export default {
          * @Function_Meth 根据搜索条件过滤仓库列表:
          *   - 如果未指定搜索字段或查询内容，返回全部仓库
          *   - 否则返回指定字段包含查询内容的仓库
+         *   - 然后应用权限过滤，确保操作员只能看到授权仓库
          * @Function_API 无外部API调用
          * @Function_Caller 被模板的computed属性或组件自身方法引用，用于动态获取筛选后的仓库数组
          */
         filteredWarehouses() {
-            if (!this.selectedField || !this.searchQuery) {
-                return this.warehouses;
+            // 首先应用搜索过滤
+            let result = this.warehouses;
+            if (this.selectedField && this.searchQuery) {
+                result = result.filter(warehouse =>
+                    warehouse[this.selectedField]?.toString().toLowerCase().includes(this.searchQuery.toLowerCase())
+                );
             }
-            return this.warehouses.filter(warehouse =>
-                warehouse[this.selectedField]?.toString().includes(this.searchQuery)
-            );
+            
+            // 然后应用权限过滤，确保操作员只能看到授权的仓库
+            return this.$permission.filterAuthorizedWarehouses(result);
         },
 
         /**
@@ -313,6 +320,11 @@ export default {
          *   - DOM API: 创建下载链接
          */
         exportData() {
+            if (!this.$permission.canCreateWarehouse()) {
+                this.$message.error('您没有导出仓库数据的权限');
+                return;
+            }
+            
             const dataStr = JSON.stringify(this.warehouses, null, 2);
             const blob = new Blob([dataStr], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
@@ -333,11 +345,9 @@ export default {
          */
         loadWarehouses() {
             const savedWarehouses = localStorage.getItem('warehouses');
-            this.warehouses = savedWarehouses ? JSON.parse(savedWarehouses).map(warehouse => ({
-                ...warehouse,
-                capacity: parseInt(warehouse.capacity, 10) || 0 // 确保容量为整数
-            })) : [];
-            this.total = this.warehouses.length;
+            const allWarehouses = savedWarehouses ? JSON.parse(savedWarehouses) : [];
+            this.warehouses = allWarehouses;
+            this.total = this.filteredWarehouses.length;
         },
 
         /**
@@ -365,6 +375,11 @@ export default {
          * @Function_API 无外部API调用
          */
         editWarehouse(warehouse) {
+            if (!this.$permission.canUpdateWarehouse(warehouse.id)) {
+                this.$message.error('您没有修改此仓库的权限');
+                return;
+            }
+            
             this.editForm = { ...warehouse };
             this.editDialogVisible = true;
         },
@@ -399,9 +414,18 @@ export default {
          *   - Element UI Message: 显示操作结果
          */
         deleteWarehouse(id) {
-            this.warehouses = this.warehouses.filter(warehouse => warehouse.id !== id);
-            this.saveWarehouses();
-            this.$message.success('删除成功');
+            if (!this.$permission.canDeleteWarehouse()) {
+                this.$message.error('您没有删除仓库的权限');
+                return;
+            }
+            
+            this.$confirm('确定删除该仓库吗？', '提示', {
+                type: 'warning'
+            }).then(() => {
+                this.warehouses = this.warehouses.filter(warehouse => warehouse.id !== id);
+                this.saveWarehouses();
+                this.$message.success('删除成功');
+            }).catch(() => {});
         },
 
         /**
@@ -412,6 +436,11 @@ export default {
          * @Function_API 无外部API调用
          */
         openAddDialog() {
+            if (!this.$permission.canCreateWarehouse()) {
+                this.$message.error('您没有创建仓库的权限');
+                return;
+            }
+            
             this.addForm = { id: '', name: '', status: '', capacity: '', location: '', manager: '' };
             this.addDialogVisible = true;
         },
@@ -448,6 +477,11 @@ export default {
          *   - Element UI Message: 显示操作结果
          */
         importData() {
+            if (!this.$permission.canCreateWarehouse()) {
+                this.$message.error('您没有导入仓库数据的权限');
+                return;
+            }
+            
             const input = document.createElement('input');
             input.type = 'file';
             input.accept = '.json';

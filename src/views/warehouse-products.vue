@@ -18,8 +18,8 @@
         <div class="search-inputs">
           <el-select v-model="selectedWarehouse" placeholder="选择仓库" clearable class="warehouse-select"
             @change="handleWarehouseChange">
-            <el-option v-for="warehouse in warehouses" :key="warehouse.id" :label="warehouse.name"
-              :value="warehouse.id"></el-option>
+            <el-option v-for="item in authorizedWarehouses" :key="item.id" :label="item.name"
+              :value="item.id"></el-option>
           </el-select>
           <el-select v-model="selectedField" placeholder="选择字段" clearable class="field-select">
             <el-option v-for="item in fields" :key="item.value" :label="item.label" :value="item.value"></el-option>
@@ -43,7 +43,7 @@
         <el-table-column prop="name" label="商品名称" width="250" sortable></el-table-column>
         <el-table-column prop="warehouseId" label="所属仓库" width="180" sortable>
           <template slot-scope="scope">
-            {{ getWarehouseName(scope.row.warehouseId) || '--' }}
+            {{ getWarehouseName(scope.row.warehouseId) }}
           </template>
         </el-table-column>
         <el-table-column prop="features" label="商品特性" width="300"></el-table-column>
@@ -56,6 +56,14 @@
         <el-table-column prop="location" label="存放位置" min-width="100">
           <template slot-scope="scope">
             <span>{{ scope.row.location || '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="220" fixed="right">
+          <template slot-scope="scope">
+            <el-button size="mini" type="primary" @click="editWarehouseProduct(scope.row)" 
+              v-if="$permission.canUpdateWarehouse(scope.row.warehouseId)">修改</el-button>
+            <el-button size="mini" type="danger" @click="deleteWarehouseProduct(scope.row)" 
+              v-if="$permission.canDeleteProduct()">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -95,7 +103,8 @@ export default {
       currentPage: 1,
       pageSize: 20,
       total: 0,
-      loading: false
+      loading: false,
+      authorizedWarehouses: []
     };
   },
   computed: {
@@ -110,35 +119,22 @@ export default {
      * @Function_Caller 被模板的computed属性或组件自身方法引用，用于动态获取筛选后的商品数组
      */
     filteredProducts() {
-      let productsToFilter = this.products;
+      // 首先应用权限过滤
+      let result = this.$permission.filterAuthorizedWarehouseProducts(this.products);
 
-      if (!this.selectedWarehouse) {
-        const allWarehouseProducts = JSON.parse(localStorage.getItem('warehouseProducts')) || [];
-        productsToFilter = allWarehouseProducts.map(product => {
-          const productInfo = this.allProducts.find(p => p.id === product.id) || {};
-          return {
-            ...product,
-            features: productInfo.features || '',
-            price: productInfo.price || 0,
-            warehouseId: product.warehouseId
-          };
-        });
+      // 然后应用仓库筛选
+      if (this.selectedWarehouse) {
+        result = result.filter(item => item.warehouseId === this.selectedWarehouse);
       }
 
-      if (!this.selectedField || !this.searchQuery) {
-        return productsToFilter;
-      }
-
-      // 添加对仓库字段的搜索支持
-      if (this.selectedField === 'warehouseId') {
-        return productsToFilter.filter(product =>
-          this.getWarehouseName(product.warehouseId).includes(this.searchQuery)
+      // 最后应用搜索筛选
+      if (this.selectedField && this.searchQuery) {
+        result = result.filter(item =>
+          String(item[this.selectedField]).toLowerCase().includes(this.searchQuery.toLowerCase())
         );
       }
 
-      return productsToFilter.filter(product =>
-        product[this.selectedField]?.toString().includes(this.searchQuery)
-      );
+      return result;
     },
 
     /**
@@ -174,8 +170,10 @@ export default {
      * @Function_Caller 被表格中仓库名称显示所调用
      */
     getWarehouseName(warehouseId) {
+      if (!warehouseId) return '--';
+      
       const warehouse = this.warehouses.find(w => w.id === warehouseId);
-      return warehouse ? warehouse.name : '';
+      return warehouse ? warehouse.name : warehouseId; // 如果找不到仓库名称，则显示仓库ID而不是空白
     },
 
     /**
@@ -249,7 +247,9 @@ export default {
      */
     loadWarehouses() {
       const savedWarehouses = localStorage.getItem('warehouses');
-      this.warehouses = savedWarehouses ? JSON.parse(savedWarehouses) : [];
+      const allWarehouses = savedWarehouses ? JSON.parse(savedWarehouses) : [];
+      this.warehouses = allWarehouses; // 加载所有仓库数据以便于显示名称
+      this.authorizedWarehouses = this.$permission.filterAuthorizedWarehouses(allWarehouses);
     },
 
     /**
@@ -342,11 +342,112 @@ export default {
         this.$message.success('修改成功');
       }
       this.editDialogVisible = false;
+    },
+
+    /**
+     * @Function_Para 删除仓库商品
+     *   @param {Object} product - 要删除的商品对象
+     * @Function_Meth 检查权限并删除商品
+     * @Function_API localStorage, Element UI Message, Element UI Confirm
+     * @Function_Caller 被表格操作列中的删除按钮调用
+     */
+    deleteWarehouseProduct(product) {
+      if (!this.$permission.canDeleteProduct()) {
+        this.$message.error('您没有删除商品的权限');
+        return;
+      }
+
+      if (!this.$permission.canUpdateWarehouse(product.warehouseId)) {
+        this.$message.error('您没有操作此仓库的权限');
+        return;
+      }
+
+      this.$confirm('确定删除该商品吗？', '提示', {
+        type: 'warning'
+      }).then(() => {
+        // 删除商品逻辑
+      }).catch(() => {});
+    },
+
+    /**
+     * @Function_Para 编辑仓库商品
+     *   @param {Object} product - 要编辑的商品对象
+     * @Function_Meth 检查权限并编辑商品
+     * @Function_API localStorage, Element UI Message
+     * @Function_Caller 被表格操作列中的编辑按钮调用
+     */
+    editWarehouseProduct(product) {
+      if (!this.$permission.canUpdateWarehouse(product.warehouseId)) {
+        this.$message.error('您没有修改此仓库商品的权限');
+        return;
+      }
+
+      // 编辑商品逻辑
+    },
+
+    /**
+     * @Function_Para 导入数据
+     *   无参数
+     * @Function_Meth 检查权限并导入数据
+     * @Function_API localStorage, Element UI Message
+     * @Function_Caller 被导入按钮点击事件调用
+     */
+    importData() {
+      if (!this.$permission.canCreateProduct()) {
+        this.$message.error('您没有导入商品数据的权限');
+        return;
+      }
+
+      // 导入数据逻辑
+
+      // 确保在导入时过滤掉没有权限的仓库商品
+      const authorizedWarehouseIds = this.$permission.getAuthorizedWarehouseIds();
+
+      // 在导入后的处理中添加权限过滤
+      if (Array.isArray(importedData)) {
+        const filteredData = importedData.filter(item => {
+          if (!authorizedWarehouseIds.includes(item.warehouseId)) {
+            hasUnauthorized = true;
+            return false;
+          }
+          return true;
+        });
+
+        if (hasUnauthorized) {
+          this.$message.warning('部分商品因权限不足已被过滤');
+        }
+
+        // 使用过滤后的数据
+        this.warehouseProducts = [...this.warehouseProducts, ...filteredData];
+      }
+    },
+
+    /**
+     * @Function_Para 导出数据
+     *   无参数
+     * @Function_Meth 检查权限并导出数据
+     * @Function_API localStorage, Element UI Message
+     * @Function_Caller 被导出按钮点击事件调用
+     */
+    exportData() {
+      if (!this.$permission.isAdmin()) {
+        this.$message.error('您没有导出仓库商品数据的权限');
+        return;
+      }
+
+      // 导出数据逻辑
+
+      // 导出时只导出有权限的仓库商品
+      const authorizedProducts = this.$permission.filterAuthorizedWarehouseProducts(this.warehouseProducts);
+
+      const dataStr = JSON.stringify(authorizedProducts, null, 2);
+      // 其他导出逻辑...
     }
   },
   created() {
     this.loadWarehouses();
     this.loadAllProducts();
+    this.loadProducts();
   }
 };
 </script>

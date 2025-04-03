@@ -79,7 +79,7 @@
         <el-table-column prop="quantity" label="数量" width="100" sortable></el-table-column>
         <el-table-column prop="sourceWarehouse" label="源仓库" width="150"></el-table-column>
         <el-table-column prop="targetWarehouse" label="目标仓库" width="150"></el-table-column>
-        <el-table-column prop="operator" label="操作人" width="120"></el-table-column>
+        <el-table-column prop="applicant" label="申请人" width="120"></el-table-column>
         <el-table-column prop="status" label="状态" width="100" sortable></el-table-column>
         <el-table-column prop="timestamp" label="时间" width="200" sortable></el-table-column>
       </el-table>
@@ -106,7 +106,7 @@ export default {
         quantity: 1,
         sourceWarehouse: '',
         targetWarehouse: '',
-        operator: '' // 新增字段：操作人
+        applicant: '' // 修改字段名：从 operator 改为 applicant
       },
       warehouses: [], // 仓库列表
       products: [],   // 商品列表
@@ -140,9 +140,13 @@ export default {
 
       const warehouseProducts = JSON.parse(localStorage.getItem('warehouseProducts')) || [];
       // 获取包含当前商品且有库存的仓库ID列表
-      const availableWarehouseIds = warehouseProducts
+      let availableWarehouseIds = warehouseProducts
         .filter(p => p.id === this.operationForm.productId && p.quantity > 0)
         .map(p => p.warehouseId);
+      
+      // 添加权限过滤
+      const authorizedWarehouseIds = this.$permission.getAuthorizedWarehouseIds();
+      availableWarehouseIds = availableWarehouseIds.filter(id => authorizedWarehouseIds.includes(id));
 
       // 返回匹配的仓库
       return this.warehouses.filter(warehouse =>
@@ -186,7 +190,8 @@ export default {
      */
     loadWarehouses() {
       const savedWarehouses = localStorage.getItem('warehouses');
-      this.warehouses = savedWarehouses ? JSON.parse(savedWarehouses) : [];
+      const allWarehouses = savedWarehouses ? JSON.parse(savedWarehouses) : [];
+      this.warehouses = this.$permission.filterAuthorizedWarehouses(allWarehouses);
     },
 
     /**
@@ -208,7 +213,8 @@ export default {
      * @Function_Meth 根据操作类型重置相关字段:
      *   1. 重置源仓库和目标仓库
      *   2. 清空商品ID
-     *   3. 对入库操作设置特殊的源仓库标记
+     *   3. 对入库操作设置特殊的源仓库标记为"External"
+     *   4. 对出库操作设置特殊的目标仓库标记为"External"
      * @Function_Orgi Template引用: 操作类型选择器的@change事件
      * @Function_API 无外部API调用
      */
@@ -216,9 +222,11 @@ export default {
       this.operationForm.sourceWarehouse = '';
       this.operationForm.targetWarehouse = '';
       this.operationForm.productId = ''; // 清空商品ID以便重新选择
-      this.operationForm.targetWarehouse.placeholder = '';
+      
       if (this.operationForm.type === '入库') {
-        this.operationForm.sourceWarehouse = 'external'; // 标记为外部来源
+        this.operationForm.sourceWarehouse = 'External'; // 标记为外部来源，修改为大写E
+      } else if (this.operationForm.type === '出库') {
+        this.operationForm.targetWarehouse = 'External'; // 出库时设置目标仓库为External
       }
     },
 
@@ -289,7 +297,7 @@ export default {
      * @Function_Meth 处理商品入库/出库/转调操作:
      *   1. 验证表单数据
      *   2. 检查商品合法性
-     *   3. 设置操作人
+     *   3. 设置申请人信息
      *   4. 针对出库，验证库存是否足够
      *   5. 更新库存数据
      *   6. 生成操作记录
@@ -313,8 +321,26 @@ export default {
           return;
         }
 
-        // 设置操作人
-        this.operationForm.operator = localStorage.getItem('username') || '未知用户';
+        // 检查仓库权限
+        if (this.operationForm.sourceWarehouse && 
+            this.operationForm.sourceWarehouse !== 'External' && 
+            !this.$permission.canOperateWarehouse(this.operationForm.sourceWarehouse)) {
+          this.logOperation('ERR', '您没有操作此源仓库的权限');
+          this.$message.error('您没有操作此源仓库的权限');
+          return;
+        }
+
+        if (this.operationForm.targetWarehouse && 
+            this.operationForm.targetWarehouse !== 'External' && 
+            !this.$permission.canOperateWarehouse(this.operationForm.targetWarehouse)) {
+          this.logOperation('ERR', '您没有操作此目标仓库的权限');
+          this.$message.error('您没有操作此目标仓库的权限');
+          return;
+        }
+
+        // 设置申请人 - 修复用户名称问题
+        const user = JSON.parse(localStorage.getItem('user')) || {};
+        this.operationForm.applicant = user.username || '未知用户';
 
         // 检查出库合法性
         if (this.operationForm.type === '出库') {
@@ -334,25 +360,16 @@ export default {
         const operationSuccess = this.updateStock();
 
         if (operationSuccess) {
-          // 生成唯一操作ID
-          const operationId = this.generateOperationId();
-
-          // 保存操作记录
+          // 生成唯一操作ID并记录成功日志，仅调用一次logOperation
           const operationData = {
-            id: operationId,
-            ...this.operationForm,
-            timestamp: new Date().toISOString(),
-            status: 'SUC'
+            status: 'SUC',
+            message: '操作成功'
           };
-          const operations = JSON.parse(localStorage.getItem('operations')) || [];
-          operations.push(operationData);
-          localStorage.setItem('operations', JSON.stringify(operations));
-
-          this.loadLogs(); // 重新加载日志
-          this.logOperation('SUC', '操作成功');
-     
+          this.logOperation('SUC', '操作成功'); // 成功时只记录一次日志
+          
           this.$message.success('操作提交成功');
           this.resetForm();
+          this.loadLogs(); // 重新加载日志以更新显示
         }
       });
     },
@@ -392,6 +409,11 @@ export default {
      *   - DOM API: 创建下载链接
      */
     exportLogs() {
+      if (!this.$permission.isAdmin()) {
+        this.$message.error('您没有导出日志的权限');
+        return;
+      }
+      
       const operations = JSON.parse(localStorage.getItem('operations')) || [];
       const dataStr = JSON.stringify(operations, null, 2);
       const blob = new Blob([dataStr], { type: 'application/json' });
@@ -570,15 +592,31 @@ export default {
      *   - Element UI Message: 显示操作消息
      */
     logOperation(status, message) {
+      // 设置申请人 - 修复用户名称问题
+      const user = JSON.parse(localStorage.getItem('user')) || {};
+      
+      // 生成唯一的操作ID
+      const operationId = this.generateOperationId();
+      
       const operationData = {
-        id: this.generateOperationId(),
+        id: operationId,
         ...this.operationForm,
+        applicant: user.username || '未知用户', // 确保这里也正确设置了申请人
         timestamp: new Date().toISOString(),
         status
       };
+      
+      // 读取现有操作记录
       const operations = JSON.parse(localStorage.getItem('operations')) || [];
-      operations.push(operationData);
-      localStorage.setItem('operations', JSON.stringify(operations));
+      
+      // 检查是否已经存在相同ID的记录，避免重复添加
+      const existingIndex = operations.findIndex(op => op.id === operationId);
+      if (existingIndex === -1) {
+        // 不存在相同ID的记录，添加新记录
+        operations.push(operationData);
+        localStorage.setItem('operations', JSON.stringify(operations));
+      }
+      
       if (status === 'ERR') {
         this.$message.error(message);
       }
@@ -600,14 +638,26 @@ export default {
     /**
      * @Function_Para 加载日志
      *   无参数
-     * @Function_Meth 从localStorage加载操作记录
+     * @Function_Meth 从localStorage加载操作记录并处理字段名称兼容性
      * @Function_Orgi 在组件created生命周期中自动调用
      * @Function_API
      *   - localStorage API: 读取操作记录
      */
     loadLogs() {
       const savedLogs = localStorage.getItem('operations');
-      this.logs = savedLogs ? JSON.parse(savedLogs) : [];
+      let logs = savedLogs ? JSON.parse(savedLogs) : [];
+      
+      // 兼容处理：将旧的operator字段映射到applicant
+      this.logs = logs.map(log => {
+        // 如果有老数据使用operator字段，则转换为applicant
+        if (log.operator && !log.applicant) {
+          return {
+            ...log,
+            applicant: log.operator
+          };
+        }
+        return log;
+      });
     },
 
     /**

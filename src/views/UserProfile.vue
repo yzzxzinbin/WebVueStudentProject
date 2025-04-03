@@ -627,7 +627,9 @@ export default {
                         }));
                 } else if (this.activeTab === 'operations') {
                     const operations = JSON.parse(localStorage.getItem('operations')) || [];
-                    const userOperations = operations.filter(op => op.operator === this.userInfo.username);
+                    // 修改这里：使用 applicant 字段而不是 operator 字段
+                    const userOperations = operations.filter(op => 
+                        op.applicant === this.userInfo.username || op.operator === this.userInfo.username); // 兼容旧数据
 
                     this.activityData = userOperations
                         .map(op => ({
