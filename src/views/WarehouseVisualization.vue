@@ -510,7 +510,7 @@ export default {
       }
     }
   },
-  
+
   computed: {
     metricCards() {
       return [
@@ -609,7 +609,7 @@ export default {
       });
     }
   },
-  
+
   methods: {
     async loadData() {
       try {
@@ -639,7 +639,7 @@ export default {
       this.charts.trend = echarts.init(this.$refs.trendChart);
       this.charts.gauge = echarts.init(this.$refs.gaugeChart);
       this.charts.scatter3d = echarts.init(this.$refs.scatter3dChart);
-      
+
       this.updateCharts();
     },
 
@@ -1024,17 +1024,17 @@ export default {
       this.loading.scatter3d = true;
       this.updateScatter3DChart();
     },
- /**
-     * @Function_Para 准备3D散点图数据
-     *   无参数
-     * @Function_Meth 构建3D散点图所需的数据:
-     *   1. 从操作记录重建库存历史变化
-     *   2. 生成仓库、时间、库存量三维数据点
-     * @Function_Orgi 被updateScatter3DChart方法调用
-     * @Function_API
-     *   - localStorage API: 读取操作和仓库数据
-     */
-     prepareScatter3DData() {
+    /**
+        * @Function_Para 准备3D散点图数据
+        *   无参数
+        * @Function_Meth 构建3D散点图所需的数据:
+        *   1. 从操作记录重建库存历史变化
+        *   2. 生成仓库、时间、库存量三维数据点
+        * @Function_Orgi 被updateScatter3DChart方法调用
+        * @Function_API
+        *   - localStorage API: 读取操作和仓库数据
+        */
+    prepareScatter3DData() {
       const operations = JSON.parse(localStorage.getItem('operations')) || [];
       const warehouses = JSON.parse(localStorage.getItem('warehouses')) || [];
       const products = JSON.parse(localStorage.getItem('products')) || [];
@@ -1054,12 +1054,12 @@ export default {
       });
 
       // 3. 计算初始库存状态（所有仓库初始库存为0）
-      const initialTime = sortedOps.length > 0 
-        ? new Date(sortedOps[0].timestamp) 
+      const initialTime = sortedOps.length > 0
+        ? new Date(sortedOps[0].timestamp)
         : new Date();
       // 将初始时间设为第一条操作记录前1小时
       initialTime.setHours(initialTime.getHours() - 1);
-      
+
       warehouses.forEach(warehouse => {
         warehouseHistory[warehouse.id].points.push({
           time: initialTime.getTime(),
@@ -1079,7 +1079,7 @@ export default {
         const opTime = new Date(op.timestamp).getTime();
         const opType = op.type;
         const quantity = op.quantity;
-        
+
         // 处理不同类型的操作
         switch (opType) {
           case '入库':
@@ -1088,7 +1088,7 @@ export default {
               if (warehouseHistory[op.targetWarehouse]) {
                 // 如果目标仓库存在，更新其状态
                 currentStock[op.targetWarehouse] += quantity;
-                
+
                 warehouseHistory[op.targetWarehouse].points.push({
                   time: opTime,
                   stock: currentStock[op.targetWarehouse],
@@ -1101,7 +1101,7 @@ export default {
               }
             }
             break;
-            
+
           case '出库':
             if (op.sourceWarehouse && op.sourceWarehouse !== 'External') {
               // 记录操作前的状态
@@ -1110,7 +1110,7 @@ export default {
                 currentStock[op.sourceWarehouse] -= quantity;
                 // 确保库存不会变为负数
                 currentStock[op.sourceWarehouse] = Math.max(0, currentStock[op.sourceWarehouse]);
-                
+
                 warehouseHistory[op.sourceWarehouse].points.push({
                   time: opTime,
                   stock: currentStock[op.sourceWarehouse],
@@ -1123,14 +1123,14 @@ export default {
               }
             }
             break;
-            
+
           case '转调':
             // 源仓库减少库存
             if (op.sourceWarehouse && op.sourceWarehouse !== 'External' && warehouseHistory[op.sourceWarehouse]) {
               currentStock[op.sourceWarehouse] -= quantity;
               // 确保库存不会变为负数
               currentStock[op.sourceWarehouse] = Math.max(0, currentStock[op.sourceWarehouse]);
-              
+
               warehouseHistory[op.sourceWarehouse].points.push({
                 time: opTime,
                 stock: currentStock[op.sourceWarehouse],
@@ -1141,11 +1141,11 @@ export default {
                 applicant: op.applicant || op.operator // 兼容旧数据
               });
             }
-            
+
             // 目标仓库增加库存
             if (op.targetWarehouse && op.targetWarehouse !== 'External' && warehouseHistory[op.targetWarehouse]) {
               currentStock[op.targetWarehouse] += quantity;
-              
+
               warehouseHistory[op.targetWarehouse].points.push({
                 time: opTime,
                 stock: currentStock[op.targetWarehouse],
@@ -1157,6 +1157,38 @@ export default {
               });
             }
             break;
+        }
+      });
+
+      // 为每个仓库添加最新状态数据点
+      const nowTime = new Date().getTime();
+      warehouses.forEach(warehouse => {
+        // 计算仓库当前实际库存（从warehouseProducts中获取）
+        const warehouseProducts = JSON.parse(localStorage.getItem('warehouseProducts')) || [];
+        const productsInWarehouse = warehouseProducts.filter(p => p.warehouseId === warehouse.id);
+        const currentTotalStock = productsInWarehouse.reduce((sum, p) => sum + p.quantity, 0);
+
+        // 确保仓库有历史记录
+        if (warehouseHistory[warehouse.id]) {
+          // 检查是否需要添加实时点（如果最后一个点不是当前时间点）
+          const lastPoint = warehouseHistory[warehouse.id].points[warehouseHistory[warehouse.id].points.length - 1];
+
+          // 如果最后一个数据点距离现在超过1小时，或者库存不一致，则添加一个实时点
+          const needRealTimePoint = !lastPoint ||
+            (nowTime - lastPoint.time > 3600000) ||
+            (currentTotalStock !== lastPoint.stock);
+
+          if (needRealTimePoint) {
+            warehouseHistory[warehouse.id].points.push({
+              time: nowTime,
+              stock: currentTotalStock,
+              status: '实时',
+              opId: 'realtime-' + warehouse.id,
+              productId: '',
+              quantity: 0,
+              applicant: '系统'
+            });
+          }
         }
       });
 
@@ -1228,60 +1260,62 @@ export default {
         // 过滤出该仓库的所有数据点
         const warehouseData = data.filter(item => item[0] === warehouseId);
         // 从第一个点获取仓库名（如果有）
-        const warehouseName = warehouseData.length > 0 && warehouseData[0][3] ? 
+        const warehouseName = warehouseData.length > 0 && warehouseData[0][3] ?
           warehouseData[0][3] : warehouseId;
-        
+
         // 根据仓库索引获取颜色，使用循环确保颜色不会用尽
         const colorIndex = index % colors.length;
         const baseColor = colors[colorIndex];
-        
+
         // 1. 添加折线系列 - 显示趋势
         lineSeries.push({
           type: 'line3D',
           name: warehouseName,
           data: warehouseData,
           lineStyle: {
-            width: 4,
+            width: 6, // 增加折线宽度，提高剧烈变化处的可视性
             // 每个仓库使用不同的基础颜色
             color: baseColor,
-            opacity: 0.7
+            opacity: 0.8 // 增加透明度使线条更明显
           },
           // 不渲染折线上的点，由scatter3D负责
           symbol: 'none',
           silent: true // 使折线不响应交互
         });
-        
+
         // 2. 添加散点系列 - 用于交互和展示数据点
         scatterSeries.push({
           type: 'scatter3D',
           name: warehouseName,
           data: warehouseData,
           // 增大点的大小以便于交互
-          symbolSize: 10,
+          symbolSize: 14, // 增大数据点尺寸，提高可选中性
+          // 增加选中区域大小，超出实际点的显示大小，使点击更容易
+          emphasis: {
+            scale: 1.5, // 悬停时放大点
+            itemStyle: {
+              color: '#111111', // 黑色高亮
+              opacity: 1,
+              borderWidth: 2,
+              borderColor: '#fff',
+              shadowBlur: 20, // 增加阴影模糊半径
+              shadowColor: 'rgba(0, 0, 0, 0.7)'
+            }
+          },
           itemStyle: {
             // 设置点的颜色
-            color: function(params) {
+            color: function (params) {
               const status = params.data[5];
               if (status === '初始状态') return '#999';
               if (status === '入库' || status === '转入') return '#67C23A';
               if (status === '出库' || status === '转出') return '#F56C6C';
+              if (status === '实时') return '#409EFF'; // 为实时状态添加特殊颜色
               return baseColor; // 默认使用仓库的基本颜色
             },
             // 透明度和边框
             opacity: 1,
             borderWidth: 1,
             borderColor: '#fff'
-          },
-          // 设置鼠标悬停时的样式
-          emphasis: {
-            itemStyle: {
-              color: '#ffd700', // 金色高亮
-              opacity: 1,
-              borderWidth: 2,
-              borderColor: '#fff',
-              shadowBlur: 10,
-              shadowColor: 'rgba(0, 0, 0, 0.5)'
-            }
           }
         });
       });
@@ -1296,10 +1330,12 @@ export default {
           show: true,
           trigger: 'item', // 确保只有点击或悬停数据点时才显示tooltip
           showDelay: 50,
-          formatter: function(params) {
+          enterable: true, // 允许鼠标进入提示框内部
+          extraCssText: 'width:280px; white-space:normal; word-wrap:break-word;', // 允许提示框文本自动换行
+          formatter: function (params) {
             if (!params.data) return '';
-            
-            // 确保获取的是实际点击的数据点的正确信息，而不是折线起始点
+
+            // 确保获取的是实际点击的数据点的正确信息
             const data = params.data;
             const warehouseName = data[3] || data[0];
             const time = new Date(data[1]);
@@ -1309,17 +1345,17 @@ export default {
             const productId = data[6] || '';
             const quantity = data[7] || 0;
             const applicant = data[8] || '';
-            
+
             // 增强HTML格式以提高可读性
             let tooltipHtml = `
-              <div style="padding: 8px; border-radius: 4px; background: rgba(50, 50, 50, 0.6); color: white;">
+              <div style="padding: 8px; border-radius: 4px; background: rgba(50, 50, 50, 0.75); color: white;">
                 <div style="font-weight:bold; color: #00bbff; font-size: 14px; border-bottom:1px solid #666; padding-bottom:5px; margin-bottom:5px">
                   ${warehouseName}仓库
                 </div>
-                <div style="line-height: 1.5;">
+                <div style="line-height: 1.6;">
                   <div style="display: flex; justify-content: space-between;">
                     <span style="color: #bbb;">时间:</span> 
-                    <b style="margin-left: 10px;">${format(time, 'yyyy-MM-dd HH:mm')}</b>
+                    <b style="margin-left: 10px;">${format(time, 'yyyy-MM-dd HH:mm:ss')}</b>
                   </div>
                   <div style="display: flex; justify-content: space-between;">
                     <span style="color: #bbb;">库存总量:</span> 
@@ -1330,13 +1366,13 @@ export default {
                     <b style="margin-left: 10px; color: ${status === '入库' || status === '转入' ? '#67C23A' : status === '出库' || status === '转出' ? '#F56C6C' : '#999'}">${status}</b>
                   </div>
             `;
-            
+
             // 非初始状态时显示更多操作详情
-            if (opId !== 'initial') {
+            if (opId !== 'initial' && !opId.startsWith('realtime-')) {
               tooltipHtml += `
                   <div style="display: flex; justify-content: space-between;">
                     <span style="color: #bbb;">操作ID:</span> 
-                    <span style="margin-left: 10px; font-family: monospace; font-size: 12px;">${opId.substring(0, 12)}...</span>
+                    <span style="margin-left: 8px; font-family: monospace; font-size: 14px; color: #fff;">${opId}</span>
                   </div>
                   <div style="display: flex; justify-content: space-between;">
                     <span style="color: #bbb;">商品ID:</span> 
@@ -1352,25 +1388,54 @@ export default {
                   </div>
               `;
             }
-            
+
             tooltipHtml += `
                 </div>
               </div>
             `;
-            
+
             return tooltipHtml;
+          }
+        },
+        // 坐标轴指示器配置
+        axisPointer: {
+          link: { show: true },
+          label: {
+            show: true,
+            formatter: function (params) {
+              // 根据坐标轴类型格式化标签
+              if (params.axisDimension === 'y') {
+                // 时间轴
+                return format(new Date(params.value), 'MM-dd HH:mm:ss');
+              } else if (params.axisDimension === 'z') {
+                // 库存数量轴 - 显示当前参考线对应的库存数量
+                return params.value.toFixed(0) + '件';
+              }
+              return params.value;
+            }
+          },
+          lineStyle: {
+            type: 'dashed', // 设置为虚线
+            width: 1.5,     // 稍微加粗
+            color: 'rgba(128, 128, 128, 0.3)' // 修改为更淡的灰色，降低不透明度
           }
         },
         // 其他网格设置
         grid3D: {
           viewControl: {
             autoRotate: this.autoRotate,
-            autoRotateSpeed: 6,
+            autoRotateSpeed: 5,
             distance: 150 * (100 / this.scatter3dZoom),
             alpha: 25,
             beta: 35,
+            // 提高交互灵敏度
+            rotateSensitivity: 1.5, // 增加旋转灵敏度
+            zoomSensitivity: 1.8,   // 增加缩放灵敏度
+            damping: 0.2,           // 减小阻尼，使旋转更流畅
             animation: true,
-            animationDurationUpdate: 500
+            animationDurationUpdate: 500,
+            // 允许更灵活的交互
+            panSensitivity: 1.2     // 增加平移灵敏度
           },
           light: {
             main: {
@@ -1383,39 +1448,79 @@ export default {
             ambient: {
               intensity: 0.4
             }
+          },
+          // 增强网格线
+          splitLine: {
+            show: true,
+            lineStyle: {
+              color: 'rgba(205, 205, 205, 0.5)',
+              width: 1
+            }
+          },
+          // 轴线设置
+          axisLine: {
+            lineStyle: {
+              color: '#AAA',
+              width: 2
+            }
+          },
+          // 轴标签样式增强
+          axisLabel: {
+            fontSize: 12,
+            textStyle: {
+              color: '#555'
+            }
           }
         },
         xAxis3D: {
           type: 'category',
           name: '仓库',
-          data: warehouseIds
+          data: warehouseIds,
+          // 轴名称样式
+          nameTextStyle: {
+            color: '#5',
+            fontSize: 14,
+            fontWeight: 'bold'
+          }
         },
         yAxis3D: {
           type: 'time',
           name: '时间',
           axisLabel: {
-            formatter: function(value) {
+            formatter: function (value) {
               const date = new Date(value);
-              return format(date, 'MM-dd HH:mm');
+              return format(date, 'MM-dd HH:mm:ss'); // 增加秒级显示
             }
+          },
+          // 轴名称样式
+          nameTextStyle: {
+            color: '#555',
+            fontSize: 14,
+            fontWeight: 'bold'
           }
         },
         zAxis3D: {
           type: 'value',
           name: '库存总量',
-          minInterval: 1
+          minInterval: 1,
+          // 轴名称样式
+          nameTextStyle: {
+            color: '#555',
+            fontSize: 14,
+            fontWeight: 'bold'
+          }
         },
         series: allSeries
       };
 
       this.charts.scatter3d.setOption(option);
       this.loading.scatter3d = false;
-      
+
       // 添加点击事件处理
       this.charts.scatter3d.off('click');
       this.charts.scatter3d.on('click', this.handleChartClick);
     },
-    
+
     /**
      * @Function_Para 处理图表点击事件
      *   @param {Object} params - 事件参数对象
@@ -1425,40 +1530,47 @@ export default {
      */
     handleChartClick(params) {
       if (!params.data) return;
-      
+
       const data = params.data;
       const warehouseName = data[3] || data[0];
       const time = new Date(data[1]);
       const stock = data[2];
       const status = data[5] || '状态未知';
-      
-      let infoMessage = `${warehouseName}仓库 - ${format(time, 'yyyy-MM-dd HH:mm')} - 库存: ${stock}`;
-      
-      if (data[4] !== 'initial') {
+      const opId = data[4] || '未知ID';
+
+      let infoMessage = `${warehouseName}仓库 - ${format(time, 'yyyy-MM-dd HH:mm:ss')} - 库存: ${stock}`;
+
+      if (data[4] !== 'initial' && !opId.startsWith('realtime-')) {
         const productId = data[6] || '';
         const quantity = data[7] || 0;
         infoMessage += ` - ${status}操作: ${productId} (${quantity > 0 ? '+' : ''}${quantity})`;
+        // 添加完整操作ID
+        infoMessage += `\n操作ID: ${opId}`;
+      } else if (status === '实时') {
+        infoMessage += ` - ${status}状态: 当前库存`;
       }
-      
+
       this.$message({
         message: infoMessage,
-        type: status === '入库' || status === '转入' ? 'success' : 
-              status === '出库' || status === '转出' ? 'warning' : 'info',
-        duration: 4000,
+        type: status === '入库' || status === '转入' ? 'success' :
+          status === '出库' || status === '转出' ? 'warning' :
+            status === '实时' ? 'info' : 'info',
+        duration: 5000, // 增加显示时间以便查看更多信息
         showClose: true
       });
     },
 
-    handleZoomChange(value) {
-      this.scatter3dZoom = value;
-      this.updateScatter3DChart();
-    },
-
     handleAutoRotateChange() {
-      this.updateScatter3DChart();
+      // 修复自动旋转控制功能
+      if (this.charts.scatter3d) {
+        const currentOption = this.charts.scatter3d.getOption();
+        // 直接修改视图控制选项
+        currentOption.grid3D[0].viewControl.autoRotate = this.autoRotate;
+        this.charts.scatter3d.setOption(currentOption, false); // false表示不合并选项，直接替换
+      }
     }
   },
-  
+
   mounted() {
     this.loadData();
     this.$nextTick(() => {
@@ -1466,7 +1578,7 @@ export default {
     });
     window.addEventListener('resize', this.handleResize);
   },
-  
+
   beforeDestroy() {
     window.removeEventListener('resize', this.handleResize);
     Object.values(this.charts).forEach(chart => {
