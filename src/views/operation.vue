@@ -21,12 +21,8 @@
               </el-col>
               <el-col :span="24">
                 <el-form-item label="商品ID" prop="productId">
-                  <el-autocomplete 
-                    v-model="operationForm.productId" 
-                    @clear="operationForm.productId = ''"
-                    :fetch-suggestions="queryProduct" 
-                    placeholder="请输入商品ID" 
-                    @select="handleProductSelect"
+                  <el-autocomplete v-model="operationForm.productId" @clear="operationForm.productId = ''"
+                    :fetch-suggestions="queryProduct" placeholder="请输入商品ID" @select="handleProductSelect"
                     :disabled="!operationForm.type">
                   </el-autocomplete>
                 </el-form-item>
@@ -70,7 +66,7 @@
     </el-card>
 
     <!-- 日志数据表单 -->
-    <el-card shadow="hover" class="table-card">
+    <el-card ref="logTableCard" shadow="hover" class="table-card">
       <div class="table-header">
         <span class="table-title">操作日志</span>
         <el-tag type="info">共 {{ totalLogs }} 条记录</el-tag>
@@ -352,6 +348,9 @@ export default {
           operations.push(operationData);
           localStorage.setItem('operations', JSON.stringify(operations));
 
+          this.loadLogs(); // 重新加载日志
+          this.logOperation('SUC', '操作成功');
+     
           this.$message.success('操作提交成功');
           this.resetForm();
         }
@@ -687,7 +686,8 @@ export default {
 
 /* 卡片样式 */
 /* 为表单卡片和表格卡片设置统一的圆角和背景 */
-.form-card, .table-card {
+.form-card,
+.table-card {
   border-radius: 8px;
   background-color: rgba(245, 245, 250, 1);
   backdrop-filter: blur(10px);
@@ -707,6 +707,7 @@ export default {
 /* 操作表单样式 */
 /* 设置表单的最大宽度和居中显示 */
 .operation-form {
+  
   max-width: 800px;
   margin: 0 auto;
 }
