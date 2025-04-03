@@ -454,19 +454,19 @@
 <script>
 import * as echarts from 'echarts'
 import { format } from 'date-fns'
-import { Scatter3DChart } from 'echarts-gl/charts';
-import { Grid3DComponent } from 'echarts-gl/components';
-import { TooltipComponent, LegendComponent } from 'echarts/components';
-import { CanvasRenderer } from 'echarts/renderers';
-import { Line3DChart } from 'echarts-gl/charts';
+import { Scatter3DChart, Line3DChart } from 'echarts-gl/charts'
+import { Grid3DComponent } from 'echarts-gl/components'
+import { TooltipComponent, LegendComponent } from 'echarts/components'
+import { CanvasRenderer } from 'echarts/renderers'
+
 echarts.use([
   Scatter3DChart,
+  Line3DChart,
   Grid3DComponent,
   TooltipComponent,
   LegendComponent,
-  CanvasRenderer,
-  Line3DChart
-]);
+  CanvasRenderer
+])
 
 export default {
   name: 'WarehouseDashboard',
@@ -512,18 +512,6 @@ export default {
   },
   
   computed: {
-    /**
-     * @Function_Para 生成指标卡片数据
-     *   无参数
-     *   Template引用: 顶部统计卡片的v-for循环
-     * @Function_Meth 根据当前数据生成四个关键指标的显示信息:
-     *   1. 仓库总数
-     *   2. 商品种类
-     *   3. 总库存量
-     *   4. 平均使用率
-     * @Function_Orgi 在template中通过v-for="(card, index) in metricCards"引用
-     * @Function_API 无外部API调用，使用其他计算属性
-     */
     metricCards() {
       return [
         {
@@ -552,59 +540,26 @@ export default {
           value: `${this.avgUsageRate}%`,
           color: this.getUsageColor(this.avgUsageRate),
           icon: 'el-icon-data-line',
-          trend: 0 // 可根据需要添加趋势计算
+          trend: 0
         }
       ]
     },
 
-    /**
-     * @Function_Para 获取仓库总数
-     *   无参数
-     * @Function_Meth 返回系统中的仓库数量
-     * @Function_Orgi 被metricCards计算属性调用，生成第一个指标卡片数据
-     * @Function_API 无外部API调用
-     */
     warehouseCount() {
       return this.warehouses.length
     },
 
-    /**
-     * @Function_Para 获取商品类型数量
-     *   无参数
-     * @Function_Meth 计算系统中不重复的商品类型数量
-     * @Function_Orgi 被metricCards计算属性调用，生成第二个指标卡片数据
-     * @Function_API
-     *   - JavaScript Set: 用于去重计算
-     */
     productTypes() {
       const types = new Set()
       this.products.forEach(p => types.add(p.type))
       return types.size
     },
 
-    /**
-     * @Function_Para 计算总库存量
-     *   无参数
-     * @Function_Meth 累加所有仓库中的商品数量
-     * @Function_Orgi 被metricCards计算属性调用，生成第三个指标卡片数据
-     * @Function_API 无外部API调用
-     */
     totalStock() {
       return this.warehouseProducts.reduce((sum, p) => sum + p.quantity, 0)
     },
 
-    /**
-     * @Function_Para 计算平均使用率
-     *   无参数
-     * @Function_Meth 计算仓库的平均容量使用率:
-     *   - 单仓模式: 返回选中仓库的使用率
-     *   - 全局模式: 计算所有仓库的平均使用率
-     * @Function_Orgi 被metricCards计算属性调用，生成第四个指标卡片数据
-     *                同时在updateGaugeChart方法中使用显示仪表盘
-     * @Function_API 无外部API调用
-     */
     avgUsageRate() {
-      // 如果有选中的仓库，只计算该仓库的使用率
       if (this.selectedWarehouse) {
         const warehouse = this.warehouses.find(w => w.id === this.selectedWarehouse);
         if (!warehouse) return 0;
@@ -613,24 +568,12 @@ export default {
         return usageData ? usageData.usageRate : 0;
       }
 
-      // 否则计算全局平均使用率
       if (this.warehouseUsageRates.length === 0) return 0;
       const total = this.warehouseUsageRates.reduce(
         (sum, w) => sum + parseFloat(w.usageRate), 0);
       return (total / this.warehouseUsageRates.length).toFixed(1);
     },
 
-    /**
-     * @Function_Para 获取最近操作记录
-     *   无参数
-     *   Template引用: 操作记录表格的:data属性
-     * @Function_Meth 处理并格式化最近的操作记录:
-     *   1. 按时间排序
-     *   2. 获取前8条记录
-     *   3. 添加商品名称信息
-     * @Function_Orgi 在template中通过el-table的:data="recentOperations"属性引用
-     * @Function_API 无外部API调用
-     */
     recentOperations() {
       return [...this.operations]
         .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
@@ -641,28 +584,11 @@ export default {
         }))
     },
 
-    /**
-     * @Function_Para 根据当前选择过滤仓库商品
-     *   无参数
-     * @Function_Meth 根据选中的仓库筛选相关的商品数据
-     * @Function_Orgi 被updateProductChart方法调用，用于过滤商品分布图数据
-     * @Function_API 无外部API调用
-     */
     filteredWarehouseProducts() {
       if (!this.selectedWarehouse) return this.warehouseProducts
       return this.warehouseProducts.filter(p => p.warehouseId === this.selectedWarehouse)
     },
 
-    /**
-     * @Function_Para 计算各仓库使用率
-     *   无参数
-     * @Function_Meth 计算每个仓库的容量使用情况:
-     *   1. 计算每个仓库的商品总量
-     *   2. 根据仓库容量计算使用率百分比
-     *   3. 返回包含详细信息的对象数组
-     * @Function_Orgi 被avgUsageRate计算属性和updateGaugeChart方法调用
-     * @Function_API 无外部API调用
-     */
     warehouseUsageRates() {
       return this.warehouses.map(warehouse => {
         const productsInWarehouse = this.warehouseProducts.filter(
@@ -670,7 +596,7 @@ export default {
         );
         const totalQuantity = productsInWarehouse.reduce((sum, p) => sum + p.quantity, 0);
         const usageRate = warehouse.capacity > 0
-          ? Math.min((totalQuantity / warehouse.capacity) * 100, 100) // 不超过100%
+          ? Math.min((totalQuantity / warehouse.capacity) * 100, 100)
           : 0;
 
         return {
@@ -685,18 +611,6 @@ export default {
   },
   
   methods: {
-    /**
-     * @Function_Para 加载数据
-     *   无参数
-     * @Function_Meth 从localStorage加载所有可视化所需数据:
-     *   1. 仓库数据
-     *   2. 商品数据
-     *   3. 仓库商品关联数据
-     *   4. 操作记录数据
-     * @Function_Orgi 在组件mounted生命周期中调用，以及refreshOperations方法中调用
-     * @Function_API
-     *   - localStorage API: 读取各类数据
-     */
     async loadData() {
       try {
         this.loading = { product: true, heatmap: true, trend: true, gauge: true, scatter3d: true };
@@ -705,7 +619,6 @@ export default {
         this.warehouseProducts = JSON.parse(localStorage.getItem('warehouseProducts')) || [];
         this.operations = JSON.parse(localStorage.getItem('operations')) || [];
 
-        // 确保capacity是数字类型
         this.warehouses.forEach(w => {
           w.capacity = Number(w.capacity) || 0;
         });
@@ -713,26 +626,13 @@ export default {
         this.loading = { product: false, heatmap: false, trend: false, gauge: false, scatter3d: false };
         this.$nextTick(() => {
           this.updateCharts();
-          this.updateTrendChart();  // 手动触发趋势图更新
-          this.updateGaugeChart();  // 手动触发仪表图更新
-          this.updateScatter3DChart();  // 手动触发散点图更新
+          this.updateTrendChart();
+          this.updateGaugeChart();
+          this.updateScatter3DChart();
         });
       }
     },
 
-    /**
-     * @Function_Para 初始化所有图表
-     *   无参数
-     * @Function_Meth 初始化所有可视化图表:
-     *   1. 商品分布图
-     *   2. 热力图
-     *   3. 趋势图
-     *   4. 仪表图
-     *   5. 3D散点图
-     * @Function_Orgi 在组件mounted生命周期钩子的$nextTick回调中调用
-     * @Function_API
-     *   - ECharts: 创建各类图表实例
-     */
     initCharts() {
       this.charts.product = echarts.init(this.$refs.productChart);
       this.charts.heatmap = echarts.init(this.$refs.heatmapChart);
@@ -743,13 +643,6 @@ export default {
       this.updateCharts();
     },
 
-    /**
-     * @Function_Para 更新所有图表
-     *   无参数
-     * @Function_Meth 触发所有图表的更新方法
-     * @Function_Orgi 多处被调用：initCharts方法、loadData方法、以及selectedWarehouse变化时
-     * @Function_API 无外部API调用
-     */
     updateCharts() {
       this.updateProductChart();
       this.updateHeatmapChart();
@@ -758,16 +651,6 @@ export default {
       this.updateScatter3DChart();
     },
 
-    /**
-     * @Function_Para 更新趋势图表
-     *   无参数
-     *   Template引用: 由趋势天数选择器触发
-     * @Function_Meth 根据选择的时间范围(7天/30天)更新入库出库趋势图
-     * @Function_Orgi 在updateCharts方法中调用；通过template中趋势天数选择器的@change事件直接调用
-     * @Function_API
-     *   - date-fns format: 格式化日期
-     *   - ECharts: 配置和渲染图表
-     */
     updateTrendChart() {
       if (!this.charts.trend) return
       if (this.warehouses.length === 0 || this.warehouseProducts.length === 0) {
@@ -777,11 +660,10 @@ export default {
       const days = parseInt(this.trendDays)
       this.trendData = {
         dates: Array.from({ length: days }, (_, i) =>
-          format(new Date().setDate(new Date().getDate() - days + i + 1), 'MM-dd')
-        ),
+          format(new Date(new Date().setDate(new Date().getDate() - days + i + 1)), 'MM-dd')),
         in: Array.from({ length: days }, () => Math.floor(Math.random() * 100) + 50),
         out: Array.from({ length: days }, () => Math.floor(Math.random() * 80) + 30)
-      }
+      };
 
       const option = {
         tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
@@ -827,30 +709,18 @@ export default {
       this.loading.trend = false
     },
 
-    /**
-     * @Function_Para 更新仪表盘图表
-     *   无参数
-     *   Template引用: 由警戒值选择器触发
-     * @Function_Meth 更新仓库容量使用率仪表盘:
-     *   - 全局模式: 显示平均使用率
-     *   - 单仓模式: 显示选中仓库的使用率
-     * @Function_Orgi 在updateCharts方法中调用；通过template中警戒值选择器的@change事件直接调用
-     * @Function_API
-     *   - ECharts: 配置和渲染仪表盘
-     */
     updateGaugeChart() {
       if (!this.charts.gauge) return;
 
-      // 全局模式 - 显示平均使用率
       if (!this.selectedWarehouse) {
         const option = {
           series: [{
             type: 'gauge',
-            center: ['50%', '60%'], // 调整中心位置
-            radius: '90%', // 调整半径
+            center: ['50%', '60%'],
+            radius: '90%',
             detail: {
               formatter: '{value}%',
-              offsetCenter: [0, '70%'], // 将详情文字下移
+              offsetCenter: [0, '70%'],
               fontSize: 16,
               fontWeight: 'bold'
             },
@@ -876,7 +746,6 @@ export default {
         return;
       }
 
-      // 单个仓库模式
       const warehouse = this.warehouses.find(w => w.id === this.selectedWarehouse);
       if (!warehouse) return;
 
@@ -886,15 +755,14 @@ export default {
       const option = {
         series: [{
           type: 'gauge',
-          center: ['50%', '60%'], // 调整中心位置
-          radius: '90%', // 调整半径
+          center: ['50%', '60%'],
+          radius: '90%',
           detail: {
             formatter: `{value}%\n${usageData.used}/${usageData.capacity}`,
-            offsetCenter: [0, '70%'], // 将详情文字下移
+            offsetCenter: [0, '70%'],
             fontSize: 16,
             fontWeight: 'bold',
             rich: {
-              // 可以添加更丰富的文本样式
               value: {
                 fontSize: 24,
                 color: this.getUsageColor(usageRate),
@@ -922,10 +790,9 @@ export default {
               ]
             }
           },
-          // 添加标题
           title: {
             show: true,
-            offsetCenter: [0, '-40%'], // 标题位置
+            offsetCenter: [0, '-40%'],
             fontSize: 14,
             color: '#606266'
           }
@@ -935,35 +802,13 @@ export default {
       this.charts.gauge.setOption(option);
     },
 
-    /**
-     * @Function_Para 根据使用率返回颜色
-     *   @param {number} rate - 使用率百分比
-     * @Function_Meth 根据使用率返回对应的颜色代码:
-     *   - <30%: 绿色(安全)
-     *   - <70%: 黄色(警告)
-     *   - >=70%: 红色(危险)
-     * @Function_Orgi 被metricCards计算属性和updateGaugeChart方法调用，设置仪表盘颜色
-     * @Function_API 无外部API调用
-     */
     getUsageColor(rate) {
       rate = parseFloat(rate);
-      if (rate < 30) return '#67C23A';  // 绿色
-      if (rate < 70) return '#E6A23C';  // 黄色
-      return '#F56C6C';                 // 红色
+      if (rate < 30) return '#67C23A';
+      if (rate < 70) return '#E6A23C';
+      return '#F56C6C';
     },
 
-    /**
-     * @Function_Para 更新商品分布图表
-     *   无参数
-     *   Template引用: 由TopN选择器触发
-     * @Function_Meth 更新商品类型分布饼图:
-     *   1. 统计各类型商品数量
-     *   2. 按数量排序并截取前N项
-     *   3. 配置并渲染饼图
-     * @Function_Orgi 在updateCharts方法中调用；通过template中TopN选择器的@change事件直接调用
-     * @Function_API
-     *   - ECharts: 配置和渲染饼图
-     */
     updateProductChart() {
       if (!this.charts.product) return
 
@@ -1050,30 +895,16 @@ export default {
       this.charts.product.setOption(option)
     },
 
-    /**
-     * @Function_Para 更新热力图
-     *   无参数
-     * @Function_Meth 更新操作活动热力图:
-     *   1. 准备热力图数据(按日期统计操作次数)
-     *   2. 计算日期范围
-     *   3. 配置并渲染热力图
-     * @Function_Orgi 在updateCharts方法中调用
-     * @Function_API
-     *   - ECharts: 配置和渲染热力图
-     */
     updateHeatmapChart() {
       if (!this.charts.heatmap) return
 
-      // Prepare heatmap data
       const heatmapData = this.prepareHeatmapData()
 
-      // 如果没有数据，显示空图表提示
       if (heatmapData.length === 0) {
         this.showEmptyChart(this.charts.heatmap, '暂无操作数据')
         return
       }
 
-      // 获取日期范围
       const dateRange = this.getHeatmapRange()
 
       const option = {
@@ -1124,39 +955,19 @@ export default {
       this.charts.heatmap.setOption(option)
     },
 
-    /**
-     * @Function_Para 准备热力图数据
-     *   无参数
-     * @Function_Meth 将操作记录转换为热力图所需的数据格式:
-     *   按日期统计操作次数，返回[日期,次数]格式的数组
-     * @Function_Orgi 被updateHeatmapChart方法调用
-     * @Function_API 无外部API调用
-     */
     prepareHeatmapData() {
-      // Group operations by date
       const dateCounts = {}
       this.operations.forEach(op => {
         const date = new Date(op.timestamp)
-        // 标准化日期，忽略时间部分
         const dateStr = new Date(date.getFullYear(), date.getMonth(), date.getDate()).toISOString()
         dateCounts[dateStr] = (dateCounts[dateStr] || 0) + 1
       })
 
-      // Convert to heatmap format
       return Object.entries(dateCounts).map(([dateStr, count]) => {
         return [dateStr, count]
       })
     },
 
-    /**
-     * @Function_Para 获取热力图日期范围
-     *   无参数
-     * @Function_Meth 计算热力图应显示的日期范围:
-     *   基于操作记录的最早和最晚日期，扩展到完整月份
-     * @Function_Orgi 被updateHeatmapChart方法调用
-     * @Function_API
-     *   - date-fns format: 格式化日期
-     */
     getHeatmapRange() {
       if (this.operations.length === 0) {
         const now = new Date()
@@ -1169,22 +980,12 @@ export default {
       const minDate = new Date(Math.min(...dates))
       const maxDate = new Date(Math.max(...dates))
 
-      // Adjust range to show full months
       const startDate = new Date(minDate.getFullYear(), minDate.getMonth(), 1)
       const endDate = new Date(maxDate.getFullYear(), maxDate.getMonth() + 1, 0)
 
       return [format(startDate, 'yyyy-MM-dd'), format(endDate, 'yyyy-MM-dd')]
     },
 
-    /**
-     * @Function_Para 显示空图表
-     *   @param {Object} chartInstance - ECharts实例
-     *   @param {string} text - 显示的文本
-     * @Function_Meth 为没有数据的图表显示友好提示
-     * @Function_Orgi 被多个图表更新方法调用，当数据为空时显示提示信息
-     * @Function_API
-     *   - ECharts: 配置图表
-     */
     showEmptyChart(chartInstance, text) {
       chartInstance.setOption({
         graphic: {
@@ -1201,199 +1002,29 @@ export default {
       })
     },
 
-    /**
-     * @Function_Para 刷新操作数据
-     *   无参数
-     *   Template引用: 刷新按钮的点击事件
-     * @Function_Meth 重新加载所有数据并更新图表
-     * @Function_Orgi 通过template中刷新按钮的@click事件调用
-     * @Function_API 无外部API调用
-     */
     refreshOperations() {
       this.loadData()
     },
 
-    /**
-     * @Function_Para 格式化时间戳
-     *   @param {string} timestamp - ISO格式时间戳
-     *   Template引用: 操作记录表格的时间列
-     * @Function_Meth 将时间戳格式化为可读的日期时间格式
-     * @Function_Orgi 在template中通过表格格式化器调用: formatTime(scope.row.timestamp)
-     * @Function_API
-     *   - date-fns format: 格式化日期
-     */
     formatTime(timestamp) {
       return format(new Date(timestamp), 'yyyy-MM-dd HH:mm')
     },
 
-    /**
-     * @Function_Para 表格行样式类名生成器
-     *   @param {Object} row - 表格行数据
-     *   Template引用: 表格的:row-class-name属性
-     * @Function_Meth 根据操作类型(正/负)返回对应的CSS类名
-     * @Function_Orgi 在template中通过表格的:row-class-name属性调用
-     * @Function_API 无外部API调用
-     */
     tableRowClassName({ row }) {
       return row.quantity >= 0 ? 'positive-row' : 'negative-row'
     },
 
-    /**
-     * @Function_Para 处理窗口大小调整
-     *   无参数
-     * @Function_Meth 当浏览器窗口大小变化时调整所有图表大小
-     * @Function_Orgi 作为window的resize事件监听器在mounted钩子中注册
-     * @Function_API
-     *   - ECharts: 调整图表大小
-     */
     handleResize() {
       Object.values(this.charts).forEach(chart => {
         if (chart) chart.resize();
       });
     },
 
-    /**
-     * @Function_Para 刷新3D图表
-     *   无参数
-     *   Template引用: 3D图表刷新按钮
-     * @Function_Meth 重新加载并渲染3D散点图
-     * @Function_Orgi 通过template中3D图表刷新按钮的@click事件调用
-     * @Function_API 无外部API调用
-     */
     refresh3DChart() {
       this.loading.scatter3d = true;
       this.updateScatter3DChart();
     },
-
-    /**
-     * @Function_Para 更新3D散点图
-     *   无参数
-     * @Function_Meth 生成并渲染仓库库存变化的3D可视化:
-     *   1. 准备3D数据点
-     *   2. 验证数据有效性
-     *   3. 配置并渲染3D图表
-     * @Function_Orgi 在updateCharts方法中调用；通过refresh3DChart方法调用；
-     *                以及通过template中缩放滑块和自动旋转开关事件直接调用
-     * @Function_API
-     *   - ECharts-GL: 配置和渲染3D图表
-     *   - date-fns format: 格式化日期
-     */
-    updateScatter3DChart() {
-      if (!this.charts.scatter3d) return;
-
-      const data = this.prepareScatter3DData().filter(item => {
-        return (
-          item[0] &&
-          !isNaN(new Date(item[1]).getTime()) &&
-          !isNaN(item[2])
-        );
-      });
-
-      if (data.length === 0) {
-        this.showEmptyChart(this.charts.scatter3d, '暂无三维数据');
-        this.loading.scatter3d = false;
-        return;
-      }
-
-      const seriesData = {};
-      data.forEach(item => {
-        const warehouseId = item[0];
-        if (!seriesData[warehouseId]) {
-          seriesData[warehouseId] = {
-            name: item[3],
-            points: []
-          };
-        }
-        seriesData[warehouseId].points.push(item);
-      });
-
-      const option = {
-        backgroundColor: 'transparent',
-        tooltip: {
-          formatter: params => {
-            const pointData = params.data.value || [];
-            let timeStr;
-            try {
-              timeStr = format(new Date(pointData[1]), 'yyyy-MM-dd HH:mm');
-            } catch (e) {
-              timeStr = '时间数据异常';
-              console.error('时间格式化错误:', pointData[1], e);
-            }
-            return `
-          <strong>${params.seriesName}</strong><br/>
-          时间: ${timeStr}<br/>
-          库存总量: ${pointData[2] || 0}<br/>
-          状态: ${pointData[5] || '未知'}<br/>
-          操作ID: ${pointData[4] || '初始状态'}
-        `;
-          }
-        },
-        grid3D: {
-          viewControl: {
-            autoRotate: this.autoRotate, // 使用变量控制自动旋转
-            autoRotateSpeed: 10,
-            distance: 150 * (this.scatter3dZoom / 100), // 根据缩放比例调整距离
-            alpha: 40,
-            beta: 60,
-            zoomSensitivity: 0, // 禁用鼠标缩放
-            rotateSensitivity: 1 // 保持旋转灵敏度
-          },
-          axisPointer: {
-            lineStyle: { color: '#fff' }
-          }
-        },
-        xAxis3D: {
-          type: 'category',
-          name: '仓库',
-          data: Object.keys(seriesData), // 仓库ID列表
-          axisLabel: {
-            interval: 0,
-            rotate: 45,
-            fontSize: 10,
-            formatter: (value) => {
-              return seriesData[value]?.name || value; // 显示仓库名称
-            }
-          }
-        },
-        yAxis3D: {
-          type: 'time',
-          name: '时间',
-          axisLabel: {
-            formatter: (value) => format(new Date(value), 'MM-dd HH:mm')
-          }
-        },
-        zAxis3D: {
-          type: 'value',
-          name: '库存总量'
-        },
-        series: Object.entries(seriesData).map(([warehouseId, warehouse]) => ({
-          type: 'line3D', // 关键修改：使用 line3D 替代 scatter3D
-          name: warehouse.name,
-          data: warehouse.points.map(point => ({
-            value: point,
-            itemStyle: {
-              color: point[5] === '操作后' ? '#c23531' : '#61a0a8' // 颜色区分
-            }
-          })),
-          lineStyle: {
-            width: 3,
-            opacity: 0.8
-          },
-          symbol: 'circle', // 保留散点标记
-          symbolSize: 8,
-          emphasis: { // 高亮样式
-            lineStyle: { width: 4 },
-            symbolSize: 12
-          }
-        }))
-      };
-
-      this.charts.scatter3d.setOption(option);
-      this.loading.scatter3d = false;
-
-    },
-
-    /**
+ /**
      * @Function_Para 准备3D散点图数据
      *   无参数
      * @Function_Meth 构建3D散点图所需的数据:
@@ -1403,15 +1034,15 @@ export default {
      * @Function_API
      *   - localStorage API: 读取操作和仓库数据
      */
-    prepareScatter3DData() {
+     prepareScatter3DData() {
       const operations = JSON.parse(localStorage.getItem('operations')) || [];
       const warehouses = JSON.parse(localStorage.getItem('warehouses')) || [];
       const products = JSON.parse(localStorage.getItem('products')) || [];
 
-      // 1. 按时间排序所有操作
-      const sortedOps = [...operations].sort((a, b) =>
-        new Date(a.timestamp) - new Date(b.timestamp)
-      );
+      // 1. 按时间排序所有操作，并且只保留成功的操作（状态为SUC）
+      const sortedOps = [...operations]
+        .filter(op => op.status === 'SUC') // 只处理成功的操作
+        .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
       // 2. 初始化每个仓库的库存历史记录
       const warehouseHistory = {};
@@ -1423,18 +1054,22 @@ export default {
       });
 
       // 3. 计算初始库存状态（所有仓库初始库存为0）
+      const initialTime = sortedOps.length > 0 
+        ? new Date(sortedOps[0].timestamp) 
+        : new Date();
+      // 将初始时间设为第一条操作记录前1小时
+      initialTime.setHours(initialTime.getHours() - 1);
+      
       warehouses.forEach(warehouse => {
         warehouseHistory[warehouse.id].points.push({
-          time: sortedOps.length > 0
-            ? new Date(sortedOps[0].timestamp).getTime() - 3600000 // 第一个操作前一h
-            : new Date().getTime() - 3600000, // 如果没有操作，使用当前时间前一h
+          time: initialTime.getTime(),
           stock: 0,
-          operationId: 'initial',
-          status: '初始状态'
+          status: '初始状态',
+          opId: 'initial'
         });
       });
 
-      // 4. 重建库存变化历史（更精确的方法）
+      // 4. 重建库存变化历史
       const currentStock = {};
       warehouses.forEach(warehouse => {
         currentStock[warehouse.id] = 0;
@@ -1444,106 +1079,386 @@ export default {
         const opTime = new Date(op.timestamp).getTime();
         const opType = op.type;
         const quantity = op.quantity;
-
-        // 记录操作前的状态（仅用于调试，正式版本可以去掉）
-        /*
-        warehouses.forEach(warehouse => {
-          warehouseHistory[warehouse.id].points.push({
-            time: opTime - 1, // 操作前1毫秒
-            stock: currentStock[warehouse.id],
-            operationId: op.id,
-            status: '操作前'
-          });
-        });
-        */
-
+        
         // 处理不同类型的操作
         switch (opType) {
           case '入库':
-            if (op.targetWarehouse) {
-              currentStock[op.targetWarehouse] = (currentStock[op.targetWarehouse] || 0) + quantity;
+            if (op.targetWarehouse && op.targetWarehouse !== 'External') {
+              // 记录操作前的状态
+              if (warehouseHistory[op.targetWarehouse]) {
+                // 如果目标仓库存在，更新其状态
+                currentStock[op.targetWarehouse] += quantity;
+                
+                warehouseHistory[op.targetWarehouse].points.push({
+                  time: opTime,
+                  stock: currentStock[op.targetWarehouse],
+                  status: '入库',
+                  opId: op.id,
+                  productId: op.productId,
+                  quantity: op.quantity,
+                  applicant: op.applicant || op.operator // 兼容旧数据
+                });
+              }
             }
             break;
-
+            
           case '出库':
-            if (op.sourceWarehouse) {
-              currentStock[op.sourceWarehouse] = Math.max(0, (currentStock[op.sourceWarehouse] || 0) - quantity);
+            if (op.sourceWarehouse && op.sourceWarehouse !== 'External') {
+              // 记录操作前的状态
+              if (warehouseHistory[op.sourceWarehouse]) {
+                // 如果源仓库存在，更新其状态
+                currentStock[op.sourceWarehouse] -= quantity;
+                // 确保库存不会变为负数
+                currentStock[op.sourceWarehouse] = Math.max(0, currentStock[op.sourceWarehouse]);
+                
+                warehouseHistory[op.sourceWarehouse].points.push({
+                  time: opTime,
+                  stock: currentStock[op.sourceWarehouse],
+                  status: '出库',
+                  opId: op.id,
+                  productId: op.productId,
+                  quantity: op.quantity,
+                  applicant: op.applicant || op.operator // 兼容旧数据
+                });
+              }
             }
             break;
-
+            
           case '转调':
-            if (op.sourceWarehouse && op.targetWarehouse) {
-              currentStock[op.sourceWarehouse] = Math.max(0, (currentStock[op.sourceWarehouse] || 0) - quantity);
-              currentStock[op.targetWarehouse] = (currentStock[op.targetWarehouse] || 0) + quantity;
+            // 源仓库减少库存
+            if (op.sourceWarehouse && op.sourceWarehouse !== 'External' && warehouseHistory[op.sourceWarehouse]) {
+              currentStock[op.sourceWarehouse] -= quantity;
+              // 确保库存不会变为负数
+              currentStock[op.sourceWarehouse] = Math.max(0, currentStock[op.sourceWarehouse]);
+              
+              warehouseHistory[op.sourceWarehouse].points.push({
+                time: opTime,
+                stock: currentStock[op.sourceWarehouse],
+                status: '转出',
+                opId: op.id,
+                productId: op.productId,
+                quantity: op.quantity,
+                applicant: op.applicant || op.operator // 兼容旧数据
+              });
+            }
+            
+            // 目标仓库增加库存
+            if (op.targetWarehouse && op.targetWarehouse !== 'External' && warehouseHistory[op.targetWarehouse]) {
+              currentStock[op.targetWarehouse] += quantity;
+              
+              warehouseHistory[op.targetWarehouse].points.push({
+                time: opTime,
+                stock: currentStock[op.targetWarehouse],
+                status: '转入',
+                opId: op.id,
+                productId: op.productId,
+                quantity: op.quantity,
+                applicant: op.applicant || op.operator // 兼容旧数据
+              });
             }
             break;
         }
-
-        // 记录操作后的状态
-        warehouses.forEach(warehouse => {
-          warehouseHistory[warehouse.id].points.push({
-            time: opTime,
-            stock: currentStock[warehouse.id],
-            operationId: op.id,
-            status: '操作后'
-          });
-        });
       });
 
-      // 5. 转换为3D图表需要的数据格式
+      // 5. 转换为3D图表需要的数据格式 [warehouseId, time值, stock值, warehouseName, opId, status, 更多操作详情...]
       const result = [];
       Object.entries(warehouseHistory).forEach(([warehouseId, history]) => {
         history.points.forEach(point => {
           result.push([
-            warehouseId,          // x轴: 仓库ID
-            point.time,          // y轴: 时间
-            point.stock,         // z轴: 库存总量
-            history.name,        // 仓库名称
-            point.operationId,   // 操作ID
-            point.status         // 状态
+            warehouseId,
+            point.time,
+            point.stock,
+            warehouseHistory[warehouseId].name,
+            point.opId,
+            point.status,
+            point.productId || '',
+            point.quantity || 0,
+            point.applicant || ''
           ]);
         });
       });
 
       return result;
     },
-
     /**
-     * @Function_Para 处理缩放比例变化
-     *   @param {number} value - 缩放百分比
-     *   Template引用: 缩放滑块的@change事件
-     * @Function_Meth 调整3D图表的视距
-     * @Function_Orgi 通过template中缩放滑块的@change事件调用
-     * @Function_API 无外部API调用
+     * @Function_Para 更新3D折线图
+     *   无参数
+     * @Function_Meth 生成并渲染仓库库存变化的3D可视化
+     * @Function_API
+     *   - ECharts-GL: 配置和渲染3D图表
+     *   - date-fns format: 格式化日期
      */
+    updateScatter3DChart() {
+      if (!this.charts.scatter3d) return;
+
+      const data = this.prepareScatter3DData().filter(item => {
+        return item && item.length >= 3 && !isNaN(item[1]) && !isNaN(item[2]);
+      });
+
+      if (data.length === 0) {
+        this.showEmptyChart(this.charts.scatter3d, '暂无三维数据');
+        this.loading.scatter3d = false;
+        return;
+      }
+
+      // 获取所有唯一的仓库ID
+      const warehouseIds = Array.from(new Set(data.map(item => item[0])));
+
+      // 定义一组对比鲜明的颜色，用于区分不同仓库
+      const colors = [
+        '#FF6B6B', // 红色
+        '#4ECDC4', // 青绿色
+        '#FFD166', // 黄色
+        '#6A0572', // 紫色
+        '#1A535C', // 深青色
+        '#F76F8E', // 粉色
+        '#2E86AB', // 蓝色
+        '#F19A3E', // 橙色
+        '#44AF69', // 绿色
+        '#9984D4', // 淡紫色
+        '#4B4E6D', // 靛蓝色
+        '#E16036'  // 砖红色
+      ];
+
+      // 准备两组系列：一组用于散点，一组用于折线
+      const scatterSeries = [];
+      const lineSeries = [];
+
+      warehouseIds.forEach((warehouseId, index) => {
+        // 过滤出该仓库的所有数据点
+        const warehouseData = data.filter(item => item[0] === warehouseId);
+        // 从第一个点获取仓库名（如果有）
+        const warehouseName = warehouseData.length > 0 && warehouseData[0][3] ? 
+          warehouseData[0][3] : warehouseId;
+        
+        // 根据仓库索引获取颜色，使用循环确保颜色不会用尽
+        const colorIndex = index % colors.length;
+        const baseColor = colors[colorIndex];
+        
+        // 1. 添加折线系列 - 显示趋势
+        lineSeries.push({
+          type: 'line3D',
+          name: warehouseName,
+          data: warehouseData,
+          lineStyle: {
+            width: 4,
+            // 每个仓库使用不同的基础颜色
+            color: baseColor,
+            opacity: 0.7
+          },
+          // 不渲染折线上的点，由scatter3D负责
+          symbol: 'none',
+          silent: true // 使折线不响应交互
+        });
+        
+        // 2. 添加散点系列 - 用于交互和展示数据点
+        scatterSeries.push({
+          type: 'scatter3D',
+          name: warehouseName,
+          data: warehouseData,
+          // 增大点的大小以便于交互
+          symbolSize: 10,
+          itemStyle: {
+            // 设置点的颜色
+            color: function(params) {
+              const status = params.data[5];
+              if (status === '初始状态') return '#999';
+              if (status === '入库' || status === '转入') return '#67C23A';
+              if (status === '出库' || status === '转出') return '#F56C6C';
+              return baseColor; // 默认使用仓库的基本颜色
+            },
+            // 透明度和边框
+            opacity: 1,
+            borderWidth: 1,
+            borderColor: '#fff'
+          },
+          // 设置鼠标悬停时的样式
+          emphasis: {
+            itemStyle: {
+              color: '#ffd700', // 金色高亮
+              opacity: 1,
+              borderWidth: 2,
+              borderColor: '#fff',
+              shadowBlur: 10,
+              shadowColor: 'rgba(0, 0, 0, 0.5)'
+            }
+          }
+        });
+      });
+
+      // 合并所有系列
+      const allSeries = [...lineSeries, ...scatterSeries];
+
+      const option = {
+        backgroundColor: 'transparent',
+        // 改进tooltip的交互和显示
+        tooltip: {
+          show: true,
+          trigger: 'item', // 确保只有点击或悬停数据点时才显示tooltip
+          showDelay: 50,
+          formatter: function(params) {
+            if (!params.data) return '';
+            
+            // 确保获取的是实际点击的数据点的正确信息，而不是折线起始点
+            const data = params.data;
+            const warehouseName = data[3] || data[0];
+            const time = new Date(data[1]);
+            const stock = data[2];
+            const status = data[5] || '状态未知';
+            const opId = data[4] || '未知ID';
+            const productId = data[6] || '';
+            const quantity = data[7] || 0;
+            const applicant = data[8] || '';
+            
+            // 增强HTML格式以提高可读性
+            let tooltipHtml = `
+              <div style="padding: 8px; border-radius: 4px; background: rgba(50, 50, 50, 0.6); color: white;">
+                <div style="font-weight:bold; color: #00bbff; font-size: 14px; border-bottom:1px solid #666; padding-bottom:5px; margin-bottom:5px">
+                  ${warehouseName}仓库
+                </div>
+                <div style="line-height: 1.5;">
+                  <div style="display: flex; justify-content: space-between;">
+                    <span style="color: #bbb;">时间:</span> 
+                    <b style="margin-left: 10px;">${format(time, 'yyyy-MM-dd HH:mm')}</b>
+                  </div>
+                  <div style="display: flex; justify-content: space-between;">
+                    <span style="color: #bbb;">库存总量:</span> 
+                    <b style="margin-left: 10px; color: ${stock > 100 ? '#67C23A' : stock > 50 ? '#E6A23C' : '#F56C6C'}">${stock}</b>
+                  </div>
+                  <div style="display: flex; justify-content: space-between;">
+                    <span style="color: #bbb;">状态:</span> 
+                    <b style="margin-left: 10px; color: ${status === '入库' || status === '转入' ? '#67C23A' : status === '出库' || status === '转出' ? '#F56C6C' : '#999'}">${status}</b>
+                  </div>
+            `;
+            
+            // 非初始状态时显示更多操作详情
+            if (opId !== 'initial') {
+              tooltipHtml += `
+                  <div style="display: flex; justify-content: space-between;">
+                    <span style="color: #bbb;">操作ID:</span> 
+                    <span style="margin-left: 10px; font-family: monospace; font-size: 12px;">${opId.substring(0, 12)}...</span>
+                  </div>
+                  <div style="display: flex; justify-content: space-between;">
+                    <span style="color: #bbb;">商品ID:</span> 
+                    <b style="margin-left: 10px;">${productId}</b>
+                  </div>
+                  <div style="display: flex; justify-content: space-between;">
+                    <span style="color: #bbb;">数量:</span> 
+                    <b style="margin-left: 10px; color: ${quantity > 0 ? '#67C23A' : '#F56C6C'}">${quantity}</b>
+                  </div>
+                  <div style="display: flex; justify-content: space-between;">
+                    <span style="color: #bbb;">申请人:</span> 
+                    <b style="margin-left: 10px;">${applicant}</b>
+                  </div>
+              `;
+            }
+            
+            tooltipHtml += `
+                </div>
+              </div>
+            `;
+            
+            return tooltipHtml;
+          }
+        },
+        // 其他网格设置
+        grid3D: {
+          viewControl: {
+            autoRotate: this.autoRotate,
+            autoRotateSpeed: 6,
+            distance: 150 * (100 / this.scatter3dZoom),
+            alpha: 25,
+            beta: 35,
+            animation: true,
+            animationDurationUpdate: 500
+          },
+          light: {
+            main: {
+              intensity: 1.2,
+              shadow: true,
+              shadowQuality: 'high',
+              alpha: 30,
+              beta: 40
+            },
+            ambient: {
+              intensity: 0.4
+            }
+          }
+        },
+        xAxis3D: {
+          type: 'category',
+          name: '仓库',
+          data: warehouseIds
+        },
+        yAxis3D: {
+          type: 'time',
+          name: '时间',
+          axisLabel: {
+            formatter: function(value) {
+              const date = new Date(value);
+              return format(date, 'MM-dd HH:mm');
+            }
+          }
+        },
+        zAxis3D: {
+          type: 'value',
+          name: '库存总量',
+          minInterval: 1
+        },
+        series: allSeries
+      };
+
+      this.charts.scatter3d.setOption(option);
+      this.loading.scatter3d = false;
+      
+      // 添加点击事件处理
+      this.charts.scatter3d.off('click');
+      this.charts.scatter3d.on('click', this.handleChartClick);
+    },
+    
+    /**
+     * @Function_Para 处理图表点击事件
+     *   @param {Object} params - 事件参数对象
+     * @Function_Meth 显示被点击数据点的详细信息
+     * @Function_API
+     *   - Element UI Message: 显示点击信息
+     */
+    handleChartClick(params) {
+      if (!params.data) return;
+      
+      const data = params.data;
+      const warehouseName = data[3] || data[0];
+      const time = new Date(data[1]);
+      const stock = data[2];
+      const status = data[5] || '状态未知';
+      
+      let infoMessage = `${warehouseName}仓库 - ${format(time, 'yyyy-MM-dd HH:mm')} - 库存: ${stock}`;
+      
+      if (data[4] !== 'initial') {
+        const productId = data[6] || '';
+        const quantity = data[7] || 0;
+        infoMessage += ` - ${status}操作: ${productId} (${quantity > 0 ? '+' : ''}${quantity})`;
+      }
+      
+      this.$message({
+        message: infoMessage,
+        type: status === '入库' || status === '转入' ? 'success' : 
+              status === '出库' || status === '转出' ? 'warning' : 'info',
+        duration: 4000,
+        showClose: true
+      });
+    },
+
     handleZoomChange(value) {
       this.scatter3dZoom = value;
       this.updateScatter3DChart();
     },
 
-    /**
-     * @Function_Para 处理自动旋转切换
-     *   无参数
-     *   Template引用: 自动旋转复选框的@change事件
-     * @Function_Meth 切换3D图表的自动旋转功能
-     * @Function_Orgi 通过template中自动旋转复选框的@change事件调用
-     * @Function_API 无外部API调用
-     */
     handleAutoRotateChange() {
       this.updateScatter3DChart();
     }
   },
   
-  /**
-   * @Function_Para 组件挂载完成钩子
-   * @Function_Meth 组件挂载后初始化数据和图表:
-   *   1. 加载所有数据
-   *   2. 等待DOM更新后初始化图表
-   *   3. 添加窗口大小调整事件监听
-   * @Function_API
-   *   - Vue nextTick: 等待DOM更新
-   *   - Window API: 添加resize事件监听
-   */
   mounted() {
     this.loadData();
     this.$nextTick(() => {
@@ -1552,15 +1467,6 @@ export default {
     window.addEventListener('resize', this.handleResize);
   },
   
-  /**
-   * @Function_Para 组件销毁前钩子
-   * @Function_Meth 组件销毁前清理资源:
-   *   1. 移除窗口大小调整事件监听
-   *   2. 释放所有图表实例
-   * @Function_API
-   *   - Window API: 移除resize事件监听
-   *   - ECharts: 销毁图表实例
-   */
   beforeDestroy() {
     window.removeEventListener('resize', this.handleResize);
     Object.values(this.charts).forEach(chart => {
