@@ -280,11 +280,6 @@ export default {
                 value: ''
             },
             editFieldName: '',
-            fieldLabels: {
-                name: '姓名',
-                email: '邮箱',
-                department: '部门'
-            },
             passwordRules: {
                 oldPassword: [{ required: true, message: '请输入原密码', trigger: 'blur' }],
                 newPassword: [
@@ -899,7 +894,11 @@ export default {
 }
 </script>
 <style scoped>
-/* 穿透到 el-avatar 内部的 img */
+/* 头像图片样式 */
+/* 
+  @Style_Desc 头像图片的显示样式及阴影效果
+  @Selector ::v-deep .avatar img 用户头像图片元素
+*/
 ::v-deep .avatar img {
     margin-bottom: 16px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
@@ -909,6 +908,11 @@ export default {
     object-position: center !important;
 }
 
+/* 用户个人中心主容器样式 */
+/* 
+  @Style_Desc 用户个人中心页面最外层容器样式，定义内边距和最大宽度
+  @Selector .user-profile 页面最外层容器
+*/
 .user-profile {
     padding: 20px;
     max-width: 1200px;
@@ -916,6 +920,10 @@ export default {
 }
 
 /* 卡片样式优化 */
+/* 
+  @Style_Desc 个人信息卡片和活动记录卡片的共同样式
+  @Selector .profile-card, .activity-card 个人信息和活动记录卡片
+*/
 .profile-card,
 .activity-card {
     border-radius: 12px;
@@ -925,9 +933,13 @@ export default {
     border: none;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
     transition: all 0.3s ease;
-
 }
 
+/* 卡片悬浮效果 */
+/* 
+  @Style_Desc 卡片悬浮时的动画效果
+  @Selector .profile-card:hover, .activity-card:hover 卡片悬浮状态
+*/
 .profile-card:hover,
 .activity-card:hover {
     box-shadow: 0 16px 20px rgba(0, 0, 0, 0.12);
@@ -935,13 +947,22 @@ export default {
     transform: translateX(-1px);
 }
 
-/* 头部样式优化 */
+/* 卡片头部样式 */
+/* 
+  @Style_Desc 个人信息和活动记录卡片的头部样式
+  @Selector .profile-header, .activity-header 卡片头部容器
+*/
 .profile-header,
 .activity-header {
     padding: 1px 24px;
     padding-bottom: 6px;
 }
 
+/* 卡片标题样式 */
+/* 
+  @Style_Desc 卡片标题的文本样式
+  @Selector .profile-header h2, .activity-header h3 卡片标题元素
+*/
 .profile-header h2,
 .activity-header h3 {
     margin: 0;
@@ -950,13 +971,22 @@ export default {
     font-size: 18px;
 }
 
-/* 内容区域优化 */
+/* 个人信息内容区域样式 */
+/* 
+  @Style_Desc 个人信息卡片的内容布局，使用弹性盒
+  @Selector .profile-content 个人信息内容区域
+*/
 .profile-content {
     display: flex;
     padding: 24px;
     align-items: flex-start;
 }
 
+/* 头像区域样式 */
+/* 
+  @Style_Desc 用户头像及更换头像按钮的容器样式
+  @Selector .avatar-section 头像区域容器
+*/
 .avatar-section {
     display: flex;
     flex-direction: column;
@@ -965,19 +995,30 @@ export default {
     flex-shrink: 0;
 }
 
-
-
+/* 头像上传组件样式 */
+/* 
+  @Style_Desc 头像上传组件的边距和圆角
+  @Selector .avatar-uploader 头像上传组件
+*/
 .avatar-uploader {
     margin-top: 12px;
     border-radius: 8px;
 }
 
-
+/* 用户信息区域样式 */
+/* 
+  @Style_Desc 用户信息区域的弹性布局
+  @Selector .info-section 用户信息区域
+*/
 .info-section {
     flex: 1;
 }
 
-/* 网格布局优化 */
+/* 用户信息网格布局 */
+/* 
+  @Style_Desc 用户信息项的网格布局配置
+  @Selector .info-grid 信息项网格容器
+*/
 .info-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -985,6 +1026,11 @@ export default {
     /* 减小行间距和列间距 */
 }
 
+/* 信息项样式 */
+/* 
+  @Style_Desc 单个信息项的高度和对齐方式
+  @Selector .info-item 单个信息项容器
+*/
 .info-item {
     min-height: 32px;
     /* 减小高度 */
@@ -992,7 +1038,11 @@ export default {
     align-items: center;
 }
 
-
+/* 信息标签样式 */
+/* 
+  @Style_Desc 信息项标签的宽度和文字样式
+  @Selector .info-label 信息项标签
+*/
 .info-label {
     width: 80px;
     font-weight: 500;
@@ -1000,25 +1050,43 @@ export default {
     font-size: 16px;
 }
 
+/* 信息值样式 */
+/* 
+  @Style_Desc 信息项值的文字样式
+  @Selector .info-value 信息项值
+*/
 .info-value {
     color: #303133;
     font-size: 16px;
 }
 
+/* 可编辑信息值样式 */
+/* 
+  @Style_Desc 可编辑信息值的布局，包含值和编辑按钮
+  @Selector .info-value-edit 可编辑信息值容器
+*/
 .info-value-edit {
     display: flex;
     align-items: center;
     gap: 8px;
 }
 
-/* 操作按钮优化 */
+/* 操作按钮区域样式 */
+/* 
+  @Style_Desc 操作按钮区域的边距和布局
+  @Selector .action-buttons 操作按钮容器
+*/
 .action-buttons {
     margin-top: 24px;
     display: flex;
     gap: 12px;
 }
 
-/* 响应式布局 */
+/* 响应式布局样式 */
+/* 
+  @Style_Desc 小屏幕设备的响应式布局调整
+  @Selector @media (max-width: 768px) 媒体查询规则
+*/
 @media (max-width: 768px) {
     .profile-content {
         flex-direction: column;
@@ -1040,6 +1108,10 @@ export default {
 
 /* ------------------ */
 /* 卡片样式优化 */
+/* 
+  @Style_Desc 卡片的基础样式重定义，包括边框、背景和过渡效果
+  @Selector .profile-card, .activity-card 信息卡片和活动卡片
+*/
 .profile-card,
 .activity-card {
     border-radius: 12px;
@@ -1051,6 +1123,11 @@ export default {
     transition: all 0.3s ease;
 }
 
+/* 活动记录卡片特殊样式 */
+/* 
+  @Style_Desc 活动记录卡片的高度限制和过渡效果
+  @Selector .activity-card 活动记录卡片
+*/
 .activity-card {
     max-height: calc(99vh - 450px);
     overflow-y: hidden;
@@ -1058,17 +1135,30 @@ export default {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-
+/* 活动表格区域样式 */
+/* 
+  @Style_Desc 活动记录表格的内边距和高度控制
+  @Selector .activity-table 活动记录表格容器
+*/
 .activity-table {
     padding: 0 16px 16px;
     height: auto;
 }
 
-/* 活动记录表格优化 */
+/* 活动记录标签页样式 */
+/* 
+  @Style_Desc 活动记录标签页的上边距
+  @Selector .compact-tabs 紧凑型标签页
+*/
 .compact-tabs {
     margin-top: 12px;
 }
 
+/* 活动记录表格样式 */
+/* 
+  @Style_Desc 活动记录表格的边框、布局和滚动效果
+  @Selector .compact-table 紧凑型表格
+*/
 .compact-table {
     border-width: 2px;
     border-color: rgba(0, 0, 0, 0.1);
@@ -1079,32 +1169,53 @@ export default {
     scrollbar-color: rgba(240, 249, 235, 0.4) transparent;
 }
 
+/* 表格伪元素移除 */
+/* 
+  @Style_Desc 移除表格默认的伪元素
+  @Selector .compact-table::before 表格伪元素
+*/
 .compact-table::before {
     display: none;
 }
 
+/* 查看他人主页提示区域样式 */
+/* 
+  @Style_Desc 查看他人主页提示的下边距
+  @Selector .viewing-notice 查看提示区域
+*/
 .viewing-notice {
     margin-bottom: 16px;
     /* 可选，调整间距 */
 }
 
+/* 提示标题内容样式 */
+/* 
+  @Style_Desc 提示标题内容的布局和对齐方式
+  @Selector .alert-title-content 提示标题内容容器
+*/
 .alert-title-content {
     display: flex;
     justify-content: space-between;
     align-items: center;
     width: 100%;
     padding-right: 10px;
-
 }
 
-/* 可选：调整按钮与文字的对齐方式 */
+/* 提示标题文字样式 */
+/* 
+  @Style_Desc 提示标题文字的右边距
+  @Selector .alert-title-content span 提示标题文字
+*/
 .alert-title-content span {
     margin-right: 10px;
-
     /* 确保文字和按钮之间有空隙 */
 }
 
-/* 设置el-card 子容器 el-alert 样式 */
+/* 提示组件背景样式 */
+/* 
+  @Style_Desc 提示组件的背景颜色
+  @Selector .el-card .el-alert 卡片内的提示组件
+*/
 .el-card .el-alert {
     background-color: rgba(240, 2, 2, 0.1);
 }

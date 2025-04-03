@@ -22,3 +22,7 @@ body {
   overflow: hidden;
   /* 隐藏水平滚动条 */
 }
+
+.el-dialog{
+  border-radius: 12px !important;
+}
