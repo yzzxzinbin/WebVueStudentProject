@@ -673,6 +673,7 @@ body {
 .el-aside,
 .el-main {
   height: calc(100vh - 60px);
+  overflow-x: hidden;
 }
 
 /* 菜单基础样式 */

@@ -25,12 +25,12 @@ const routes = [
       },
       {
         path: 'list/warehouse-products',
-        component: () => import('../views/warehouse-products.vue'),
+        component: () => import('../views/Warehouse-products.vue'),
         meta: { roles: ['admin', 'manager', 'operator'] }
       },
       {
         path: 'operation',
-        component: () => import('../views/operation.vue'),
+        component: () => import('../views/Operation.vue'),
         meta: { roles: ['admin', 'manager', 'operator'] }
       },
       {

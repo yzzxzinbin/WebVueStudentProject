@@ -1,3 +1,124 @@
+<!-- 
+    @Author_Notification
+        该代码片段是一个Vue视图组件，主要用于展示仓库数据的可视化看板，
+        代码长度较长，使用AI生成了模板注释，作为一个简易目录，方便理解和查找
+
+    @Template_Desc 仓库数据可视化看板
+        包含四大功能模块：
+        1. 仓库整体状态概览
+        2. 商品分布与操作记录
+        3. 出入库趋势分析
+        4. 三维库存可视化
+  
+    @Component_Structure
+    visualization-container (主容器)
+    ├── summary-card (顶部概览卡片)
+    │   ├── summary-header (标题栏)
+    │   │   ├── header-left (左侧区域)
+    │   │   │   ├── title (看板标题)
+    │   │   │   └── el-tag (模式标签)
+    │   │   └── header-actions (右侧操作区)
+    │   │       ├── el-select (仓库选择器)
+    │   │       └── el-option (仓库选项)
+    │   └── summary-cards (指标卡片区)
+    │       ├── metric-card (仓库总数)
+    │       │   └── metric-content (卡片内容)
+    │       │       ├── icon (指标图标)
+    │       │       ├── metric-title (指标标题)
+    │       │       ├── metric-value (指标数值)
+    │       │       └── metric-trend (环比趋势)
+    │       ├── metric-card (商品种类)  
+    │       │   └── metric-content (同上结构)
+    │       ├── metric-card (总库存量)
+    │       │   └── metric-content (同上结构)
+    │       └── metric-card (平均使用率)
+    │           └── metric-content (同上结构)
+    │
+    ├── chart-row (第一行图表区)
+    │   ├── [左]操作记录表格
+    │   │   └── chart-card (卡片容器)
+    │   │       ├── chart-header (标题+刷新按钮)
+    │   │       │   ├── chart-title (图表标题)
+    │   │       │   └── el-button (刷新按钮)
+    │   │       └── el-table (操作记录表格)
+    │   │           ├── el-table-column (操作类型列 - 带彩色标签)
+    │   │           ├── el-table-column (商品名称列)
+    │   │           ├── el-table-column (数量列 - 正负染色)  
+    │   │           └── el-table-column (时间列 - 格式化显示)
+    │   │
+    │   └── [右]双图表区
+    │       ├── chart-card (商品分布)
+    │       │   ├── chart-header (标题+TopN选择器)
+    │       │   │   ├── chart-title (图表标题)
+    │       │   │   └── el-select (TopN选择器)
+    │       │   └── productChart (环形饼图容器)
+    │       │       └── el-skeleton (加载状态)
+    │       └── chart-card (操作热力图)
+    │           ├── chart-header (标题+刷新按钮)
+    │           │   ├── chart-title (图表标题)
+    │           │   └── el-button (刷新按钮)
+    │           └── heatmapChart (日历热力图容器)
+    │               └── el-skeleton (加载状态)
+    │
+    ├── chart-row (第二行图表区)
+    │   ├── [左]趋势分析
+    │   │   └── chart-card
+    │   │       ├── chart-header (标题+时间范围切换)
+    │   │       │   ├── chart-title (图表标题)
+    │   │       │   └── el-radio-group (时间范围切换)
+    │   │       └── trendChart (双线面积图容器)
+    │   │           └── el-skeleton (加载状态)
+    │   └── [右]容量预警  
+    │       └── chart-card
+    │           ├── chart-header (标题+阈值选择器)
+    │           │   ├── chart-title (图表标题)
+    │           │   └── el-select (阈值选择器)
+    │           └── gaugeChart (仪表盘容器)
+    │               └── el-skeleton (加载状态)
+    │
+    └── chart-row (三维可视化区)
+        └── chart-card (3D视图卡片)
+            ├── chart-header (控制区)
+            │   ├── chart-title (图表标题)
+            │   ├── chart-controls (控制区容器)
+            │   │   ├── warehouse-filter (仓库筛选)
+            │   │   │   ├── filter-label (标签)
+            │   │   │   └── el-select (多选下拉框)
+            │   │   ├── el-button (刷新按钮)
+            │   │   └── el-checkbox (自动旋转开关)
+            ├── scatter3dChart (3D散点图容器)
+            │   └── el-skeleton (加载状态)
+            └── chart-footer-controls (底部控制栏)
+                ├── control-group (控制组)
+                │   ├── time-range-filter (时间范围筛选)
+                │   │   ├── filter-label (标签)
+                │   │   └── el-slider (范围滑块)
+                └── control-group (控制组)
+                    ├── zoom-control (缩放控制)
+                        ├── filter-label (标签)
+                        └── el-slider (缩放滑块)
+  
+    @Interactive_Features
+      1. 仓库选择器：全局/单仓模式切换 → 更新所有图表
+      2. 商品分布TopN选择：5/10/15种商品展示
+      3. 趋势时间范围：7天/30天数据切换
+      4. 容量预警阈值：70%-85%警戒线设置
+      5. 3D视图控制：
+         - 多仓库对比
+         - 时间轴筛选
+         - 视角缩放(50%-200%)
+         - 自动旋转开关
+         - 实时数据刷新
+  
+    @Visual_Design
+      - 半透明毛玻璃卡片效果
+      - 响应式布局：4→2→1列自适应
+      - 动态颜色：
+        * 指标卡根据数值变色
+        * 操作记录正负值红绿区分
+        * 热力图颜色深浅表示操作密度
+ -->
+
 <template>
   <div class="visualization-container">
     <el-card shadow="hover" class="summary-card">
@@ -49,8 +170,7 @@
             <div class="chart-title">近期操作记录</div>
             <el-button type="text" @click="refreshOperations" :icon="'el-icon-refresh'"></el-button>
           </div>
-          <el-table :data="recentOperations" height="calc(100vh - 500px)" style="width: 100%"
-            :row-class-name="tableRowClassName">
+          <el-table :data="recentOperations" style="width: 100%;  height: 500px;" :row-class-name="tableRowClassName">
             <el-table-column prop="type" label="操作类型" width="120">
               <template #default="{ row }">
                 <el-tag :type="operationTagMap[row.type]">{{ row.type }}</el-tag>
@@ -73,7 +193,7 @@
         </el-card>
       </el-col>
       <el-col :xs="24" :sm="24" :md="12">
-        <el-card shadow="hover" class="chart-card" style="height: calc(50vh - 180px); margin-bottom: 24px;">
+        <el-card shadow="hover" class="chart-card" style="height: calc(290px); margin-bottom: 24px;">
           <div class="chart-header">
             <div class="chart-title">商品类型分布</div>
             <el-select v-model="productTopN" size="mini" style="width: 80px" @change="updateProductChart">
@@ -82,19 +202,19 @@
           </div>
           <el-skeleton :loading="loading.product" animated>
             <template #template>
-              <el-skeleton-item variant="image" style="height: calc(100% - 50px)" />
+              <el-skeleton-item variant="image" style="height: calc(290px)" />
             </template>
             <div ref="productChart" class="chart-container"></div>
           </el-skeleton>
         </el-card>
-        <el-card shadow="hover" class="chart-card" style="height: calc(50vh - 250px);">
+        <el-card shadow="hover" class="chart-card" style="height: calc(280px);">
           <div class="chart-header">
             <div class="chart-title">操作热力图</div>
             <el-button type="text" @click="refreshOperations" :icon="'el-icon-refresh'"></el-button>
           </div>
           <el-skeleton :loading="loading.heatmap" animated>
             <template #template>
-              <el-skeleton-item variant="image" style="height: calc(100% - 50px)" />
+              <el-skeleton-item variant="image" style="height: calc(280px);" />
             </template>
             <div ref="heatmapChart" class="chart-container"></div>
           </el-skeleton>
@@ -190,8 +310,6 @@
 
   </div>
 </template>
-
-
 
 
 <style>
@@ -347,7 +465,7 @@
 }
 
 .chart-container {
-  width: 100%;
+  /* width: 100%; */
   height: 250px;
 }
 
@@ -555,7 +673,7 @@ export default {
         center: [0, 0, 0] // 视图中心点
       },
       scatter3dZoom: 100, // 缩放比例，初始100%
-      autoRotate: true, // 是否自动旋转
+      autoRotate: false, // 是否自动旋转
       // 添加时间范围筛选相关数据
       timeRangeValue: [0, 100], // 默认全范围，具体值会在数据加载后更新
       timeRangeMin: 0,
@@ -1113,25 +1231,25 @@ export default {
     },
 
     updateHeatmapChart() {
-      if (!this.charts.heatmap) return
+      if (!this.charts.heatmap) return;
 
-      const heatmapData = this.prepareHeatmapData()
+      const heatmapData = this.prepareHeatmapData();
 
       if (heatmapData.length === 0) {
-        this.showEmptyChart(this.charts.heatmap, '暂无操作数据')
-        return
+        this.showEmptyChart(this.charts.heatmap, '暂无操作数据');
+        return;
       }
 
-      const dateRange = this.getHeatmapRange()
+      const dateRange = this.getHeatmapRange();
 
       const option = {
         backgroundColor: 'transparent',
         tooltip: {
           position: 'top',
           formatter: function (params) {
-            const date = new Date(params.data[0])
+            const date = new Date(params.data[0]);
             return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}<br/>
-            操作次数: ${params.data[1]}`
+      操作次数: ${params.data[1]}`;
           }
         },
         visualMap: {
@@ -1142,17 +1260,36 @@ export default {
           left: 'center',
           bottom: 10,
           inRange: {
+            // GitHub贡献日历绿色渐变
             color: ['#ebedf0', '#c6e48b', '#7bc96f', '#239a3b', '#196127']
-          }
+          },
+          backgroundColor: 'transparent',
         },
+
+        dayLabel: {
+          margin: 20,
+          backgroundColor: 'transparent',
+        },
+
         calendar: {
-          top: 30,
-          left: 30,
-          right: 30,
-          cellSize: ['auto', 13],
+          // 小方块更紧凑
+          cellSize: [18],
+          top: 25,
+          left: 120,
+
           range: dateRange,
           itemStyle: {
-            borderWidth: 0.5
+            // 边框窄一些，更像GitHub贡献日历
+            borderWidth: 3,
+            borderColor: 'rgba(200, 200, 200, 0.5)',
+          },
+          splitLine: {
+            show: true,
+            lineStyle: {
+              color: '#AAA',
+              width: 1,
+              type: 'solid'
+            }
           },
           yearLabel: { show: false }
         },
@@ -1162,14 +1299,13 @@ export default {
           data: heatmapData,
           emphasis: {
             itemStyle: {
-              shadowBlur: 10,
-              shadowColor: 'rgba(0, 0, 0, 0.5)'
+              shadowBlur: 6,
+              shadowColor: 'rgba(0, 0, 0, 0.4)'
             }
           }
         }
-      }
-
-      this.charts.heatmap.setOption(option)
+      };
+      this.charts.heatmap.setOption(option);
     },
 
     prepareHeatmapData() {
@@ -1187,20 +1323,40 @@ export default {
 
     getHeatmapRange() {
       if (this.operations.length === 0) {
-        const now = new Date()
-        const start = new Date(now.getFullYear(), now.getMonth(), 1)
-        const end = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-        return [format(start, 'yyyy-MM-dd'), format(end, 'yyyy-MM-dd')]
+        // 无数据时显示当前月及未来3个月
+        const now = new Date();
+        const start = new Date(now.getFullYear(), now.getMonth(), 1);
+        // 当前月+3个月的最后一天
+        const end = new Date(now.getFullYear(), now.getMonth() + 4, 0);
+        return [format(start, 'yyyy-MM-dd'), format(end, 'yyyy-MM-dd')];
       }
 
-      const dates = this.operations.map(op => new Date(op.timestamp))
-      const minDate = new Date(Math.min(...dates))
-      const maxDate = new Date(Math.max(...dates))
+      // 提取所有操作的日期并找出时间范围
+      const dates = this.operations.map(op => new Date(op.timestamp));
+      const minDate = new Date(Math.min(...dates));
+      const maxDate = new Date(Math.max(...dates));
 
-      const startDate = new Date(minDate.getFullYear(), minDate.getMonth(), 1)
-      const endDate = new Date(maxDate.getFullYear(), maxDate.getMonth() + 1, 0)
+      // 计算起始月和结束月
+      let startDate = new Date(minDate.getFullYear(), minDate.getMonth(), 1);
+      let endDate = new Date(maxDate.getFullYear(), maxDate.getMonth() + 1, 0);
 
-      return [format(startDate, 'yyyy-MM-dd'), format(endDate, 'yyyy-MM-dd')]
+      // 计算月份差值
+      const monthDiff = (endDate.getFullYear() - startDate.getFullYear()) * 12 +
+        endDate.getMonth() - startDate.getMonth();
+
+      // 如果月份差小于4个月（即不足5个月），则扩展时间范围
+      if (monthDiff < 4) {
+        // 计算需要额外显示的月数
+        const extraMonths = 4 - monthDiff;
+
+        // 将开始日期前移所需月数，保证总共显示5个月
+        startDate = new Date(startDate.getFullYear(), startDate.getMonth() - extraMonths, 1);
+
+        // 确保结束日期是其所在月的最后一天
+        endDate = new Date(endDate.getFullYear(), endDate.getMonth() + 1, 0);
+      }
+
+      return [format(startDate, 'yyyy-MM-dd'), format(endDate, 'yyyy-MM-dd')];
     },
 
     showEmptyChart(chartInstance, text) {
