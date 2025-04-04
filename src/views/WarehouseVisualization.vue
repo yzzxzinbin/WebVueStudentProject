@@ -144,8 +144,17 @@
           <div class="chart-header">
             <div class="chart-title">仓库库存三维视图</div>
             <div class="chart-controls">
-              <div style="flex: 1; min-width: 350px; max-width: 400px; margin-left: 10px;">
-                <el-slider v-model="scatter3dZoom" :min="50" :max="200" @change="handleZoomChange" show-input>
+              <!-- 添加时间范围筛选器 -->
+              <div class="time-range-filter">
+                <span class="filter-label" style="user-select: none;">时间范围:</span>
+                <el-slider v-model="timeRangeValue" range :min="timeRangeMin" :max="timeRangeMax" :step="timeRangeStep"
+                  :format-tooltip="formatTimeTooltip" @change="handleTimeRangeChange"
+                  style="width: 300px; margin-right: 15px;"></el-slider>
+              </div>
+              <div class="zoom-control">
+                <span class="filter-label" style="user-select: none;">缩放范围:</span>
+                <el-slider v-model="scatter3dZoom" :min="50" :max="200" @change="handleZoomChange" show-input
+                  style="width: 250px;">
                 </el-slider>
               </div>
               <el-button type="text" @click="refresh3DChart" :icon="'el-icon-refresh'"></el-button>
@@ -447,6 +456,27 @@
 .el-table--striped .el-table__body tr.el-table__row--striped td {
   background-color: rgba(255, 255, 255, 0.8) !important;
 }
+
+/* 时间范围筛选器样式 */
+.time-range-filter {
+  display: flex;
+  align-items: center;
+  margin-right: 10px;
+}
+
+.filter-label {
+  margin-right: 10px;
+  white-space: nowrap;
+  font-size: 13px;
+  color: #606266;
+}
+
+/* 添加缩放控制样式 */
+.zoom-control {
+  display: flex;
+  align-items: center;
+  margin-right: 10px;
+}
 </style>
 <style scoped></style>
 
@@ -474,6 +504,13 @@ export default {
     return {
       scatter3dZoom: 100, // 缩放比例，初始100%
       autoRotate: true, // 是否自动旋转
+      // 添加时间范围筛选相关数据
+      timeRangeValue: [0, 100], // 默认全范围，具体值会在数据加载后更新
+      timeRangeMin: 0,
+      timeRangeMax: 100,
+      timeRangeStep: 1,
+      timeRangeDates: [], // 存储时间范围对应的实际日期值
+      originalScatterData: [], // 存储原始数据，用于筛选
       selectedWarehouse: '',
       productTopN: 5,
       trendDays: '7',
@@ -1022,27 +1059,242 @@ export default {
 
     refresh3DChart() {
       this.loading.scatter3d = true;
+
+      // 重置时间范围为全范围
+      this.timeRangeValue = [0, 100];
+
       this.updateScatter3DChart();
     },
+
     /**
-        * @Function_Para 准备3D散点图数据
-        *   无参数
-        * @Function_Meth 构建3D散点图所需的数据:
-        *   1. 从操作记录重建库存历史变化
-        *   2. 生成仓库、时间、库存量三维数据点
-        * @Function_Orgi 被updateScatter3DChart方法调用
-        * @Function_API
-        *   - localStorage API: 读取操作和仓库数据
-        */
+     * @Function_Para 根据时间范围筛选数据
+     *   @param {Array} data - 原始数据点数组
+     * @Function_Meth 根据用户选择的时间范围筛选数据点
+     * @Function_API 无外部API调用
+     */
+    filterDataByTimeRange(data) {
+      // 如果没有时间范围数据，直接返回原始数据
+      if (!this.timeRangeDates || this.timeRangeDates.length === 0) {
+        return data;
+      }
+
+      // 获取当前时间 - 始终作为参考最大值
+      const nowTime = new Date().getTime();
+
+      // 计算实际时间范围（关键修复点1：确保最大时间始终是当前时间）
+      const minIndex = Math.floor((this.timeRangeValue[0] / 100) * this.timeRangeDates.length);
+      let maxIndex = Math.floor((this.timeRangeValue[1] / 100) * this.timeRangeDates.length);
+
+      // 取出时间范围
+      const minTime = this.timeRangeDates[minIndex];
+      const originalMaxTime = this.timeRangeDates[maxIndex];
+
+      // 修复滑块结束点映射问题：确保100%对应的时间至少为当前时间或更大
+      const maxTime = this.timeRangeValue[1] === 100 ? nowTime : originalMaxTime;
+
+      // 判断是否为全范围
+      const isFullRange = this.timeRangeValue[0] === 0 && this.timeRangeValue[1] === 100;
+      if (isFullRange) {
+        return data;
+      }
+
+      // 确定是否包含当前时间点
+      // 关键修复点2：更精确地判断何时应该包含实时点
+      const isEndAtMax = this.timeRangeValue[1] === 100;
+      const isEndNearCurrent = Math.abs(nowTime - maxTime) < 60; // 1 分钟
+      const includeCurrentTime = isEndAtMax || isEndNearCurrent;
+
+      // 按仓库分组数据
+      const warehouseGroups = {};
+      data.forEach(item => {
+        const warehouseId = item[0];
+        if (!warehouseGroups[warehouseId]) {
+          warehouseGroups[warehouseId] = [];
+        }
+        warehouseGroups[warehouseId].push(item);
+      });
+
+      // 结果数组
+      let result = [];
+
+      // 对每个仓库处理数据点
+      Object.entries(warehouseGroups).forEach(([warehouseId, warehouseData]) => {
+        // 按时间排序
+        warehouseData.sort((a, b) => a[1] - b[1]);
+
+        // 提取关键数据点
+        const initialPoints = warehouseData.filter(item => item[5] === '初始状态');
+
+        // 关键修复点3：确保获取所有时间区间内的点，而不只是边界点
+        const beforePoints = warehouseData.filter(item => item[1] < minTime);
+        const inRangePoints = warehouseData.filter(item => item[1] >= minTime && item[1] <= maxTime);
+        const afterPoints = warehouseData.filter(item => item[1] > maxTime);
+
+        const realTimePoints = warehouseData.filter(item =>
+          item[5] === '实时' || (item[4] && item[4].startsWith('realtime-'))
+        );
+
+        // 存储当前仓库的数据点
+        let warehouseResult = [];
+
+        // 1. 添加起始边界点 - 如果有起始时间前的点
+        let startStock = 0; // 默认库存值
+
+        // 如果有时间范围前的点，使用最近的一个
+        if (beforePoints.length > 0) {
+          const lastBeforePoint = beforePoints[beforePoints.length - 1];
+          startStock = lastBeforePoint[2];
+
+          // 关键修复点4：始终包含最接近起始时间的历史点，确保连续性
+          const templatePoint = [...lastBeforePoint];
+          templatePoint[1] = minTime; // 设置为起始时间
+          templatePoint[4] = 'boundary-start-' + warehouseId; // 自定义ID
+          templatePoint[5] = '自定义范围'; // 设置状态
+
+          warehouseResult.push(templatePoint);
+        } else if (initialPoints.length > 0) {
+          // 否则使用初始点
+          startStock = initialPoints[0][2];
+
+          // 创建起始边界点
+          const templatePoint = initialPoints[0];
+          const startBoundaryPoint = [...templatePoint];
+          startBoundaryPoint[1] = minTime; // 设置时间
+          startBoundaryPoint[4] = 'boundary-start-' + warehouseId; // 设置ID
+          startBoundaryPoint[5] = '自定义范围'; // 设置状态
+
+          warehouseResult.push(startBoundaryPoint);
+        } else if (inRangePoints.length > 0) {
+          // 如果没有之前的点，但有范围内的点，使用第一个范围内的点作为模板
+          const firstInRangePoint = inRangePoints[0];
+          const templatePoint = [...firstInRangePoint];
+          templatePoint[1] = minTime; // 设置为起始时间
+          templatePoint[4] = 'boundary-start-' + warehouseId; // 自定义ID
+          templatePoint[5] = '自定义范围'; // 设置状态
+
+          warehouseResult.push(templatePoint);
+        }
+
+        // 2. 添加范围内的所有点 - 关键修复点，确保所有在范围内的点都被添加
+        warehouseResult = warehouseResult.concat(inRangePoints);
+
+        // 3. 确定结束点处理方式
+
+        // 计算结束库存默认值
+        let endStock = startStock; // 默认使用起始库存
+        if (inRangePoints.length > 0) {
+          endStock = inRangePoints[inRangePoints.length - 1][2]; // 使用范围内最后一点的库存
+        }
+
+        // A. 如果应该包含当前时间点，尝试添加实时点
+        if (includeCurrentTime && realTimePoints.length > 0) {
+          const realTimePoint = realTimePoints[realTimePoints.length - 1];
+
+          // 检查实时点是否已经包含在结果中
+          const realTimeExists = warehouseResult.some(point =>
+            point[4] === realTimePoint[4] ||
+            (point[5] === '实时' && point[1] === realTimePoint[1])
+          );
+
+          if (!realTimeExists) {
+            // 如果实时点已经在指定范围内，直接使用
+            if (realTimePoint[1] >= minTime) {
+              warehouseResult.push(realTimePoint);
+            } else {
+              // 否则创建一个新的实时点
+              const adjustedRealTimePoint = [...realTimePoint];
+              adjustedRealTimePoint[1] = maxTime; // 重要：使用我们计算的maxTime而不是默认
+              adjustedRealTimePoint[4] = 'realtime-adjusted-' + warehouseId;
+              warehouseResult.push(adjustedRealTimePoint);
+            }
+          }
+        }
+        // B. 如果不包含当前时间，添加自定义范围结束点
+        else {
+          // 修复：先检查是否有紧接在maxTime之后的点可以作为模板
+          let templatePoint;
+          if (afterPoints.length > 0) {
+            templatePoint = [...afterPoints[0]];
+          } else if (inRangePoints.length > 0) {
+            templatePoint = [...inRangePoints[inRangePoints.length - 1]];
+          } else if (beforePoints.length > 0) {
+            templatePoint = [...beforePoints[beforePoints.length - 1]];
+          } else {
+            // 找个默认模板
+            templatePoint = warehouseData[0] || [warehouseId, maxTime, endStock, warehouseId, '', '自定义范围', '', 0, ''];
+          }
+
+          const endBoundaryPoint = [...templatePoint];
+          endBoundaryPoint[1] = maxTime; // 设置时间
+          endBoundaryPoint[2] = endStock; // 设置库存
+          endBoundaryPoint[4] = 'boundary-end-' + warehouseId; // 设置ID
+          endBoundaryPoint[5] = '自定义范围'; // 设置状态
+          warehouseResult.push(endBoundaryPoint);
+        }
+
+        // 4. 最终检查 - 确保至少有两个点并且它们之间的连线逻辑正确
+        if (warehouseResult.length < 2) {
+          console.log(`Warning: Warehouse ${warehouseId} has less than 2 points after filtering`);
+
+          // 如果只有一个点(通常是起始点)，添加第二个点
+          const existingPoint = warehouseResult[0] || null;
+
+          if (existingPoint) {
+            // 复制现有点，修改其时间
+            const secondPoint = [...existingPoint];
+            secondPoint[1] = existingPoint[1] + 3600000; // 增加1小时
+            secondPoint[4] = 'generated-end-' + warehouseId;
+            warehouseResult.push(secondPoint);
+          } else if (realTimePoints.length > 0) {
+            // 如果没有任何点但有实时点，添加实时点
+            warehouseResult.push(realTimePoints[realTimePoints.length - 1]);
+          } else if (warehouseData.length > 0) {
+            // 添加任何可用的点
+            warehouseResult.push(warehouseData[0]);
+            if (warehouseData.length > 1) {
+              warehouseResult.push(warehouseData[warehouseData.length - 1]);
+            } else {
+              // 复制并修改时间创建第二个点
+              const secondPoint = [...warehouseData[0]];
+              secondPoint[1] += 3600000; // 增加1小时
+              secondPoint[4] = 'generated-second-' + warehouseId;
+              warehouseResult.push(secondPoint);
+            }
+          }
+        }
+
+        // 5. 确保数据点按时间排序
+        warehouseResult.sort((a, b) => a[1] - b[1]);
+
+        // 将当前仓库的结果添加到总结果
+        result = result.concat(warehouseResult);
+      });
+
+      return result;
+    },
+
+    /**
+     * @Function_Para 准备3D散点图数据
+     *   无参数
+     * @Function_Meth 构建3D散点图所需的数据
+     * @Function_Orgi 被updateScatter3DChart方法调用
+     * @Function_API
+     *   - localStorage API: 读取操作和仓库数据
+     */
     prepareScatter3DData() {
       const operations = JSON.parse(localStorage.getItem('operations')) || [];
       const warehouses = JSON.parse(localStorage.getItem('warehouses')) || [];
       const products = JSON.parse(localStorage.getItem('products')) || [];
 
-      // 1. 按时间排序所有操作，并且只保留成功的操作（状态为SUC）
+      // 1. 按时间排序所有操作
       const sortedOps = [...operations]
         .filter(op => op.status === 'SUC') // 只处理成功的操作
         .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+      // 如果没有操作记录，直接返回空数组
+      if (sortedOps.length === 0) {
+        return [];
+      }
 
       // 2. 初始化每个仓库的库存历史记录
       const warehouseHistory = {};
@@ -1053,13 +1305,25 @@ export default {
         };
       });
 
-      // 3. 计算初始库存状态（所有仓库初始库存为0）
-      const initialTime = sortedOps.length > 0
-        ? new Date(sortedOps[0].timestamp)
-        : new Date();
-      // 将初始时间设为第一条操作记录前1小时
+      // 3. 获取所有操作的时间范围
+      const allTimes = sortedOps.map(op => new Date(op.timestamp).getTime());
+      const minTime = Math.min(...allTimes);
+      const maxTime = Math.max(...allTimes);
+
+      // 3.1 创建初始时间点 - 最早操作时间之前1小时
+      const initialTime = new Date(minTime);
       initialTime.setHours(initialTime.getHours() - 1);
 
+      // 3.2 创建时间参考数组，用于时间范围滑块
+      // 关键修复点1：调整时间范围确保100%始终对应系统当前时间
+      const currentTime = new Date().getTime();
+      const timeRange = currentTime - initialTime.getTime(); // 使用当前时间，而不是最后操作时间
+      const timeSteps = 100; // 将时间范围分为100个步骤
+      this.timeRangeDates = Array.from({ length: timeSteps + 1 }, (_, i) =>
+        initialTime.getTime() + (timeRange * i / timeSteps)
+      );
+
+      // 4. 初始化每个仓库初始时间点的状态（初始库存为0）
       warehouses.forEach(warehouse => {
         warehouseHistory[warehouse.id].points.push({
           time: initialTime.getTime(),
@@ -1069,13 +1333,15 @@ export default {
         });
       });
 
-      // 4. 重建库存变化历史
+      // 5. 重建库存变化历史
       const currentStock = {};
       warehouses.forEach(warehouse => {
         currentStock[warehouse.id] = 0;
       });
 
+      // 关键修复点2：确保所有操作记录都被正确处理并添加到库存历史中
       sortedOps.forEach(op => {
+        // 确保时间戳保留毫秒精度
         const opTime = new Date(op.timestamp).getTime();
         const opType = op.type;
         const quantity = op.quantity;
@@ -1089,14 +1355,21 @@ export default {
                 // 如果目标仓库存在，更新其状态
                 currentStock[op.targetWarehouse] += quantity;
 
+                // 同一仓库内如果上一条记录时间完全相同，给当前记录微小偏移确保连线
+                const lastPoint = warehouseHistory[op.targetWarehouse].points[warehouseHistory[op.targetWarehouse].points.length - 1];
+                let adjustedTime = opTime;
+                if (lastPoint && lastPoint.time === opTime) {
+                  adjustedTime = opTime + 1; // 增加1毫秒确保连线
+                }
+
                 warehouseHistory[op.targetWarehouse].points.push({
-                  time: opTime,
+                  time: adjustedTime,
                   stock: currentStock[op.targetWarehouse],
                   status: '入库',
                   opId: op.id,
                   productId: op.productId,
                   quantity: op.quantity,
-                  applicant: op.applicant || op.operator // 兼容旧数据
+                  applicant: op.applicant || op.operator
                 });
               }
             }
@@ -1111,14 +1384,21 @@ export default {
                 // 确保库存不会变为负数
                 currentStock[op.sourceWarehouse] = Math.max(0, currentStock[op.sourceWarehouse]);
 
+                // 同一仓库内如果上一条记录时间完全相同，给当前记录微小偏移确保连线
+                const lastPoint = warehouseHistory[op.sourceWarehouse].points[warehouseHistory[op.sourceWarehouse].points.length - 1];
+                let adjustedTime = opTime;
+                if (lastPoint && lastPoint.time === opTime) {
+                  adjustedTime = opTime + 1; // 增加1毫秒确保连线
+                }
+
                 warehouseHistory[op.sourceWarehouse].points.push({
-                  time: opTime,
+                  time: adjustedTime,
                   stock: currentStock[op.sourceWarehouse],
                   status: '出库',
                   opId: op.id,
                   productId: op.productId,
                   quantity: op.quantity,
-                  applicant: op.applicant || op.operator // 兼容旧数据
+                  applicant: op.applicant || op.operator
                 });
               }
             }
@@ -1131,14 +1411,21 @@ export default {
               // 确保库存不会变为负数
               currentStock[op.sourceWarehouse] = Math.max(0, currentStock[op.sourceWarehouse]);
 
+              // 同一仓库内如果上一条记录时间完全相同，给当前记录微小偏移确保连线
+              const lastSourcePoint = warehouseHistory[op.sourceWarehouse].points[warehouseHistory[op.sourceWarehouse].points.length - 1];
+              let adjustedSourceTime = opTime;
+              if (lastSourcePoint && lastSourcePoint.time === opTime) {
+                adjustedSourceTime = opTime + 1; // 增加1毫秒确保连线
+              }
+
               warehouseHistory[op.sourceWarehouse].points.push({
-                time: opTime,
+                time: adjustedSourceTime,
                 stock: currentStock[op.sourceWarehouse],
                 status: '转出',
                 opId: op.id,
                 productId: op.productId,
                 quantity: op.quantity,
-                applicant: op.applicant || op.operator // 兼容旧数据
+                applicant: op.applicant || op.operator
               });
             }
 
@@ -1146,21 +1433,28 @@ export default {
             if (op.targetWarehouse && op.targetWarehouse !== 'External' && warehouseHistory[op.targetWarehouse]) {
               currentStock[op.targetWarehouse] += quantity;
 
+              // 同一仓库内如果上一条记录时间完全相同，给当前记录微小偏移确保连线
+              const lastTargetPoint = warehouseHistory[op.targetWarehouse].points[warehouseHistory[op.targetWarehouse].points.length - 1];
+              let adjustedTargetTime = opTime;
+              if (lastTargetPoint && lastTargetPoint.time === opTime) {
+                adjustedTargetTime = opTime + 1; // 增加1毫秒确保连线
+              }
+
               warehouseHistory[op.targetWarehouse].points.push({
-                time: opTime,
+                time: adjustedTargetTime,
                 stock: currentStock[op.targetWarehouse],
                 status: '转入',
                 opId: op.id,
                 productId: op.productId,
                 quantity: op.quantity,
-                applicant: op.applicant || op.operator // 兼容旧数据
+                applicant: op.applicant || op.operator
               });
             }
             break;
         }
       });
 
-      // 为每个仓库添加最新状态数据点
+      // 6. 为每个仓库添加最新状态数据点
       const nowTime = new Date().getTime();
       warehouses.forEach(warehouse => {
         // 计算仓库当前实际库存（从warehouseProducts中获取）
@@ -1170,7 +1464,7 @@ export default {
 
         // 确保仓库有历史记录
         if (warehouseHistory[warehouse.id]) {
-          // 检查是否需要添加实时点（如果最后一个点不是当前时间点）
+          // 检查是否需要添加实时点
           const lastPoint = warehouseHistory[warehouse.id].points[warehouseHistory[warehouse.id].points.length - 1];
 
           // 如果最后一个数据点距离现在超过1小时，或者库存不一致，则添加一个实时点
@@ -1179,8 +1473,14 @@ export default {
             (currentTotalStock !== lastPoint.stock);
 
           if (needRealTimePoint) {
+            // 如果上一条记录时间相同，添加微小偏移
+            let adjustedTime = nowTime;
+            if (lastPoint && lastPoint.time === nowTime) {
+              adjustedTime = nowTime + 1; // 增加1毫秒确保连线
+            }
+
             warehouseHistory[warehouse.id].points.push({
-              time: nowTime,
+              time: adjustedTime,
               stock: currentTotalStock,
               status: '实时',
               opId: 'realtime-' + warehouse.id,
@@ -1192,9 +1492,10 @@ export default {
         }
       });
 
-      // 5. 转换为3D图表需要的数据格式 [warehouseId, time值, stock值, warehouseName, opId, status, 更多操作详情...]
-      const result = [];
+      // 7. 转换为3D图表需要的数据格式
+      let result = [];
       Object.entries(warehouseHistory).forEach(([warehouseId, history]) => {
+        // 关键修复点3：确保历史点完整性，不会因为滤镜丢失中间点
         history.points.forEach(point => {
           result.push([
             warehouseId,
@@ -1210,16 +1511,35 @@ export default {
         });
       });
 
-      return result;
+      // 保存原始数据，用于后续筛选
+      this.originalScatterData = [...result];
+
+      return this.filterDataByTimeRange(result);
     },
+
     /**
-     * @Function_Para 更新3D折线图
-     *   无参数
-     * @Function_Meth 生成并渲染仓库库存变化的3D可视化
+     * @Function_Para 处理时间范围变化
+     *   @param {Array} value - 新的时间范围值 [min, max]
+     * @Function_Meth 根据时间范围筛选数据并更新图表
      * @Function_API
-     *   - ECharts-GL: 配置和渲染3D图表
-     *   - date-fns format: 格式化日期
+     *   - ECharts: 重新渲染图表
      */
+    handleTimeRangeChange(value) {
+      // 修复：防止时间范围发生跳跃，确保结束点在100%时对应当前时间
+      if (value[1] === 100 && this.originalScatterData.length > 0) {
+        // 如果拖动到100%，显式设置为当前时间
+        const currentTime = new Date();
+        this.$notify({
+          title: '时间范围更新',
+          message: `时间范围更新: ${this.formatTimeTooltip(value[0])} 至 ${format(currentTime, 'yyyy-MM-dd HH:mm')}`,
+          position: 'top-left'
+        });
+      }
+      // 更新时间范围并刷新图表
+      this.timeRangeValue = value;
+      this.updateScatter3DChart();
+    },
+
     updateScatter3DChart() {
       if (!this.charts.scatter3d) return;
 
@@ -1310,6 +1630,7 @@ export default {
               if (status === '入库' || status === '转入') return '#67C23A';
               if (status === '出库' || status === '转出') return '#F56C6C';
               if (status === '实时') return '#409EFF'; // 为实时状态添加特殊颜色
+              if (status === '自定义范围') return '#FF9F00'; // 为自定义范围点添加特殊颜色（橙色）
               return baseColor; // 默认使用仓库的基本颜色
             },
             // 透明度和边框
@@ -1368,7 +1689,7 @@ export default {
             `;
 
             // 非初始状态时显示更多操作详情
-            if (opId !== 'initial' && !opId.startsWith('realtime-')) {
+            if (opId !== 'initial' && !opId.startsWith('realtime-') && !opId.startsWith('boundary-')) {
               tooltipHtml += `
                   <div style="display: flex; justify-content: space-between;">
                     <span style="color: #bbb;">操作ID:</span> 
@@ -1385,6 +1706,13 @@ export default {
                   <div style="display: flex; justify-content: space-between;">
                     <span style="color: #bbb;">申请人:</span> 
                     <b style="margin-left: 10px;">${applicant}</b>
+                  </div>
+              `;
+            } else if (status === '自定义范围') {
+              tooltipHtml += `
+                  <div style="display: flex; justify-content: space-between;">
+                    <span style="color: #bbb;">说明:</span> 
+                    <b style="margin-left: 10px;">时间范围筛选边界点</b>
                   </div>
               `;
             }
@@ -1540,7 +1868,7 @@ export default {
 
       let infoMessage = `${warehouseName}仓库 - ${format(time, 'yyyy-MM-dd HH:mm:ss')} - 库存: ${stock}`;
 
-      if (data[4] !== 'initial' && !opId.startsWith('realtime-')) {
+      if (data[4] !== 'initial' && !opId.startsWith('realtime-') && !opId.startsWith('boundary-')) {
         const productId = data[6] || '';
         const quantity = data[7] || 0;
         infoMessage += ` - ${status}操作: ${productId} (${quantity > 0 ? '+' : ''}${quantity})`;
@@ -1548,14 +1876,17 @@ export default {
         infoMessage += `\n操作ID: ${opId}`;
       } else if (status === '实时') {
         infoMessage += ` - ${status}状态: 当前库存`;
+      } else if (status === '自定义范围') {
+        infoMessage += ` - ${status}状态: 筛选边界点`;
       }
 
       this.$message({
         message: infoMessage,
         type: status === '入库' || status === '转入' ? 'success' :
           status === '出库' || status === '转出' ? 'warning' :
-            status === '实时' ? 'info' : 'info',
-        duration: 5000, // 增加显示时间以便查看更多信息
+            status === '实时' ? 'info' :
+              status === '自定义范围' ? 'info' : 'info',
+        duration: 5000,
         showClose: true
       });
     },
@@ -1568,6 +1899,43 @@ export default {
         currentOption.grid3D[0].viewControl.autoRotate = this.autoRotate;
         this.charts.scatter3d.setOption(currentOption, false); // false表示不合并选项，直接替换
       }
+    },
+
+    /**
+     * @Function_Para 处理缩放变化
+     *   @param {number} value - 新的缩放值
+     * @Function_Meth 更新3D图表的缩放比例
+     * @Function_API
+     *   - ECharts: 直接修改图表配置选项
+     */
+    handleZoomChange(value) {
+      this.scatter3dZoom = value;
+
+      // 修复缩放控制功能
+      if (this.charts.scatter3d) {
+        const currentOption = this.charts.scatter3d.getOption();
+        // 更新视图控制距离
+        currentOption.grid3D[0].viewControl.distance = 150 * (100 / this.scatter3dZoom);
+        this.charts.scatter3d.setOption(currentOption, false); // false表示不合并选项，直接替换
+      }
+    },
+
+    /**
+     * @Function_Para 格式化时间范围提示
+     *   @param {number} value - 滑块值
+     * @Function_Meth 将滑块值转换为可读的时间格式
+     * @Function_API
+     *   - date-fns format: 格式化日期
+     */
+    formatTimeTooltip(value) {
+      if (!this.timeRangeDates || this.timeRangeDates.length === 0) {
+        return value;
+      }
+
+      // 将滑块值映射到对应的日期
+      const index = Math.min(Math.floor((value / 100) * this.timeRangeDates.length), this.timeRangeDates.length - 1);
+      const date = new Date(this.timeRangeDates[index]);
+      return format(date, 'yyyy-MM-dd HH:mm');
     }
   },
 
