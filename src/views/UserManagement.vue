@@ -128,7 +128,7 @@
                 <el-button type="primary" @click="saveUser">保存</el-button>
             </span>
         </el-dialog>
-        <el-dialog title="授权仓库管理" :visible.sync="warehouseDialogVisible" width="60%">
+        <el-dialog title="授权仓库管理" :visible.sync="warehouseDialogVisible" width="70%">
             <el-table :data="warehouses" ref="warehouseTable" style="width: 100%" border stripe
                 @selection-change="handleWarehouseSelectionChange">
                 <el-table-column type="selection" width="55">
@@ -138,6 +138,21 @@
                 <el-table-column prop="name" label="仓库名称">
                 </el-table-column>
                 <el-table-column prop="location" label="仓库位置">
+                </el-table-column>
+                <el-table-column label="基本权限" width="100">
+                    <template slot-scope="scope">
+                        <el-checkbox v-model="scope.row.hasBasicPermission" 
+                                     @change="(value) => handleBasicPermissionChange(scope.row, value)">
+                        </el-checkbox>
+                    </template>
+                </el-table-column>
+                <el-table-column label="越权批准" width="100">
+                    <template slot-scope="scope">
+                        <el-checkbox v-model="scope.row.hasOverridePermission"
+                                     :disabled="!scope.row.hasBasicPermission"
+                                     @change="(value) => handleOverridePermissionChange(scope.row, value)">
+                        </el-checkbox>
+                    </template>
                 </el-table-column>
             </el-table>
             <span slot="footer" class="dialog-footer">
@@ -155,6 +170,7 @@ export default {
             warehouseDialogVisible: false,
             warehouses: [], // 所有仓库列表
             selectedWarehouses: [], // 当前选中的仓库
+            selectedOverrideWarehouses: [], // 当前选中的越权批准仓库
             currentAuthUser: null, // 当前正在设置授权的用户
             users: [],
             searchQuery: '',
@@ -177,7 +193,8 @@ export default {
             },
             currentPage: 1,
             pageSize: 20,
-            loading: false
+            loading: false,
+            isInitializingWarehouses: false // 添加初始化标志位
         };
     },
     computed: {
@@ -218,6 +235,16 @@ export default {
          */
         initWarehouses() {
             let warehouses = JSON.parse(localStorage.getItem('warehouses')) || [];
+            // 确保每个仓库都有唯一ID
+            if (warehouses.length === 0) {
+                // 初始化一些示例仓库数据，如果没有仓库数据
+                warehouses = [
+                    { id: 'wh001', name: '主仓库', location: '北京市朝阳区' },
+                    { id: 'wh002', name: '分仓A', location: '上海市浦东新区' },
+                    { id: 'wh003', name: '分仓B', location: '广州市天河区' }
+                ];
+                localStorage.setItem('warehouses', JSON.stringify(warehouses));
+            }
         },
 
         /**
@@ -561,55 +588,155 @@ export default {
          *   - Element UI Table: 设置表格行选中状态
          */
         loadWarehouses() {
+            this.isInitializingWarehouses = true; // 设置初始化标志
+            
             // 从localStorage获取仓库数据
-            this.warehouses = JSON.parse(localStorage.getItem('warehouses')) || [];
-
-            // 设置当前用户已授权的仓库
+            const warehouses = JSON.parse(localStorage.getItem('warehouses')) || [];
+            const authorizedWarehouses = this.currentAuthUser.authorizedWarehouses || [];
+            const overrideApprovalWarehouses = this.currentAuthUser.overrideApprovalWarehouses || [];
+            
+            // 为每个仓库添加权限状态
+            this.warehouses = warehouses.map(warehouse => {
+                return {
+                    ...warehouse,
+                    hasBasicPermission: authorizedWarehouses.includes(warehouse.id),
+                    hasOverridePermission: overrideApprovalWarehouses.includes(warehouse.id)
+                };
+            });
+            
+            // 为管理员用户处理特殊情况
+            if (this.currentAuthUser.role === 'admin') {
+                this.warehouses = this.warehouses.map(warehouse => ({
+                    ...warehouse,
+                    hasBasicPermission: true,
+                    hasOverridePermission: true
+                }));
+            }
+            
+            // 等待DOM更新后设置表格选择状态
             this.$nextTick(() => {
-                if (this.currentAuthUser.authorizedWarehouses) {
-                    this.currentAuthUser.authorizedWarehouses.forEach(warehouseId => {
-                        const warehouse = this.warehouses.find(w => w.id === warehouseId);
-                        if (warehouse) {
+                if (this.$refs.warehouseTable) {
+                    // 先清除所有选择
+                    this.$refs.warehouseTable.clearSelection();
+                    
+                    // 选择有基本权限的仓库
+                    this.warehouses.forEach(warehouse => {
+                        if (warehouse.hasBasicPermission) {
                             this.$refs.warehouseTable.toggleRowSelection(warehouse, true);
                         }
                     });
+                    
+                    // 设置完成后解除初始化标志
+                    setTimeout(() => {
+                        this.isInitializingWarehouses = false;
+                    }, 100);
                 }
             });
         },
 
         /**
+         * @Function_Para 处理基本权限变更
+         * @param {Object} row - 表格行对象
+         * @param {Boolean} value - 新的权限值
+         */
+        handleBasicPermissionChange(row, value) {
+            // 更新基本权限状态
+            row.hasBasicPermission = value;
+            
+            // 如果取消基本权限，同时取消越权批准权限
+            if (!value) {
+                row.hasOverridePermission = false;
+                
+                // 同步更新表格选择状态
+                if (this.$refs.warehouseTable) {
+                    this.$refs.warehouseTable.toggleRowSelection(row, false);
+                }
+            } else {
+                // 添加基本权限时，选中该行
+                if (this.$refs.warehouseTable) {
+                    this.$refs.warehouseTable.toggleRowSelection(row, true);
+                }
+            }
+        },
+
+        /**
+         * @Function_Para 处理越权批准权限变更
+         * @param {Object} row - 表格行对象
+         * @param {Boolean} value - 新的权限值
+         */
+        handleOverridePermissionChange(row, value) {
+            // 仅更新越权批准权限状态，不影响表格选择和基本权限
+            row.hasOverridePermission = value;
+        },
+
+        /**
          * @Function_Para 处理仓库选择变化
-         *   @param {Array} selection - 当前选中的仓库数组
-         * @Function_Meth 更新当前选中的仓库列表
-         * @Function_Orgi Template引用: 仓库表格的@selection-change事件
-         * @Function_API 无外部API调用
          */
         handleWarehouseSelectionChange(selection) {
+            // 如果在初始化过程中，不处理选择变化事件
+            if (this.isInitializingWarehouses) return;
+            
+            // 存储选中的仓库
             this.selectedWarehouses = selection;
+            
+            // 获取选中仓库的ID列表
+            const selectedIds = selection.map(item => item.id);
+            
+            // 更新所有仓库的基本权限状态（保留越权批准权限状态）
+            this.warehouses.forEach(warehouse => {
+                const isSelected = selectedIds.includes(warehouse.id);
+                
+                // 仅当选择状态与当前基本权限状态不一致时更新
+                if (warehouse.hasBasicPermission !== isSelected) {
+                    warehouse.hasBasicPermission = isSelected;
+                    
+                    // 如果取消选择，同时取消越权批准权限
+                    if (!isSelected) {
+                        warehouse.hasOverridePermission = false;
+                    }
+                }
+            });
         },
 
         /**
          * @Function_Para 保存授权设置
-         *   无参数
-         * @Function_Meth 将选中的仓库ID保存到用户的authorizedWarehouses属性中
-         * @Function_Orgi Template引用: 授权对话框的"确认授权"按钮点击事件
-         * @Function_API
-         *   - localStorage API: 读写用户数据
-         *   - Element UI Notify: 显示授权成功通知
          */
         saveWarehouseAuthorization() {
             const users = JSON.parse(localStorage.getItem('users')) || [];
             const userIndex = users.findIndex(u => u.id === this.currentAuthUser.id);
 
             if (userIndex !== -1) {
-                users[userIndex].authorizedWarehouses = this.selectedWarehouses.map(w => w.id);
+                // 获取基本权限和越权批准权限的仓库ID列表
+                const basicPermissionIds = this.warehouses
+                    .filter(w => w.hasBasicPermission)
+                    .map(w => w.id);
+                    
+                const overridePermissionIds = this.warehouses
+                    .filter(w => w.hasOverridePermission)
+                    .map(w => w.id);
+                
+                // 管理员始终拥有所有权限
+                if (this.currentAuthUser.role === 'admin') {
+                    const allWarehouseIds = this.warehouses.map(w => w.id);
+                    users[userIndex].authorizedWarehouses = allWarehouseIds;
+                    users[userIndex].overrideApprovalWarehouses = allWarehouseIds;
+                } else {
+                    // 更新用户权限
+                    users[userIndex].authorizedWarehouses = basicPermissionIds;
+                    users[userIndex].overrideApprovalWarehouses = overridePermissionIds;
+                }
+                
+                // 保存到localStorage
                 localStorage.setItem('users', JSON.stringify(users));
+                
+                // 更新当前授权用户对象
+                this.currentAuthUser = users[userIndex];
 
                 this.$notify({
                     title: '授权成功',
                     message: `${this.currentAuthUser.name}的仓库授权已更新`,
                     type: 'success',
-                    iconClass: 'el-icon-success'
+                    position: 'top-right'
                 });
 
                 this.loadUsers(); // 刷新用户列表
@@ -628,6 +755,14 @@ export default {
         isCurrentUserAdmin() {
             const currentUser = JSON.parse(localStorage.getItem('user'));
             return currentUser && currentUser.role === 'admin';
+        },
+
+        /**
+         * @Function_Para 检查是否是管理员用户
+         * @Function_Meth 判断当前授权的用户是否是管理员
+         */
+        isAdminUser() {
+            return this.currentAuthUser && this.currentAuthUser.role === 'admin';
         }
     }
 };

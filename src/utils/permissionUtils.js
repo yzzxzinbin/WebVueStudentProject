@@ -160,5 +160,54 @@ export default {
     
     const authorizedIds = this.getAuthorizedWarehouseIds();
     return warehouseProducts.filter(wp => authorizedIds.includes(wp.warehouseId));
+  },
+
+  /**
+   * 检查当前用户是否有指定仓库的越权操作批准权限
+   * @param {string} warehouseId - 仓库ID
+   * @returns {boolean} 是否有越权批准权限
+   */
+  hasOverrideApprovalPermission(warehouseId) {
+    // 管理员有所有仓库的越权批准权限
+    if (this.isAdmin()) return true;
+
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const overrideApprovalWarehouses = user.overrideApprovalWarehouses || [];
+    
+    return overrideApprovalWarehouses.includes(warehouseId);
+  },
+
+  /**
+   * 检查当前用户是否对多个仓库都有越权批准权限
+   * @param {Array<string>} warehouseIds - 仓库ID数组
+   * @returns {boolean} 是否对所有指定仓库都有越权批准权限
+   */
+  hasAllWarehousesOverrideApprovalPermission(warehouseIds) {
+    // 管理员有所有仓库的越权批准权限
+    if (this.isAdmin()) return true;
+    
+    // 空数组默认有权限
+    if (!warehouseIds || warehouseIds.length === 0) return true;
+
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const overrideApprovalWarehouses = user.overrideApprovalWarehouses || [];
+    
+    return warehouseIds.every(id => overrideApprovalWarehouses.includes(id));
+  },
+
+  /**
+   * 获取当前用户有越权批准权限的仓库ID列表
+   * @returns {Array<string>} 有越权批准权限的仓库ID数组
+   */
+  getOverrideApprovalWarehouseIds() {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    
+    // 管理员有所有仓库的越权批准权限
+    if (user.role === 'admin') {
+      const warehouses = JSON.parse(localStorage.getItem('warehouses') || '[]');
+      return warehouses.map(w => w.id);
+    }
+    
+    return user.overrideApprovalWarehouses || [];
   }
 }

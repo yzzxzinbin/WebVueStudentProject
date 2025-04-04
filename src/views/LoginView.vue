@@ -125,6 +125,12 @@ export default {
 
                     // 更新用户最后登录时间
                     user.lastLogin = new Date().toISOString();
+                    
+                    // 如果是管理员账户，确保拥有所有仓库的权限
+                    if (user.role === 'admin') {
+                        this.ensureAdminFullPermissions(user);
+                    }
+                    
                     localStorage.setItem("user", JSON.stringify(user));
 
                     if (this.rememberMe) {
@@ -325,6 +331,30 @@ export default {
          */
         generateId() {
             return Date.now().toString(36) + Math.random().toString(36).substr(2);
+        },
+
+        /**
+         * @Function_Para 确保管理员拥有完全权限
+         * @param {Object} admin - 管理员用户对象
+         * @Function_Meth 检查并确保管理员拥有所有仓库的权限
+         */
+        ensureAdminFullPermissions(admin) {
+            // 获取所有仓库ID
+            const warehouses = JSON.parse(localStorage.getItem('warehouses')) || [];
+            const allWarehouseIds = warehouses.map(w => w.id);
+            
+            // 更新管理员的权限
+            admin.authorizedWarehouses = allWarehouseIds;
+            admin.overrideApprovalWarehouses = allWarehouseIds;
+            
+            // 更新用户列表中的管理员权限
+            const users = JSON.parse(localStorage.getItem('users')) || [];
+            const adminIndex = users.findIndex(u => u.id === admin.id);
+            if (adminIndex !== -1) {
+                users[adminIndex].authorizedWarehouses = allWarehouseIds;
+                users[adminIndex].overrideApprovalWarehouses = allWarehouseIds;
+                localStorage.setItem('users', JSON.stringify(users));
+            }
         }
     },
 

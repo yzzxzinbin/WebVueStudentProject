@@ -78,6 +78,7 @@
                         <el-radio-button label="all" style="user-select: none;" unselectable="on">全部</el-radio-button>
                         <el-radio-button label="mine" style="user-select: none;" unselectable="on">我的申请</el-radio-button>
                         <el-radio-button label="approval" v-if="canApprove" style="user-select: none;" unselectable="on">待我审批</el-radio-button>
+                        <el-radio-button label="approved" style="user-select: none;" unselectable="on">已批准</el-radio-button>
                     </el-radio-group>
                 </div>
             </div>
@@ -87,6 +88,13 @@
                 <el-table-column prop="type" label="操作类型" width="120" sortable>
                     <template slot-scope="{row}">
                         <el-tag :type="getOperationTagType(row.type)" size="small">{{ row.type }}</el-tag>
+                    </template>
+                </el-table-column>
+                <el-table-column prop="status" label="状态" width="100" sortable>
+                    <template slot-scope="{row}">
+                        <el-tag :type="getStatusTagType(row.status)" size="small">
+                            {{ getStatusText(row.status) }}
+                        </el-tag>
                     </template>
                 </el-table-column>
                 <el-table-column prop="sourceWarehouse" label="源仓库" width="100">
@@ -113,11 +121,12 @@
                 <el-table-column label="操作" width="200" fixed="right" align="center">
                     <template slot-scope="{row}">
                         <el-button size="mini" type="success" @click="approveRequest(row)"
-                            v-if="canApproveThis(row)">批准</el-button>
+                            v-if="canApproveThis(row) && row.status === 'AWA'">批准</el-button>
                         <el-button size="mini" type="danger" @click="rejectRequest(row)"
-                            v-if="canApproveThis(row)">拒绝</el-button>
+                            v-if="canApproveThis(row) && row.status === 'AWA'">拒绝</el-button>
                         <el-button size="mini" type="warning" @click="cancelRequest(row)"
-                            v-if="isMyRequest(row)">撤销</el-button>
+                            v-if="isMyRequest(row) && row.status === 'AWA'">撤销</el-button>
+                        <span v-if="row.status === 'EXC'">已执行</span>
                     </template>
                 </el-table-column>
             </el-table>
@@ -208,7 +217,7 @@ export default {
                 reason: [{ required: true, message: '请填写申请理由', trigger: 'blur' }]
             },
             pendingRequests: [], // 待处理的申请
-            viewMode: 'all', // 查看模式：all-全部, mine-我的申请, approval-待我审批
+            viewMode: 'all', // 查看模式：all-全部, mine-我的申请, approval-待我审批, approved-已批准
             currentPage: 1,
             pageSize: 20,
             loading: false,
@@ -265,6 +274,9 @@ export default {
                 filtered = filtered.filter(req => req.applicant === currentUser.username);
             } else if (this.viewMode === 'approval' && this.canApprove) {
                 filtered = filtered.filter(req => {
+                    // 只显示等待状态的申请
+                    if (req.status !== 'AWA') return false;
+                    
                     // 管理员可以审批所有申请
                     if (currentUser.role === 'admin') return true;
 
@@ -272,16 +284,28 @@ export default {
                     const targetWarehouseId = req.targetWarehouse;
                     const sourceWarehouseId = req.sourceWarehouse;
                     const authorizedWarehouseIds = this.$permission.getAuthorizedWarehouseIds();
+                    const overrideApprovalWarehouseIds = this.$permission.getOverrideApprovalWarehouseIds();
 
+                    // 必须同时有基本权限和越权批准权限
                     if (req.type === '入库') {
-                        return authorizedWarehouseIds.includes(targetWarehouseId);
+                        return authorizedWarehouseIds.includes(targetWarehouseId) && 
+                               overrideApprovalWarehouseIds.includes(targetWarehouseId);
                     } else if (req.type === '出库') {
-                        return authorizedWarehouseIds.includes(sourceWarehouseId);
+                        return authorizedWarehouseIds.includes(sourceWarehouseId) && 
+                               overrideApprovalWarehouseIds.includes(sourceWarehouseId);
                     } else { // 转调
                         return authorizedWarehouseIds.includes(sourceWarehouseId) &&
-                            authorizedWarehouseIds.includes(targetWarehouseId);
+                               authorizedWarehouseIds.includes(targetWarehouseId) &&
+                               overrideApprovalWarehouseIds.includes(sourceWarehouseId) &&
+                               overrideApprovalWarehouseIds.includes(targetWarehouseId);
                     }
                 });
+            } else if (this.viewMode === 'approved') {
+                // 已批准选项卡只显示已执行的申请
+                filtered = filtered.filter(req => req.status === 'EXC');
+            } else if (this.viewMode === 'all') {
+                // "全部"选项卡不显示已执行的申请
+                filtered = filtered.filter(req => req.status === 'AWA');
             }
 
             // 然后分页
@@ -303,21 +327,33 @@ export default {
                 filtered = filtered.filter(req => req.applicant === currentUser.username);
             } else if (this.viewMode === 'approval' && this.canApprove) {
                 filtered = filtered.filter(req => {
+                    // 只显示等待状态的申请
+                    if (req.status !== 'AWA') return false;
+                    
                     if (currentUser.role === 'admin') return true;
 
                     const targetWarehouseId = req.targetWarehouse;
                     const sourceWarehouseId = req.sourceWarehouse;
                     const authorizedWarehouseIds = this.$permission.getAuthorizedWarehouseIds();
+                    const overrideApprovalWarehouseIds = this.$permission.getOverrideApprovalWarehouseIds();
 
                     if (req.type === '入库') {
-                        return authorizedWarehouseIds.includes(targetWarehouseId);
+                        return authorizedWarehouseIds.includes(targetWarehouseId) && 
+                               overrideApprovalWarehouseIds.includes(targetWarehouseId);
                     } else if (req.type === '出库') {
-                        return authorizedWarehouseIds.includes(sourceWarehouseId);
+                        return authorizedWarehouseIds.includes(sourceWarehouseId) && 
+                               overrideApprovalWarehouseIds.includes(sourceWarehouseId);
                     } else {
                         return authorizedWarehouseIds.includes(sourceWarehouseId) &&
-                            authorizedWarehouseIds.includes(targetWarehouseId);
+                               authorizedWarehouseIds.includes(targetWarehouseId) &&
+                               overrideApprovalWarehouseIds.includes(sourceWarehouseId) &&
+                               overrideApprovalWarehouseIds.includes(targetWarehouseId);
                     }
                 });
+            } else if (this.viewMode === 'approved') {
+                filtered = filtered.filter(req => req.status === 'EXC');
+            } else if (this.viewMode === 'all') {
+                filtered = filtered.filter(req => req.status === 'AWA');
             }
 
             return filtered.length;
@@ -495,7 +531,7 @@ export default {
             const request = {
                 id: requestId,
                 ...this.operationForm,
-                status: 'pending',
+                status: 'AWA', // 设置初始状态为等待(AWAiting)
                 timestamp: new Date().toISOString()
             };
 
@@ -529,6 +565,17 @@ export default {
          * @Function_Meth 批准越权操作申请并执行操作
          */
         approveRequest(request) {
+            // 检查是否有权批准此申请
+            if (!this.canApproveThis(request)) {
+                this.$notify({
+                    title: '权限不足',
+                    message: '您没有批准此越权操作的权限',
+                    type: 'warning',
+                    position: 'top-right'
+                });
+                return;
+            }
+
             this.$confirm('确定批准此越权操作申请?', '提示', {
                 confirmButtonText: '确定',
                 cancelButtonText: '取消',
@@ -587,13 +634,18 @@ export default {
             // 查找并更新指定申请的状态
             const index = pendingRequests.findIndex(req => req.id === requestId);
             if (index !== -1) {
-                pendingRequests[index].status = status;
+                // 如果是批准，状态变为已执行(EXeCuted)
+                if (status === 'approved') {
+                    pendingRequests[index].status = 'EXC';
+                } else {
+                    pendingRequests[index].status = status;
+                }
+                
                 pendingRequests[index].processTime = new Date().toISOString();
                 pendingRequests[index].processor = (JSON.parse(localStorage.getItem('user')) || {}).username || '未知用户';
 
-                // 如果是完成状态，将其从待处理列表移除
-                // 同时添加到操作历史记录
-                if (status === 'approved' || status === 'rejected' || status === 'cancelled') {
+                // 如果是拒绝或撤销状态，将其从待处理列表移除并添加到操作历史记录
+                if (status === 'rejected' || status === 'cancelled') {
                     const completedRequest = pendingRequests.splice(index, 1)[0];
 
                     // 将已处理的申请添加到操作历史
@@ -611,6 +663,27 @@ export default {
                         reason: completedRequest.reason,
                         processTime: completedRequest.processTime,
                         processor: completedRequest.processor
+                    });
+                    localStorage.setItem('operations', JSON.stringify(operations));
+                } else if (status === 'approved') {
+                    // 如果是批准状态，也添加到操作历史记录，但不从pendingRequests中移除
+                    const approvedRequest = pendingRequests[index];
+                    
+                    // 将已批准的申请添加到操作历史
+                    const operations = JSON.parse(localStorage.getItem('operations') || '[]');
+                    operations.push({
+                        id: approvedRequest.id,
+                        type: approvedRequest.type,
+                        productId: approvedRequest.productId,
+                        quantity: approvedRequest.quantity,
+                        sourceWarehouse: approvedRequest.sourceWarehouse,
+                        targetWarehouse: approvedRequest.targetWarehouse,
+                        applicant: approvedRequest.applicant,
+                        timestamp: approvedRequest.timestamp,
+                        status: 'SUC',
+                        reason: approvedRequest.reason,
+                        processTime: approvedRequest.processTime,
+                        processor: approvedRequest.processor
                     });
                     localStorage.setItem('operations', JSON.stringify(operations));
                 }
@@ -843,19 +916,24 @@ export default {
             // 管理员可以审批所有申请
             if (currentUser.role === 'admin') return true;
 
-            // 经理只能审批自己有权限的仓库
+            // 经理只能审批自己有权限的仓库，并且需要有越权批准权限
             if (currentUser.role === 'manager') {
                 const targetWarehouseId = request.targetWarehouse;
                 const sourceWarehouseId = request.sourceWarehouse;
                 const authorizedWarehouseIds = this.$permission.getAuthorizedWarehouseIds();
+                const overrideApprovalWarehouseIds = this.$permission.getOverrideApprovalWarehouseIds();
 
                 if (request.type === '入库') {
-                    return authorizedWarehouseIds.includes(targetWarehouseId);
+                    return authorizedWarehouseIds.includes(targetWarehouseId) &&
+                           overrideApprovalWarehouseIds.includes(targetWarehouseId);
                 } else if (request.type === '出库') {
-                    return authorizedWarehouseIds.includes(sourceWarehouseId);
+                    return authorizedWarehouseIds.includes(sourceWarehouseId) &&
+                           overrideApprovalWarehouseIds.includes(sourceWarehouseId);
                 } else { // 转调
                     return authorizedWarehouseIds.includes(sourceWarehouseId) &&
-                        authorizedWarehouseIds.includes(targetWarehouseId);
+                           authorizedWarehouseIds.includes(targetWarehouseId) &&
+                           overrideApprovalWarehouseIds.includes(sourceWarehouseId) &&
+                           overrideApprovalWarehouseIds.includes(targetWarehouseId);
                 }
             }
 
@@ -880,6 +958,36 @@ export default {
         showReasonDetail(request) {
             this.currentRequest = request;
             this.reasonDialogVisible = true;
+        },
+
+        /**
+         * @Function_Para 获取状态标签样式
+         * @param {string} status - 申请状态
+         * @Function_Meth 根据申请状态返回对应的标签样式
+         */
+        getStatusTagType(status) {
+            const statusMap = {
+                'AWA': 'warning',   // 等待中
+                'EXC': 'success',   // 已执行
+                'rejected': 'danger',  // 已拒绝
+                'cancelled': 'info'    // 已撤销
+            };
+            return statusMap[status] || 'info';
+        },
+
+        /**
+         * @Function_Para 获取状态文本
+         * @param {string} status - 申请状态
+         * @Function_Meth 根据申请状态返回中文状态描述
+         */
+        getStatusText(status) {
+            const statusMap = {
+                'AWA': '等待中',
+                'EXC': '已执行',
+                'rejected': '已拒绝',
+                'cancelled': '已撤销'
+            };
+            return statusMap[status] || status;
         }
     },
     created() {
