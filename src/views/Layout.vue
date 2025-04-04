@@ -641,6 +641,7 @@ body {
   letter-spacing: 1px;
   transition: all 0.5s;
   user-select: none;
+  margin-left: 10px;
 }
 
 /* 系统名称悬停效果 */
@@ -977,7 +978,8 @@ span {
 /* 应用于标志容器中的分隔线div，class="divider" */
 .divider {
   width: 2px;
-  height: 40px;
+  height: 50%;
+  transform: translateY(+10%);
   background-color: #dcdcdc;
   margin-left: 18px;
 }

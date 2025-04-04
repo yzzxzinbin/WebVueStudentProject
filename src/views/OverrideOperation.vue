@@ -67,7 +67,7 @@
         </el-card>
 
         <!-- 待处理申请表格 -->
-        <el-card ref="pendingTableCard" shadow="hover" class="table-card" style="height: calc(99vh - 590px);">
+        <el-card ref="pendingTableCard" shadow="hover" class="table-card" style="height: calc(99vh - 580px);">
             <div class="table-header">
                 <div class="header-left">
                     <span class="table-title">待处理申请</span>
@@ -75,14 +75,14 @@
                 </div>
                 <div class="header-right">
                     <el-radio-group v-model="viewMode" size="small">
-                        <el-radio-button label="all">全部</el-radio-button>
-                        <el-radio-button label="mine">我的申请</el-radio-button>
-                        <el-radio-button label="approval" v-if="canApprove">待我审批</el-radio-button>
+                        <el-radio-button label="all" style="user-select: none;" unselectable="on">全部</el-radio-button>
+                        <el-radio-button label="mine" style="user-select: none;" unselectable="on">我的申请</el-radio-button>
+                        <el-radio-button label="approval" v-if="canApprove" style="user-select: none;" unselectable="on">待我审批</el-radio-button>
                     </el-radio-group>
                 </div>
             </div>
-            <el-table ref="pendingTable" :data="paginatedPending" height="tableHeight" stripe border
-                highlight-current-row style="width: 100%" v-loading="loading" class="rounded-table">
+            <el-table ref="pendingTable" :data="paginatedPending" height="calc(99vh - 700px)" stripe border
+                highlight-current-row style="width: 100%" v-loading="loading" class="rounded-table fixed-height-table">
                 <el-table-column prop="id" label="申请ID" width="240" sortable></el-table-column>
                 <el-table-column prop="type" label="操作类型" width="120" sortable>
                     <template slot-scope="{row}">
@@ -99,7 +99,7 @@
                 <el-table-column prop="reason" label="申请理由" min-width="120">
                     <!-- 修改申请理由显示方式 -->
                     <template slot-scope="{row}">
-                        <div class="reason-preview" @click="showReasonDetail(row)">
+                        <div class="reason-preview ellipsis-cell" @click="showReasonDetail(row)">
                             {{ truncateReason(row.reason) }}
                             <el-button type="text" size="mini" class="view-detail-btn">
                                 查看详情 <i class="el-icon-view"></i>
@@ -123,13 +123,15 @@
             </el-table>
             <div class="table-footer">
                 <div class="footer-left">
-                    <el-button type="primary" plain size="mini" @click="scrollToTop('pendingTable')" class="back-to-top">
+                    <el-button type="primary" plain size="mini" @click="scrollToTop('pendingTable')"
+                        class="back-to-top">
                         <i class="el-icon-top"></i> 返回顶部
                     </el-button>
                 </div>
                 <div class="footer-right">
-                    <el-pagination class="pagination" @size-change="handleSizeChange" @current-change="handleCurrentChange"
-                        :current-page="currentPage" :page-sizes="[10, 20, 50, 100]" :page-size="pageSize"
+                    <el-pagination class="pagination" @size-change="handleSizeChange"
+                        @current-change="handleCurrentChange" :current-page="currentPage"
+                        :page-sizes="[10, 20, 50, 100]" :page-size="pageSize"
                         layout="total, sizes, prev, pager, next, jumper" :total="totalPending">
                     </el-pagination>
                 </div>
@@ -867,7 +869,7 @@ export default {
          */
         truncateReason(reason) {
             if (!reason) return '无';
-            return reason.length > 20 ? reason.substring(0, 20) + '...' : reason;
+            return reason.length > 4 ? reason.substring(0, 4) + '...' : reason;
         },
 
         /**
@@ -907,7 +909,7 @@ export default {
 }
 
 .table-card {
-   margin: 0;
+    margin: 0;
 }
 
 /* 表单头部样式 */
@@ -999,7 +1001,7 @@ export default {
 }
 
 .reason-form-item {
-    margin :15px;
+    margin: 15px;
 }
 
 /* 操作按钮容器 */
@@ -1008,6 +1010,7 @@ export default {
     justify-content: flex-end;
     gap: 15px;
     margin-top: 20px;
+    margin-right: 20px;
 }
 
 .form-actions .el-button {
@@ -1188,49 +1191,108 @@ export default {
 .rounded-table {
     border-radius: 8px;
     overflow: hidden;
-    margin: 0 22px; /* 与标题左侧padding对齐 */
+    margin: 0 22px 5px;
+    /* 添加底部外边距 */
     width: calc(100% - 44px) !important;
 }
 
-.rounded-table>>>.el-table__header-wrapper,
-.rounded-table>>>.el-table__body-wrapper {
-    border-radius: 8px;
+/* 固定高度表格和行高 */
+.fixed-height-table>>>.el-table__body tr {
+    height: 48px;
+    /* 固定行高 */
+}
+
+.fixed-height-table>>>.el-table__body td {
+    padding: 0 12px !important;
+    /* 减小内边距 */
+}
+
+/* 单元格内容溢出控制 */
+.ellipsis-cell {
+    white-space: nowrap;
     overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.table-card {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 0px !important;
+}
+
+/* 改善表格滚动行为 */
+.rounded-table>>>.el-table__body-wrapper {
+    overflow-y: auto !important;
+    scrollbar-width: thin;
+    /* Firefox */
+}
+
+.rounded-table>>>.el-table__body-wrapper::-webkit-scrollbar {
+    width: 8px;
+    /* Chrome, Safari */
+}
+
+.rounded-table>>>.el-table__body-wrapper::-webkit-scrollbar-thumb {
+    background-color: #dcdfe6;
+    border-radius: 4px;
+}
+
+.rounded-table>>>.el-table__body-wrapper::-webkit-scrollbar-track {
+    background-color: #f5f7fa;
+    border-radius: 4px;
 }
 
 /* 表格底部样式优化 */
 .table-footer {
-    padding: 15px 22px; /* 与表格标题对齐 */
+    padding: 0px 22px;
+    /* 与表格标题对齐 */
     display: flex;
     justify-content: space-between;
     align-items: center;
     width: calc(100% - 44px);
 }
 
-.footer-left, .footer-right {
+.footer-left,
+.footer-right {
     display: flex;
     align-items: center;
 }
 
-/* 对话框关闭按钮样式 */
+/* 对话框关闭按钮样式 - 简化为正方形圆角 */
+/* 对话框关闭按钮样式 - 增大悬浮区域 */
 .reason-dialog>>>.el-dialog__headerbtn {
     transition: all 0.3s;
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 30px;
+    /* 增加按钮宽度 */
+    height: 28px;
+    /* 增加按钮高度 */
+    padding: 5px;
+    /* 添加内边距增大可点击区域 */
 }
 
 .reason-dialog>>>.el-dialog__headerbtn:hover {
-    background-color: rgba(245, 108, 108, 0.9);
-    border-radius: 50%;
-    width: 30px;
-    height: 30px;
-    top: 15px;
-    right: 15px;
+    background-color: rgba(245, 108, 108, 0.8);
+    border-radius: 4px;
+    /* 保持正方形圆角 */
 }
 
 .reason-dialog>>>.el-dialog__headerbtn:hover .el-dialog__close {
     color: #ffffff;
 }
 
-.reason-dialog>>>.el-dialog__close {
-    transition: all 0.3s;
+/* 调整关闭图标的位置和大小 */
+.reason-dialog>>>.el-dialog__headerbtn .el-dialog__close {
+    transition: color 0.3s;
+    font-size: 18px;
+    /* 增大图标尺寸 */
+    transform: scale(1.2);
+    /* 额外缩放图标 */
 }
 </style>
