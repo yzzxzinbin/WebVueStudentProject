@@ -28,9 +28,16 @@ const routes = [
         component: () => import('../views/Warehouse-products.vue'),
         meta: { roles: ['admin', 'manager', 'operator'] }
       },
+      // 将原本的operation路由修改为warehouse/operation
       {
-        path: 'operation',
+        path: 'warehouse/operation',
         component: () => import('../views/Operation.vue'),
+        meta: { roles: ['admin', 'manager', 'operator'] }
+      },
+      // 添加新的越权申请页面路由
+      {
+        path: 'warehouse/override',
+        component: () => import('../views/OverrideOperation.vue'),
         meta: { roles: ['admin', 'manager', 'operator'] }
       },
       {
@@ -69,7 +76,7 @@ function getDefaultRouteForUser(user) {
     case 'manager':
       return '/list/warehouses';
     case 'operator':
-      return '/operation';
+      return '/warehouse/operation'; // 修改默认路由为新的路径
     default:
       return '/list/products';
   }

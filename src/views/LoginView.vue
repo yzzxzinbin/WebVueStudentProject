@@ -142,7 +142,7 @@ export default {
                     } else if (user.role === 'manager') {
                         redirectPath = '/list/warehouses';
                     } else if (user.role === 'operator') {
-                        redirectPath = '/operation';
+                        redirectPath = '/warehouse/operation';
                     }
 
                     this.$router.push(redirectPath).catch(err => {

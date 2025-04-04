@@ -128,6 +128,21 @@ export default {
           ]
         },
         {
+          path: '/warehouse',
+          title: '仓库操作',
+          icon: 'el-icon-s-operation',
+          children: [
+            {
+              path: '/warehouse/operation',
+              title: '操作申请',
+            },
+            {
+              path: '/warehouse/override',
+              title: '越权申请',
+            }
+          ]
+        },
+        {
           path: '/system',
           title: '系统管理',
           icon: 'el-icon-setting',
@@ -141,12 +156,6 @@ export default {
               title: '个人中心'
             }
           ]
-        },
-        {
-          path: '/operation',
-          title: '操作申请',
-          icon: 'el-icon-s-operation',
-          children: []
         },
         {
           path: '/visualization',
