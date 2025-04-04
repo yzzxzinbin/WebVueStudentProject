@@ -514,7 +514,7 @@ export default {
       this.isLoading = true;
       setTimeout(() => {
         this.isLoading = false;
-      }, 300);
+      }, 100);
     }
   },
   

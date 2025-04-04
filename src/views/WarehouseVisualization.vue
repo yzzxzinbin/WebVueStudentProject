@@ -144,29 +144,46 @@
           <div class="chart-header">
             <div class="chart-title">仓库库存三维视图</div>
             <div class="chart-controls">
-              <!-- 添加时间范围筛选器 -->
-              <div class="time-range-filter">
-                <span class="filter-label" style="user-select: none;">时间范围:</span>
-                <el-slider v-model="timeRangeValue" range :min="timeRangeMin" :max="timeRangeMax" :step="timeRangeStep"
-                  :format-tooltip="formatTimeTooltip" @change="handleTimeRangeChange"
-                  style="width: 300px; margin-right: 15px;"></el-slider>
-              </div>
-              <div class="zoom-control">
-                <span class="filter-label" style="user-select: none;">缩放范围:</span>
-                <el-slider v-model="scatter3dZoom" :min="50" :max="200" @change="handleZoomChange" show-input
-                  style="width: 250px;">
-                </el-slider>
+              <!-- 仅保留仓库选择控件在顶部 -->
+              <div class="warehouse-filter">
+                <span class="filter-label" style="user-select: none;">选择仓库:</span>
+                <el-select v-model="selectedWarehouses" multiple collapse-tags placeholder="选择仓库"
+                  style="width: 260px; margin-right: 15px;" @change="handleWarehouseSelectionChange">
+                  <el-option v-for="warehouse in availableWarehouses" :key="warehouse.id" :label="warehouse.name"
+                    :value="warehouse.id">
+                  </el-option>
+                </el-select>
               </div>
               <el-button type="text" @click="refresh3DChart" :icon="'el-icon-refresh'"></el-button>
               <el-checkbox v-model="autoRotate" @change="handleAutoRotateChange">自动旋转</el-checkbox>
             </div>
           </div>
+
           <el-skeleton :loading="loading.scatter3d" animated>
             <template #template>
               <el-skeleton-item variant="image" style="height: calc(100% - 50px)" />
             </template>
             <div ref="scatter3dChart" class="chart-container" style="height: 700px;"></div>
           </el-skeleton>
+
+          <!-- 将时间范围和缩放控件移至图表下方 -->
+          <div class="chart-footer-controls">
+            <div class="control-group">
+              <div class="time-range-filter">
+                <span class="filter-label" style="user-select: none;">时间范围:</span>
+                <el-slider v-model="timeRangeValue" range :min="timeRangeMin" :max="timeRangeMax" :step="timeRangeStep"
+                  :format-tooltip="formatTimeTooltip" @change="handleTimeRangeChange" style="width: 500px;"></el-slider>
+              </div>
+            </div>
+            <div class="control-group">
+              <div class="zoom-control">
+                <span class="filter-label" style="user-select: none;">缩放范围:</span>
+                <el-slider v-model="scatter3dZoom" :min="50" :max="200" @change="handleZoomChange" show-input
+                  style="width: 250px;">
+                </el-slider>
+              </div>
+            </div>
+          </div>
         </el-card>
       </el-col>
     </el-row>
@@ -191,8 +208,9 @@
   background-size: cover;
   background-position: center;
   padding: 20px;
-  min-height: 100vh;
+  min-height: 95vh;
   border-radius: 12px;
+  padding-bottom: 1px;
 }
 
 .summary-card {
@@ -477,6 +495,30 @@
   align-items: center;
   margin-right: 10px;
 }
+
+/* 添加仓库筛选器样式 */
+.warehouse-filter {
+  display: flex;
+  align-items: center;
+  margin-right: 15px;
+  max-width: 400px;
+}
+
+/* 添加图表底部控件样式 */
+.chart-footer-controls {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: space-between;
+}
+
+.control-group {
+  flex: 1;
+  min-width: 300px;
+}
 </style>
 <style scoped></style>
 
@@ -502,6 +544,16 @@ export default {
   name: 'WarehouseDashboard',
   data() {
     return {
+      // 添加仓库选择相关数据
+      selectedWarehouses: [], // 当前选中的仓库ID列表
+      availableWarehouses: [], // 有操作记录的仓库列表
+      // 添加图表视图状态存储
+      chartViewState: {
+        alpha: 25,        // 垂直旋转角度
+        beta: 35,         // 水平旋转角度
+        distance: 150,    // 视图距离
+        center: [0, 0, 0] // 视图中心点
+      },
       scatter3dZoom: 100, // 缩放比例，初始100%
       autoRotate: true, // 是否自动旋转
       // 添加时间范围筛选相关数据
@@ -544,7 +596,11 @@ export default {
         trend: null,
         gauge: null,
         scatter3d: null
-      }
+      },
+      // 添加实际时间范围记录
+      actualTimeRange: null,
+      // 添加强制刷新标记
+      forceRefreshChart: false,
     }
   },
 
@@ -659,6 +715,9 @@ export default {
         this.warehouses.forEach(w => {
           w.capacity = Number(w.capacity) || 0;
         });
+
+        // 初始化有操作记录的仓库列表
+        this.initAvailableWarehouses();
       } finally {
         this.loading = { product: false, heatmap: false, trend: false, gauge: false, scatter3d: false };
         this.$nextTick(() => {
@@ -668,6 +727,127 @@ export default {
           this.updateScatter3DChart();
         });
       }
+    },
+
+    /**
+     * 初始化有操作记录的仓库列表并设置默认选中
+     */
+    initAvailableWarehouses() {
+      // 获取所有操作中涉及的仓库ID
+      const warehouseIdsWithOps = new Set();
+      this.operations.forEach(op => {
+        if (op.sourceWarehouse && op.sourceWarehouse !== 'External') {
+          warehouseIdsWithOps.add(op.sourceWarehouse);
+        }
+        if (op.targetWarehouse && op.targetWarehouse !== 'External') {
+          warehouseIdsWithOps.add(op.targetWarehouse);
+        }
+      });
+
+      // 过滤并格式化有操作的仓库列表
+      this.availableWarehouses = this.warehouses.filter(w =>
+        warehouseIdsWithOps.has(w.id)
+      );
+
+      // 默认选中所有有操作记录的仓库
+      this.selectedWarehouses = this.availableWarehouses.map(w => w.id);
+    },
+
+    /**
+     * 处理仓库选择变更
+     */
+    handleWarehouseSelectionChange() {
+      // 保存当前视图状态
+      this.saveChartViewState();
+
+      // 标记重新加载
+      this.loading.scatter3d = true;
+
+      // 关键修改：不再重置时间范围，而是保留用户的设置
+      // 仅清除actualTimeRange确保时间轴会根据新数据重新计算
+      this.actualTimeRange = null;
+
+      // 使用强制刷新模式重绘图表
+      this.forceRefreshChart = true;
+
+      // 重新渲染3D散点图
+      this.updateScatter3DChart();
+    },
+
+    /**
+     * 保存当前图表视图状态
+     */
+    saveChartViewState() {
+      if (!this.charts.scatter3d) return;
+
+      try {
+        // 获取图表当前选项
+        const option = this.charts.scatter3d.getOption();
+        if (option && option.grid3D && option.grid3D[0] && option.grid3D[0].viewControl) {
+          const viewControl = option.grid3D[0].viewControl;
+
+          this.chartViewState = {
+            alpha: viewControl.alpha,
+            beta: viewControl.beta,
+            distance: viewControl.distance,
+            center: viewControl.center || [0, 0, 0],
+            // 其他可能需要的状态
+          };
+        }
+      } catch (err) {
+        console.warn('Failed to save chart view state:', err);
+      }
+    },
+
+    /**
+     * 恢复保存的图表视图状态
+     */
+    restoreChartViewState() {
+      if (!this.charts.scatter3d) return;
+
+      try {
+        // 获取当前选项状态
+        const option = this.charts.scatter3d.getOption();
+
+        // 仅当某些状态信息丢失时才需要恢复
+        if (option && option.grid3D && option.grid3D[0] && option.grid3D[0].viewControl) {
+          // 检查当前视图是否已经符合期望状态
+          const currentViewControl = option.grid3D[0].viewControl;
+          const needUpdate =
+            currentViewControl.alpha !== this.chartViewState.alpha ||
+            currentViewControl.beta !== this.chartViewState.beta ||
+            currentViewControl.distance !== this.chartViewState.distance ||
+            !this.arraysEqual(currentViewControl.center, this.chartViewState.center);
+
+          // 仅在需要更新时才应用保存的状态
+          if (needUpdate) {
+            option.grid3D[0].viewControl = {
+              ...option.grid3D[0].viewControl,
+              alpha: this.chartViewState.alpha,
+              beta: this.chartViewState.beta,
+              distance: this.chartViewState.distance,
+              center: this.chartViewState.center,
+              // 保留自动旋转设置
+              autoRotate: this.autoRotate
+            };
+
+            // 应用保存的状态但不触发完整重绘
+            this.charts.scatter3d.setOption(option, false);
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to restore chart view state:', err);
+      }
+    },
+
+    // 新增辅助方法：检查两个数组是否相等
+    arraysEqual(a, b) {
+      if (!a || !b) return false;
+      if (a.length !== b.length) return false;
+      for (let i = 0; i < a.length; i++) {
+        if (a[i] !== b[i]) return false;
+      }
+      return true;
     },
 
     initCharts() {
@@ -1058,10 +1238,15 @@ export default {
     },
 
     refresh3DChart() {
+      // 保存当前视图状态
+      this.saveChartViewState();
+
       this.loading.scatter3d = true;
 
       // 重置时间范围为全范围
       this.timeRangeValue = [0, 100];
+      this.actualTimeRange = null;
+      this.forceRefreshChart = true;
 
       this.updateScatter3DChart();
     },
@@ -1081,13 +1266,17 @@ export default {
       // 获取当前时间 - 始终作为参考最大值
       const nowTime = new Date().getTime();
 
-      // 计算实际时间范围（关键修复点1：确保最大时间始终是当前时间）
+      // 计算实际时间范围
       const minIndex = Math.floor((this.timeRangeValue[0] / 100) * this.timeRangeDates.length);
       let maxIndex = Math.floor((this.timeRangeValue[1] / 100) * this.timeRangeDates.length);
 
+      // 确保索引在有效范围内
+      const safeMinIndex = Math.max(0, Math.min(minIndex, this.timeRangeDates.length - 1));
+      const safeMaxIndex = Math.max(0, Math.min(maxIndex, this.timeRangeDates.length - 1));
+
       // 取出时间范围
-      const minTime = this.timeRangeDates[minIndex];
-      const originalMaxTime = this.timeRangeDates[maxIndex];
+      const minTime = this.timeRangeDates[safeMinIndex];
+      const originalMaxTime = this.timeRangeDates[safeMaxIndex];
 
       // 修复滑块结束点映射问题：确保100%对应的时间至少为当前时间或更大
       const maxTime = this.timeRangeValue[1] === 100 ? nowTime : originalMaxTime;
@@ -1098,7 +1287,13 @@ export default {
         return data;
       }
 
-      // 确定是否包含当前时间点
+      // 记录实际的时间范围，用于图表轴设置
+      this.actualTimeRange = {
+        min: minTime,
+        max: maxTime
+      };
+
+      // 判断是否包含当前时间点
       // 关键修复点2：更精确地判断何时应该包含实时点
       const isEndAtMax = this.timeRangeValue[1] === 100;
       const isEndNearCurrent = Math.abs(nowTime - maxTime) < 60; // 1 分钟
@@ -1283,12 +1478,30 @@ export default {
      */
     prepareScatter3DData() {
       const operations = JSON.parse(localStorage.getItem('operations')) || [];
-      const warehouses = JSON.parse(localStorage.getItem('warehouses')) || [];
+      // 只获取已选仓库的数据
+      const warehouses = (JSON.parse(localStorage.getItem('warehouses')) || [])
+        .filter(warehouse => this.selectedWarehouses.includes(warehouse.id));
+
+      // 如果没有选择仓库，直接返回空数组
+      if (warehouses.length === 0) {
+        return [];
+      }
+
       const products = JSON.parse(localStorage.getItem('products')) || [];
 
-      // 1. 按时间排序所有操作
+      // 1. 按时间排序所有操作，并只保留与已选仓库相关的操作
       const sortedOps = [...operations]
-        .filter(op => op.status === 'SUC') // 只处理成功的操作
+        .filter(op => {
+          // 只处理成功的操作
+          if (op.status !== 'SUC') return false;
+
+          // 只保留与已选仓库相关的操作
+          const relatedToSelectedWarehouses =
+            (op.sourceWarehouse && this.selectedWarehouses.includes(op.sourceWarehouse)) ||
+            (op.targetWarehouse && this.selectedWarehouses.includes(op.targetWarehouse));
+
+          return relatedToSelectedWarehouses;
+        })
         .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
       // 如果没有操作记录，直接返回空数组
@@ -1296,7 +1509,7 @@ export default {
         return [];
       }
 
-      // 2. 初始化每个仓库的库存历史记录
+      // 2. 初始化每个已选仓库的库存历史记录
       const warehouseHistory = {};
       warehouses.forEach(warehouse => {
         warehouseHistory[warehouse.id] = {
@@ -1315,15 +1528,15 @@ export default {
       initialTime.setHours(initialTime.getHours() - 1);
 
       // 3.2 创建时间参考数组，用于时间范围滑块
-      // 关键修复点1：调整时间范围确保100%始终对应系统当前时间
       const currentTime = new Date().getTime();
-      const timeRange = currentTime - initialTime.getTime(); // 使用当前时间，而不是最后操作时间
-      const timeSteps = 100; // 将时间范围分为100个步骤
+      const timeRange = currentTime - initialTime.getTime();
+      const timeSteps = 100;
       this.timeRangeDates = Array.from({ length: timeSteps + 1 }, (_, i) =>
         initialTime.getTime() + (timeRange * i / timeSteps)
       );
 
       // 4. 初始化每个仓库初始时间点的状态（初始库存为0）
+      // 只为已选仓库创建初始点
       warehouses.forEach(warehouse => {
         warehouseHistory[warehouse.id].points.push({
           time: initialTime.getTime(),
@@ -1339,9 +1552,8 @@ export default {
         currentStock[warehouse.id] = 0;
       });
 
-      // 关键修复点2：确保所有操作记录都被正确处理并添加到库存历史中
+      // 处理所有操作记录 - 只处理已选仓库的操作
       sortedOps.forEach(op => {
-        // 确保时间戳保留毫秒精度
         const opTime = new Date(op.timestamp).getTime();
         const opType = op.type;
         const quantity = op.quantity;
@@ -1349,17 +1561,35 @@ export default {
         // 处理不同类型的操作
         switch (opType) {
           case '入库':
-            if (op.targetWarehouse && op.targetWarehouse !== 'External') {
+            if (op.targetWarehouse && this.selectedWarehouses.includes(op.targetWarehouse)) {
               // 记录操作前的状态
               if (warehouseHistory[op.targetWarehouse]) {
-                // 如果目标仓库存在，更新其状态
+                // 添加操作前的状态点，时间戳略微早于操作时间
+                const lastPoint = warehouseHistory[op.targetWarehouse].points[warehouseHistory[op.targetWarehouse].points.length - 1];
+                let preAdjustedTime = opTime - 1; // 操作前1毫秒
+
+                // 确保前置点时间不会与上一个点重合
+                if (lastPoint && lastPoint.time >= preAdjustedTime) {
+                  preAdjustedTime = lastPoint.time + 1;
+                }
+
+                // 添加操作前状态点
+                warehouseHistory[op.targetWarehouse].points.push({
+                  time: preAdjustedTime,
+                  stock: currentStock[op.targetWarehouse], // 使用操作前的库存
+                  status: '操作前',
+                  opId: 'pre-' + op.id,
+                  productId: op.productId,
+                  quantity: 0, // 不显示数量
+                  applicant: ''
+                });
+
+                // 然后更新库存并添加操作后点
                 currentStock[op.targetWarehouse] += quantity;
 
-                // 同一仓库内如果上一条记录时间完全相同，给当前记录微小偏移确保连线
-                const lastPoint = warehouseHistory[op.targetWarehouse].points[warehouseHistory[op.targetWarehouse].points.length - 1];
                 let adjustedTime = opTime;
                 if (lastPoint && lastPoint.time === opTime) {
-                  adjustedTime = opTime + 1; // 增加1毫秒确保连线
+                  adjustedTime = opTime + 1;
                 }
 
                 warehouseHistory[op.targetWarehouse].points.push({
@@ -1376,19 +1606,36 @@ export default {
             break;
 
           case '出库':
-            if (op.sourceWarehouse && op.sourceWarehouse !== 'External') {
+            if (op.sourceWarehouse && this.selectedWarehouses.includes(op.sourceWarehouse)) {
               // 记录操作前的状态
               if (warehouseHistory[op.sourceWarehouse]) {
-                // 如果源仓库存在，更新其状态
+                // 添加操作前的状态点
+                const lastPoint = warehouseHistory[op.sourceWarehouse].points[warehouseHistory[op.sourceWarehouse].points.length - 1];
+                let preAdjustedTime = opTime - 1; // 操作前1毫秒
+
+                // 确保前置点时间不会与上一个点重合
+                if (lastPoint && lastPoint.time >= preAdjustedTime) {
+                  preAdjustedTime = lastPoint.time + 1;
+                }
+
+                // 添加操作前状态点
+                warehouseHistory[op.sourceWarehouse].points.push({
+                  time: preAdjustedTime,
+                  stock: currentStock[op.sourceWarehouse], // 使用操作前的库存
+                  status: '操作前',
+                  opId: 'pre-' + op.id,
+                  productId: op.productId,
+                  quantity: 0, // 不显示数量
+                  applicant: ''
+                });
+
+                // 然后更新库存并添加操作后点
                 currentStock[op.sourceWarehouse] -= quantity;
-                // 确保库存不会变为负数
                 currentStock[op.sourceWarehouse] = Math.max(0, currentStock[op.sourceWarehouse]);
 
-                // 同一仓库内如果上一条记录时间完全相同，给当前记录微小偏移确保连线
-                const lastPoint = warehouseHistory[op.sourceWarehouse].points[warehouseHistory[op.sourceWarehouse].points.length - 1];
                 let adjustedTime = opTime;
                 if (lastPoint && lastPoint.time === opTime) {
-                  adjustedTime = opTime + 1; // 增加1毫秒确保连线
+                  adjustedTime = opTime + 1;
                 }
 
                 warehouseHistory[op.sourceWarehouse].points.push({
@@ -1406,16 +1653,34 @@ export default {
 
           case '转调':
             // 源仓库减少库存
-            if (op.sourceWarehouse && op.sourceWarehouse !== 'External' && warehouseHistory[op.sourceWarehouse]) {
+            if (op.sourceWarehouse && this.selectedWarehouses.includes(op.sourceWarehouse) && warehouseHistory[op.sourceWarehouse]) {
+              // 添加操作前的状态点
+              const lastSourcePoint = warehouseHistory[op.sourceWarehouse].points[warehouseHistory[op.sourceWarehouse].points.length - 1];
+              let preAdjustedSourceTime = opTime - 1; // 操作前1毫秒
+
+              // 确保前置点时间不会与上一个点重合
+              if (lastSourcePoint && lastSourcePoint.time >= preAdjustedSourceTime) {
+                preAdjustedSourceTime = lastSourcePoint.time + 1;
+              }
+
+              // 添加操作前状态点
+              warehouseHistory[op.sourceWarehouse].points.push({
+                time: preAdjustedSourceTime,
+                stock: currentStock[op.sourceWarehouse], // 使用操作前的库存
+                status: '操作前',
+                opId: 'pre-source-' + op.id,
+                productId: op.productId,
+                quantity: 0, // 不显示数量
+                applicant: ''
+              });
+
+              // 更新库存并添加操作后点
               currentStock[op.sourceWarehouse] -= quantity;
-              // 确保库存不会变为负数
               currentStock[op.sourceWarehouse] = Math.max(0, currentStock[op.sourceWarehouse]);
 
-              // 同一仓库内如果上一条记录时间完全相同，给当前记录微小偏移确保连线
-              const lastSourcePoint = warehouseHistory[op.sourceWarehouse].points[warehouseHistory[op.sourceWarehouse].points.length - 1];
               let adjustedSourceTime = opTime;
               if (lastSourcePoint && lastSourcePoint.time === opTime) {
-                adjustedSourceTime = opTime + 1; // 增加1毫秒确保连线
+                adjustedSourceTime = opTime + 1;
               }
 
               warehouseHistory[op.sourceWarehouse].points.push({
@@ -1430,14 +1695,33 @@ export default {
             }
 
             // 目标仓库增加库存
-            if (op.targetWarehouse && op.targetWarehouse !== 'External' && warehouseHistory[op.targetWarehouse]) {
+            if (op.targetWarehouse && this.selectedWarehouses.includes(op.targetWarehouse) && warehouseHistory[op.targetWarehouse]) {
+              // 添加操作前的状态点
+              const lastTargetPoint = warehouseHistory[op.targetWarehouse].points[warehouseHistory[op.targetWarehouse].points.length - 1];
+              let preAdjustedTargetTime = opTime - 1; // 操作前1毫秒
+
+              // 确保前置点时间不会与上一个点重合
+              if (lastTargetPoint && lastTargetPoint.time >= preAdjustedTargetTime) {
+                preAdjustedTargetTime = lastTargetPoint.time + 1;
+              }
+
+              // 添加操作前状态点
+              warehouseHistory[op.targetWarehouse].points.push({
+                time: preAdjustedTargetTime,
+                stock: currentStock[op.targetWarehouse], // 使用操作前的库存
+                status: '操作前',
+                opId: 'pre-target-' + op.id,
+                productId: op.productId,
+                quantity: 0, // 不显示数量
+                applicant: ''
+              });
+
+              // 更新库存并添加操作后点
               currentStock[op.targetWarehouse] += quantity;
 
-              // 同一仓库内如果上一条记录时间完全相同，给当前记录微小偏移确保连线
-              const lastTargetPoint = warehouseHistory[op.targetWarehouse].points[warehouseHistory[op.targetWarehouse].points.length - 1];
               let adjustedTargetTime = opTime;
               if (lastTargetPoint && lastTargetPoint.time === opTime) {
-                adjustedTargetTime = opTime + 1; // 增加1毫秒确保连线
+                adjustedTargetTime = opTime + 1;
               }
 
               warehouseHistory[op.targetWarehouse].points.push({
@@ -1454,7 +1738,7 @@ export default {
         }
       });
 
-      // 6. 为每个仓库添加最新状态数据点
+      // 6. 为每个已选仓库添加最新状态数据点
       const nowTime = new Date().getTime();
       warehouses.forEach(warehouse => {
         // 计算仓库当前实际库存（从warehouseProducts中获取）
@@ -1476,7 +1760,7 @@ export default {
             // 如果上一条记录时间相同，添加微小偏移
             let adjustedTime = nowTime;
             if (lastPoint && lastPoint.time === nowTime) {
-              adjustedTime = nowTime + 1; // 增加1毫秒确保连线
+              adjustedTime = nowTime + 1;
             }
 
             warehouseHistory[warehouse.id].points.push({
@@ -1495,7 +1779,6 @@ export default {
       // 7. 转换为3D图表需要的数据格式
       let result = [];
       Object.entries(warehouseHistory).forEach(([warehouseId, history]) => {
-        // 关键修复点3：确保历史点完整性，不会因为滤镜丢失中间点
         history.points.forEach(point => {
           result.push([
             warehouseId,
@@ -1525,6 +1808,12 @@ export default {
      *   - ECharts: 重新渲染图表
      */
     handleTimeRangeChange(value) {
+      // 在更新时间范围前保存当前视图状态
+      this.saveChartViewState();
+
+      // 清除可能存在的轴范围缓存
+      this.actualTimeRange = null;
+
       // 修复：防止时间范围发生跳跃，确保结束点在100%时对应当前时间
       if (value[1] === 100 && this.originalScatterData.length > 0) {
         // 如果拖动到100%，显式设置为当前时间
@@ -1535,14 +1824,30 @@ export default {
           position: 'top-left'
         });
       }
+
       // 更新时间范围并刷新图表
       this.timeRangeValue = value;
+
+      // 需要强制刷新图表
+      this.forceRefreshChart = true;
+
+      // 强制图表完全重新计算数据和视图
+      this.loading.scatter3d = true;
       this.updateScatter3DChart();
     },
 
     updateScatter3DChart() {
       if (!this.charts.scatter3d) return;
 
+      // 在更新前保存当前视图状态（如果尚未保存）
+      if (!this.chartViewState.alpha) {
+        this.saveChartViewState();
+      }
+
+      // 关键修复：主动清除图表，移除所有旧内容包括"暂无数据"提示
+      this.charts.scatter3d.clear();
+
+      // 重要：确保在数据准备时记录实际时间范围
       const data = this.prepareScatter3DData().filter(item => {
         return item && item.length >= 3 && !isNaN(item[1]) && !isNaN(item[2]);
       });
@@ -1553,8 +1858,25 @@ export default {
         return;
       }
 
-      // 获取所有唯一的仓库ID
-      const warehouseIds = Array.from(new Set(data.map(item => item[0])));
+      // 提取所有时间点，用于确保轴范围正确设置
+      const allTimePoints = data.map(item => item[1]);
+
+      // 数据的实际时间范围
+      const dataMinTime = Math.min(...allTimePoints);
+      const dataMaxTime = Math.max(...allTimePoints);
+
+      // 决定使用哪个时间范围：用户设置的范围或数据的实际范围
+      const minTime = this.actualTimeRange ?
+        // 确保最小时间不小于数据中的最小时间
+        Math.max(this.actualTimeRange.min, dataMinTime) : dataMinTime;
+
+      const maxTime = this.actualTimeRange ?
+        // 确保最大时间不大于数据中的最大时间
+        Math.min(this.actualTimeRange.max, dataMaxTime) : dataMaxTime;
+
+      // 获取所有唯一的仓库ID，但仅限于已选中的仓库
+      const warehouseIds = Array.from(new Set(data.map(item => item[0])))
+        .filter(id => this.selectedWarehouses.includes(id));
 
       // 定义一组对比鲜明的颜色，用于区分不同仓库
       const colors = [
@@ -1577,6 +1899,9 @@ export default {
       const lineSeries = [];
 
       warehouseIds.forEach((warehouseId, index) => {
+        // 只处理选中的仓库
+        if (!this.selectedWarehouses.includes(warehouseId)) return;
+
         // 过滤出该仓库的所有数据点
         const warehouseData = data.filter(item => item[0] === warehouseId);
         // 从第一个点获取仓库名（如果有）
@@ -1608,24 +1933,35 @@ export default {
           type: 'scatter3D',
           name: warehouseName,
           data: warehouseData,
-          // 增大点的大小以便于交互
-          symbolSize: 14, // 增大数据点尺寸，提高可选中性
+          // 为不同类型的点设置不同大小
+          symbolSize: function (data) {
+            const status = data[5];
+            // 操作前点设置为更小的尺寸，几乎不可见
+            if (status === '操作前' || (data[4] && data[4].startsWith('pre-'))) {
+              return 4;  // 非常小的点
+            }
+            return 14; // 常规点尺寸
+          },
           // 增加选中区域大小，超出实际点的显示大小，使点击更容易
           emphasis: {
-            scale: 1.5, // 悬停时放大点
+            scale: 2, // 悬停时放大点
             itemStyle: {
               color: '#111111', // 黑色高亮
               opacity: 1,
               borderWidth: 2,
               borderColor: '#fff',
-              shadowBlur: 20, // 增加阴影模糊半径
-              shadowColor: 'rgba(0, 0, 0, 0.7)'
+              shadowBlur: 30, // 增加阴影模糊半径
+              shadowColor: 'rgba(0, 0, 0, 0.5)'
             }
           },
           itemStyle: {
             // 设置点的颜色
             color: function (params) {
               const status = params.data[5];
+              // 操作前点设置为半透明灰色
+              if (status === '操作前' || (params.data[4] && params.data[4].startsWith('pre-'))) {
+                return 'rgba(150, 150, 150, 0.3)';  // 半透明灰色
+              }
               if (status === '初始状态') return '#999';
               if (status === '入库' || status === '转入') return '#67C23A';
               if (status === '出库' || status === '转出') return '#F56C6C';
@@ -1634,7 +1970,14 @@ export default {
               return baseColor; // 默认使用仓库的基本颜色
             },
             // 透明度和边框
-            opacity: 1,
+            opacity: function (params) {
+              const status = params.data[5];
+              // 操作前点设置为半透明
+              if (status === '操作前' || (params.data[4] && params.data[4].startsWith('pre-'))) {
+                return 0.3;  // 半透明
+              }
+              return 1; // 完全不透明
+            },
             borderWidth: 1,
             borderColor: '#fff'
           }
@@ -1644,6 +1987,7 @@ export default {
       // 合并所有系列
       const allSeries = [...lineSeries, ...scatterSeries];
 
+      // 修复关键点：使用已保存的视图状态作为初始设置，而不是硬编码的默认值
       const option = {
         backgroundColor: 'transparent',
         // 改进tooltip的交互和显示
@@ -1748,22 +2092,25 @@ export default {
             color: 'rgba(128, 128, 128, 0.3)' // 修改为更淡的灰色，降低不透明度
           }
         },
-        // 其他网格设置
+        // 修改grid3D配置，使用保存的视图状态作为初始值
         grid3D: {
           viewControl: {
+            // 使用已保存的视图状态，如果存在的话
             autoRotate: this.autoRotate,
             autoRotateSpeed: 5,
-            distance: 150 * (100 / this.scatter3dZoom),
-            alpha: 25,
-            beta: 35,
+            // 使用已保存的视图距离，否则使用计算值
+            distance: this.chartViewState.distance || (150 * (100 / this.scatter3dZoom)),
+            // 使用已保存的方位角，否则使用默认值
+            alpha: this.chartViewState.alpha || 25,
+            beta: this.chartViewState.beta || 35,
+            center: this.chartViewState.center || [0, 0, 0],
             // 提高交互灵敏度
-            rotateSensitivity: 1.5, // 增加旋转灵敏度
-            zoomSensitivity: 1.8,   // 增加缩放灵敏度
-            damping: 0.2,           // 减小阻尼，使旋转更流畅
+            rotateSensitivity: 1.5,
+            zoomSensitivity: 1.8,
+            damping: 0.2,
             animation: true,
             animationDurationUpdate: 500,
-            // 允许更灵活的交互
-            panSensitivity: 1.2     // 增加平移灵敏度
+            panSensitivity: 1.2
           },
           light: {
             main: {
@@ -1814,6 +2161,9 @@ export default {
         yAxis3D: {
           type: 'time',
           name: '时间',
+          min: minTime,  // 关键：明确设置时间轴的最小值
+          max: maxTime,  // 关键：明确设置时间轴的最大值
+          scale: true,   // 允许轴自动调整以更好地显示数据
           axisLabel: {
             formatter: function (value) {
               const date = new Date(value);
@@ -1841,7 +2191,14 @@ export default {
         series: allSeries
       };
 
-      this.charts.scatter3d.setOption(option);
+      // 使用 true 作为第二个参数确保新选项完全替换旧选项
+      // 这有助于解决图表显示问题
+      const shouldReplaceOption = this.forceRefreshChart === true;
+      this.charts.scatter3d.setOption(option, shouldReplaceOption);
+
+      // 重置强制刷新标记
+      this.forceRefreshChart = false;
+
       this.loading.scatter3d = false;
 
       // 添加点击事件处理
@@ -1858,6 +2215,11 @@ export default {
      */
     handleChartClick(params) {
       if (!params.data) return;
+
+      // 忽略操作前状态点的点击事件
+      if (params.data[5] === '操作前' || (params.data[4] && params.data[4].startsWith('pre-'))) {
+        return;
+      }
 
       const data = params.data;
       const warehouseName = data[3] || data[0];
@@ -1892,12 +2254,20 @@ export default {
     },
 
     handleAutoRotateChange() {
+      // 保存当前视图状态
+      this.saveChartViewState();
+
       // 修复自动旋转控制功能
       if (this.charts.scatter3d) {
         const currentOption = this.charts.scatter3d.getOption();
         // 直接修改视图控制选项
         currentOption.grid3D[0].viewControl.autoRotate = this.autoRotate;
         this.charts.scatter3d.setOption(currentOption, false); // false表示不合并选项，直接替换
+
+        // 恢复保存的视图状态
+        this.$nextTick(() => {
+          this.restoreChartViewState();
+        });
       }
     },
 
@@ -1909,6 +2279,9 @@ export default {
      *   - ECharts: 直接修改图表配置选项
      */
     handleZoomChange(value) {
+      // 保存当前视图状态
+      this.saveChartViewState();
+
       this.scatter3dZoom = value;
 
       // 修复缩放控制功能
@@ -1917,6 +2290,11 @@ export default {
         // 更新视图控制距离
         currentOption.grid3D[0].viewControl.distance = 150 * (100 / this.scatter3dZoom);
         this.charts.scatter3d.setOption(currentOption, false); // false表示不合并选项，直接替换
+
+        // 恢复保存的视图状态
+        this.$nextTick(() => {
+          this.restoreChartViewState();
+        });
       }
     },
 
