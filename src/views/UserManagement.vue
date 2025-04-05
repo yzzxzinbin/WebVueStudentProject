@@ -146,6 +146,23 @@
                         <p>正在设置仓库访问权限</p>
                     </div>
                 </div>
+                <div class="auth-search">
+                    <el-autocomplete
+                        v-model="warehouseSearchQuery"
+                        :fetch-suggestions="queryWarehouse"
+                        placeholder="输入仓库ID搜索"
+                        clearable
+                        @select="scrollToWarehouse"
+                        class="warehouse-search">
+                        <template slot-scope="{ item }">
+                            <div class="warehouse-suggestion">
+                                <span class="suggestion-id">{{ item.value }}</span>
+                                <span class="suggestion-name">{{ item.label }}</span>
+                            </div>
+                        </template>
+                        <el-button slot="append" icon="el-icon-search" @click="handleWarehouseSearch"></el-button>
+                    </el-autocomplete>
+                </div>
                 <div class="auth-actions">
                     <el-tooltip content="选择全部仓库" placement="top">
                         <el-button type="primary" plain icon="el-icon-check" size="small" 
@@ -161,7 +178,9 @@
             <div class="auth-content">
                 <el-table :data="warehouses" ref="warehouseTable" style="width: 100%" border stripe
                     @selection-change="handleWarehouseSelectionChange"
-                    :header-cell-style="{ background: '#f5f7fa', color: '#606266' }">
+                    :header-cell-style="{ background: '#f5f7fa', color: '#606266' }"
+                    height="500px" 
+                    class="scrollable-table">
                     <el-table-column type="selection" width="55"></el-table-column>
                     <el-table-column prop="id" label="仓库ID" width="120"></el-table-column>
                     <el-table-column prop="name" label="仓库名称">
@@ -239,7 +258,9 @@ export default {
             currentPage: 1,
             pageSize: 20,
             loading: false,
-            isInitializingWarehouses: false // 添加初始化标志位
+            isInitializingWarehouses: false, // 添加初始化标志位
+            warehouseSearchQuery: '', // 添加仓库搜索相关数据
+            warehouseSearchTimeout: null
         };
     },
     computed: {
@@ -861,6 +882,109 @@ export default {
          */
         getSelectedOverrideCount() {
             return this.warehouses.filter(w => w.hasOverridePermission).length;
+        },
+
+        /**
+         * @Function_Para 搜索仓库
+         * @param {string} queryString - 搜索关键字
+         * @param {Function} callback - 回调函数，用于返回结果
+         * @Function_Meth 根据输入ID查询匹配仓库
+         */
+        queryWarehouse(queryString, callback) {
+            if (!queryString) {
+                callback([]);
+                return;
+            }
+
+            const query = queryString.toLowerCase();
+            const results = this.warehouses
+                .filter(warehouse => {
+                    return warehouse.id.toLowerCase().includes(query) || 
+                           warehouse.name.toLowerCase().includes(query);
+                })
+                .sort((a, b) => {
+                    const aIdStartsWith = a.id.toLowerCase().startsWith(query);
+                    const bIdStartsWith = b.id.toLowerCase().startsWith(query);
+                    if (aIdStartsWith && !bIdStartsWith) return -1;
+                    if (!aIdStartsWith && bIdStartsWith) return 1;
+                    return 0;
+                })
+                .map(warehouse => ({
+                    value: warehouse.id,
+                    label: warehouse.name,
+                    data: warehouse
+                }));
+
+            callback(results);
+        },
+
+        /**
+         * @Function_Para 处理仓库搜索
+         * @Function_Meth 执行搜索并滚动到匹配的仓库
+         */
+        handleWarehouseSearch() {
+            if (!this.warehouseSearchQuery) return;
+            
+            const warehouse = this.warehouses.find(
+                w => w.id.toLowerCase() === this.warehouseSearchQuery.toLowerCase()
+            );
+            
+            if (warehouse) {
+                this.scrollToWarehouse({ data: warehouse });
+            } else {
+                this.$message.warning('未找到匹配的仓库');
+            }
+        },
+
+        /**
+         * @Function_Para 滚动到指定仓库
+         * @param {Object} item - 包含仓库数据的对象
+         * @Function_Meth 平滑滚动到表格中的指定仓库行
+         */
+        scrollToWarehouse(item) {
+            const warehouse = item.data;
+            if (!warehouse) return;
+            
+            this.$nextTick(() => {
+                // 找到对应仓库的索引
+                const index = this.warehouses.findIndex(w => w.id === warehouse.id);
+                if (index === -1) return;
+                
+                // 获取表格和行元素
+                const tableBody = this.$refs.warehouseTable.$el.querySelector('.el-table__body-wrapper');
+                const rows = tableBody.querySelectorAll('tr.el-table__row');
+                
+                if (index < rows.length && tableBody) {
+                    // 获取行元素的位置，并平滑滚动
+                    const rowEl = rows[index];
+                    const offsetTop = rowEl.offsetTop;
+                    
+                    tableBody.scrollTo({
+                        top: offsetTop - 60, // 向上偏移一点，更容易看到
+                        behavior: 'smooth'
+                    });
+                    
+                    // 添加高亮效果
+                    this.highlightRow(rows[index]);
+                }
+            });
+        },
+        
+        /**
+         * @Function_Para 高亮显示行
+         * @param {HTMLElement} row - 要高亮的表格行元素
+         * @Function_Meth 临时添加高亮样式，并在一段时间后移除
+         */
+        highlightRow(row) {
+            if (!row) return;
+            
+            // 添加高亮类
+            row.classList.add('row-highlight');
+            
+            // 3秒后移除高亮效果
+            setTimeout(() => {
+                row.classList.remove('row-highlight');
+            }, 3000);
         }
     }
 };
@@ -1123,44 +1247,48 @@ export default {
 
 .auth-header {
   display: flex;
+  flex-wrap: wrap; /* 允许在小屏幕上换行 */
   justify-content: space-between;
   align-items: center;
   padding: 20px;
   background: linear-gradient(135deg, #f5f7fa 0%, #eef2f6 100%);
   border-bottom: 1px solid #ebeef5;
+  gap: 15px; /* 各元素间距 */
 }
 
 .auth-user-info {
   display: flex;
   align-items: center;
   gap: 15px;
+  flex: 1;
+  min-width: 200px;
 }
 
-.auth-avatar {
-  width: 50px;
-  height: 50px;
-  background-color: #e6f1fc;
-  border-radius: 50%;
+/* 添加搜索框样式 */
+.auth-search {
+  flex: 2;
+  max-width: 300px;
+}
+
+.warehouse-search {
+  width: 100%;
+}
+
+/* 搜索建议样式 */
+.warehouse-suggestion {
   display: flex;
   align-items: center;
-  justify-content: center;
+  height: 34px;
+}
+
+.suggestion-id {
+  font-weight: bold;
+  margin-right: 8px;
   color: #409EFF;
-  font-size: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.auth-details h3 {
-  margin: 0;
-  font-size: 16px;
-  margin-bottom: 4px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.auth-details p {
-  margin: 0;
-  font-size: 14px;
+.suggestion-name {
+  font-size: 13px;
   color: #606266;
 }
 
@@ -1171,6 +1299,7 @@ export default {
 
 .auth-content {
   padding: 20px;
+  height: 500px; /* 添加固定高度 */
 }
 
 .warehouse-name {
@@ -1228,5 +1357,34 @@ export default {
 .authorization-dialog>>>.el-table--border::after, 
 .authorization-dialog>>>.el-table--group::after {
   display: none;
+}
+
+/* 添加可滚动表格样式 */
+.scrollable-table {
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+/* 高亮效果 */
+.authorization-dialog >>>.row-highlight {
+  background-color: rgba(64, 158, 255, 0.2) !important;
+  transition: background-color 0.5s ease;
+}
+
+/* 响应式调整 */
+@media (max-width: 900px) {
+  .auth-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .auth-search, .auth-actions {
+    width: 100%;
+    max-width: none;
+    margin-top: 10px;
+  }
+}
+.el-button--small {
+  padding: 12px 20px;
 }
 </style>

@@ -157,7 +157,7 @@
 
         <!-- 修改密码对话框 -->
         <el-dialog title="修改密码" :visible.sync="passwordDialogVisible" width="500px" 
-                   class="modern-dialog" top="10vh">
+                   class="modern-dialog" top="25vh">
             <el-form :model="passwordForm" :rules="passwordRules" ref="passwordForm" label-width="100px">
                 <el-form-item label="原密码" prop="oldPassword">
                     <el-input type="password" v-model="passwordForm.oldPassword" autocomplete="off"></el-input>
@@ -177,7 +177,7 @@
 
         <!-- 编辑个人档案对话框 -->
         <el-dialog title="编辑个人档案" :visible.sync="profileDialogVisible" width="600px" 
-                   class="modern-dialog" top="5vh">
+                   class="modern-dialog" top="20vh">
             <el-form :model="profileForm" label-width="100px">
                 <el-row :gutter="20">
                     <el-col :span="12">
@@ -224,7 +224,7 @@
 
         <!-- 编辑单个字段对话框 -->
         <el-dialog :title="'编辑' + fieldLabels[editFieldName]" :visible.sync="fieldDialogVisible" width="400px"
-                   class="modern-dialog" top="15vh">
+                   class="modern-dialog" top="25vh">
             <el-form :model="fieldForm" label-width="80px">
                 <el-form-item :label="fieldLabels[editFieldName]">
                     <el-input v-model="fieldForm.value"></el-input>
