@@ -40,30 +40,29 @@
       <el-table ref="table" :data="paginatedProducts" height="calc(99vh - 400px)" stripe border highlight-current-row
         style="width: 100%" v-loading="loading">
         <el-table-column prop="id" label="商品ID" width="100" sortable align="center"></el-table-column>
-        <el-table-column prop="name" label="商品名称" width="250" sortable></el-table-column>
+        <el-table-column prop="name" label="商品名称" width="260" sortable></el-table-column>
         <el-table-column prop="warehouseId" label="所属仓库" width="180" sortable>
           <template slot-scope="scope">
             {{ getWarehouseName(scope.row.warehouseId) }}
           </template>
         </el-table-column>
-        <el-table-column prop="features" label="商品特性" width="300"></el-table-column>
+        <el-table-column prop="features" label="商品特性" width="320"></el-table-column>
         <el-table-column prop="price" label="商品价格" width="160" sortable></el-table-column>
         <el-table-column prop="quantity" label="库存数量" width="150" sortable>
           <template slot-scope="scope">
             <span style="font-weight: bold">{{ scope.row.quantity }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="location" label="存放位置" min-width="100">
+        <!-- 删除存放位置列，替换为查看详情按钮列 -->
+        <el-table-column label="操作" width="120" align="center">
           <template slot-scope="scope">
-            <span>{{ scope.row.location || '--' }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="220" fixed="right">
-          <template slot-scope="scope">
-            <el-button size="mini" type="primary" @click="editWarehouseProduct(scope.row)" 
-              v-if="$permission.canUpdateWarehouse(scope.row.warehouseId)">修改</el-button>
-            <el-button size="mini" type="danger" @click="deleteWarehouseProduct(scope.row)" 
-              v-if="$permission.canDeleteProduct()">删除</el-button>
+            <el-button 
+              type="text" 
+              @click="showProductDetail(scope.row)" 
+              class="detail-button"
+              size="small">
+              查看详情 <i class="el-icon-view"></i>
+            </el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -77,6 +76,100 @@
         </el-pagination>
       </div>
     </el-card>
+    
+    <!-- 商品详情对话框 -->
+    <el-dialog title="商品详情" :visible.sync="productDetailVisible" width="700px" center class="modern-dialog"
+      top="8vh" style="overflow: hidden;">
+      <div v-if="currentProduct" class="detail-dialog-content">
+        <!-- 第一部分：商品基本信息 -->
+        <div class="detail-section">
+          <h3 class="section-title">商品信息</h3>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">商品ID:</span>
+              <span class="detail-value">{{ currentProduct.id }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">商品名称:</span>
+              <span class="detail-value">{{ currentProduct.name }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">当前库存:</span>
+              <span class="detail-value highlight">{{ currentProduct.quantity }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">商品类型:</span>
+              <span class="detail-value">{{ getProductDetail(currentProduct.id, 'type') || '未知' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">供应商:</span>
+              <span class="detail-value">{{ getProductDetail(currentProduct.id, 'supplier') || '未知' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">创建日期:</span>
+              <span class="detail-value">{{ formatDate(getProductDetail(currentProduct.id, 'createdAt')) }}</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 第二部分：仓库信息 -->
+        <div class="detail-section">
+          <h3 class="section-title">仓库信息</h3>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">仓库ID:</span>
+              <span class="detail-value">{{ currentProduct.warehouseId }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">仓库名称:</span>
+              <span class="detail-value">{{ getWarehouseName(currentProduct.warehouseId) }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">仓库状态:</span>
+              <span class="detail-value">{{ getWarehouseDetail(currentProduct.warehouseId, 'status') || '未知' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">最大容量:</span>
+              <span class="detail-value">{{ getWarehouseDetail(currentProduct.warehouseId, 'capacity') || '未知' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">仓库地点:</span>
+              <span class="detail-value">{{ getWarehouseDetail(currentProduct.warehouseId, 'location') || '未知' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">负责人:</span>
+              <span class="detail-value">{{ getWarehouseDetail(currentProduct.warehouseId, 'manager') || '未知' }}</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 第三部分：变更历史记录 -->
+        <div class="detail-section history-section">
+          <h3 class="section-title">变更历史</h3>
+          <div class="history-content">
+            <div class="current-stock">
+              当前库存该商品: <span class="highlight">{{ currentProduct.quantity }}</span> 个
+            </div>
+            <div class="history-records" v-if="productHistory.length > 0">
+              <div v-for="(record, index) in productHistory" :key="index" class="history-record">
+                <span :class="getOperationClass(record.type)">
+                  [{{ record.type }}]
+                </span>
+                <span class="change-text">{{ formatChange(record) }}</span>
+                <span class="record-time">@{{ formatDateTime(record.timestamp) }}</span>
+                <span class="record-person">by {{ record.applicant || record.operator || '未知用户' }}</span>
+              </div>
+            </div>
+            <div v-else class="no-record">
+              暂无变更记录
+            </div>
+          </div>
+        </div>
+      </div>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="productDetailVisible = false">关闭</el-button>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -92,7 +185,6 @@ export default {
         { label: '商品特性', value: 'features' },
         { label: '商品价格', value: 'price' },
         { label: '库存数量', value: 'quantity' },
-        { label: '存放位置', value: 'location' },
         { label: '所属仓库', value: 'warehouseId' }
       ],
       warehouses: [], // 仓库列表
@@ -104,7 +196,10 @@ export default {
       pageSize: 20,
       total: 0,
       loading: false,
-      authorizedWarehouses: []
+      authorizedWarehouses: [],
+      productDetailVisible: false,
+      currentProduct: null,
+      productHistory: []
     };
   },
   computed: {
@@ -345,44 +440,13 @@ export default {
     },
 
     /**
-     * @Function_Para 删除仓库商品
-     *   @param {Object} product - 要删除的商品对象
-     * @Function_Meth 检查权限并删除商品
-     * @Function_API localStorage, Element UI Message, Element UI Confirm
-     * @Function_Caller 被表格操作列中的删除按钮调用
+     * @Function_Para 查看商品详情
+     *   @param {Object} product - 商品对象
+     * @Function_Meth 显示商品详情对话框
      */
-    deleteWarehouseProduct(product) {
-      if (!this.$permission.canDeleteProduct()) {
-        this.$message.error('您没有删除商品的权限');
-        return;
-      }
-
-      if (!this.$permission.canUpdateWarehouse(product.warehouseId)) {
-        this.$message.error('您没有操作此仓库的权限');
-        return;
-      }
-
-      this.$confirm('确定删除该商品吗？', '提示', {
-        type: 'warning'
-      }).then(() => {
-        // 删除商品逻辑
-      }).catch(() => {});
-    },
-
-    /**
-     * @Function_Para 编辑仓库商品
-     *   @param {Object} product - 要编辑的商品对象
-     * @Function_Meth 检查权限并编辑商品
-     * @Function_API localStorage, Element UI Message
-     * @Function_Caller 被表格操作列中的编辑按钮调用
-     */
-    editWarehouseProduct(product) {
-      if (!this.$permission.canUpdateWarehouse(product.warehouseId)) {
-        this.$message.error('您没有修改此仓库商品的权限');
-        return;
-      }
-
-      // 编辑商品逻辑
+    viewProductDetail(product) {
+      this.currentProduct = product;
+      this.productDetailVisible = true;
     },
 
     /**
@@ -442,6 +506,138 @@ export default {
 
       const dataStr = JSON.stringify(authorizedProducts, null, 2);
       // 其他导出逻辑...
+    },
+
+    /**
+     * @Function_Para 显示商品详情
+     * @param {Object} product - 商品对象
+     * @Function_Meth 显示商品详情对话框并加载历史记录
+     */
+    showProductDetail(product) {
+      this.currentProduct = product;
+      this.loadProductHistory(product);
+      this.productDetailVisible = true;
+    },
+    
+    /**
+     * @Function_Para 加载商品历史
+     * @param {Object} product - 商品对象
+     * @Function_Meth 从操作记录中筛选与当前商品和仓库相关的记录
+     */
+    loadProductHistory(product) {
+      const operations = JSON.parse(localStorage.getItem('operations')) || [];
+      
+      // 筛选与当前商品和仓库相关的操作记录
+      this.productHistory = operations.filter(op => {
+        return op.productId === product.id && 
+          (op.sourceWarehouse === product.warehouseId || 
+           op.targetWarehouse === product.warehouseId);
+      }).sort((a, b) => {
+        // 按时间倒序排列
+        return new Date(b.timestamp) - new Date(a.timestamp);
+      });
+    },
+    
+    /**
+     * @Function_Para 获取商品详情
+     * @param {string} productId - 商品ID
+     * @param {string} field - 字段名称
+     * @returns {any} 字段值
+     * @Function_Meth 根据商品ID和字段名获取商品详情
+     */
+    getProductDetail(productId, field) {
+      const product = this.allProducts.find(p => p.id === productId);
+      return product ? product[field] : null;
+    },
+    
+    /**
+     * @Function_Para 获取仓库详情
+     * @param {string} warehouseId - 仓库ID
+     * @param {string} field - 字段名称
+     * @returns {any} 字段值
+     * @Function_Meth 根据仓库ID和字段名获取仓库详情
+     */
+    getWarehouseDetail(warehouseId, field) {
+      const warehouse = this.warehouses.find(w => w.id === warehouseId);
+      return warehouse ? warehouse[field] : null;
+    },
+    
+    /**
+     * @Function_Para 格式化操作记录
+     * @param {Object} record - 操作记录
+     * @returns {string} 格式化后的变更信息
+     * @Function_Meth 根据操作类型格式化变更信息
+     */
+    formatChange(record) {
+      if (record.type === '入库' && record.targetWarehouse === this.currentProduct.warehouseId) {
+        // 入库操作且目标仓库是当前仓库
+        return `数量增加 ${record.quantity}`;
+      } else if (record.type === '出库' && record.sourceWarehouse === this.currentProduct.warehouseId) {
+        // 出库操作且源仓库是当前仓库
+        return `数量减少 ${record.quantity}`;
+      } else if (record.type === '转调') {
+        if (record.sourceWarehouse === this.currentProduct.warehouseId) {
+          // 转出
+          return `转出 ${record.quantity} 到 ${this.getWarehouseName(record.targetWarehouse)}`;
+        } else if (record.targetWarehouse === this.currentProduct.warehouseId) {
+          // 转入
+          return `从 ${this.getWarehouseName(record.sourceWarehouse)} 转入 ${record.quantity}`;
+        }
+      }
+      return `数量变更 ${record.quantity}`;
+    },
+    
+    /**
+     * @Function_Para 获取操作类型样式类
+     * @param {string} type - 操作类型
+     * @returns {string} CSS类名
+     * @Function_Meth 根据操作类型返回对应的CSS类名
+     */
+    getOperationClass(type) {
+      const classMap = {
+        '入库': 'operation-in',
+        '出库': 'operation-out',
+        '转调': 'operation-transfer'
+      };
+      return classMap[type] || '';
+    },
+    
+    /**
+     * @Function_Para 格式化日期
+     * @param {string} dateStr - 日期字符串
+     * @returns {string} 格式化后的日期
+     * @Function_Meth 将日期格式化为YYYY-MM-DD格式
+     */
+    formatDate(dateStr) {
+      if (!dateStr) return '未知';
+      try {
+        const date = new Date(dateStr);
+        return date.toISOString().split('T')[0];
+      } catch (e) {
+        return dateStr;
+      }
+    },
+    
+    /**
+     * @Function_Para 格式化日期时间
+     * @param {string} dateStr - 日期时间字符串
+     * @returns {string} 格式化后的日期时间
+     * @Function_Meth 将日期时间格式化为YYYY-MM-DD HH:mm:ss格式
+     */
+    formatDateTime(dateStr) {
+      if (!dateStr) return '';
+      try {
+        const date = new Date(dateStr);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        const seconds = String(date.getSeconds()).padStart(2, '0');
+        return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+      } catch (e) {
+        return dateStr;
+      }
     }
   },
   created() {
@@ -599,5 +795,286 @@ export default {
 
 .el-table .el-table__header-wrapper th .cell {
   white-space: nowrap;
+}
+
+/* 现代对话框样式 */
+.modern-dialog>>>.el-dialog {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.modern-dialog>>>.el-dialog__header {
+  background-color: #f5f7fa;
+  padding: 16px 20px;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.modern-dialog>>>.el-dialog__title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.modern-dialog>>>.el-dialog__body {
+  padding: 20px;
+}
+
+.modern-dialog>>>.el-dialog__footer {
+  padding: 12px 20px;
+  border-top: 1px solid #ebeef5;
+}
+
+.dialog-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.dialog-header {
+  padding-bottom: 16px;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.product-meta {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-gap: 12px;
+}
+
+.meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.meta-label {
+  font-size: 12px;
+  color: #909399;
+}
+
+.meta-value {
+  font-size: 14px;
+  color: #303133;
+}
+
+.product-detail-content {
+  background-color: #f8f9fb;
+  border-radius: 8px;
+  padding: 16px;
+  line-height: 1.6;
+  font-size: 14px;
+  color: #303133;
+  min-height: 100px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.product-detail-content h4 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  color: #606266;
+}
+
+/* 对话框关闭按钮样式 */
+.modern-dialog>>>.el-dialog__headerbtn {
+  transition: all 0.3s;
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 30px;
+  height: 28px;
+  padding: 5px;
+}
+
+.modern-dialog>>>.el-dialog__headerbtn:hover {
+  background-color: rgba(245, 108, 108, 0.8);
+  border-radius: 4px;
+}
+
+.modern-dialog>>>.el-dialog__headerbtn:hover .el-dialog__close {
+  color: #ffffff;
+}
+
+.modern-dialog>>>.el-dialog__headerbtn .el-dialog__close {
+  transition: color 0.3s;
+  font-size: 18px;
+  transform: scale(1.2);
+}
+
+/* 美化表单样式 */
+.modern-dialog .el-input__inner,
+.modern-dialog .el-textarea__inner {
+  border-radius: 6px;
+  transition: all 0.3s;
+}
+
+.modern-dialog .el-input__inner:focus,
+.modern-dialog .el-textarea__inner:focus {
+  border-color: #409EFF;
+  box-shadow: 0 0 5px rgba(64, 158, 255, 0.2);
+}
+
+/* 美化按钮样式 */
+.modern-dialog .dialog-footer .el-button {
+  padding: 10px 20px;
+  border-radius: 6px;
+  transition: all 0.3s;
+}
+
+.modern-dialog .dialog-footer .el-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* 详情按钮样式 */
+.detail-button {
+  color: #409EFF;
+  font-weight: 500;
+  transition: all 0.3s;
+}
+
+.detail-button:hover {
+  color: #66b1ff;
+  transform: translateY(-2px);
+}
+
+.detail-button i {
+  margin-left: 4px;
+}
+
+/* 详情对话框内容样式 */
+.detail-dialog-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.detail-section {
+  background-color: #f9f9fb;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #409EFF;
+  margin-top: 0;
+  margin-bottom: 15px;
+  position: relative;
+  padding-left: 12px;
+}
+
+.section-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 16px;
+  width: 4px;
+  background-color: #409EFF;
+  border-radius: 2px;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.detail-label {
+  font-size: 12px;
+  color: #909399;
+}
+
+.detail-value {
+  font-size: 14px;
+  color: #303133;
+}
+
+.highlight {
+  font-weight: bold;
+  color: #409EFF;
+}
+
+/* 历史记录样式 */
+.history-section {
+  background-color: #f2f6fc;
+}
+
+.history-content {
+  padding: 5px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.current-stock {
+  font-weight: 500;
+  color: #303133;
+  padding: 8px;
+  margin-bottom: 12px;
+  border-bottom: 1px dashed #dcdfe6;
+}
+
+.history-records {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.history-record {
+  padding: 8px;
+  margin-bottom: 8px;
+  border-radius: 4px;
+  background-color: #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.operation-in {
+  color: #67c23a;
+  font-weight: bold;
+}
+
+.operation-out {
+  color: #f56c6c;
+  font-weight: bold;
+}
+
+.operation-transfer {
+  color: #e6a23c;
+  font-weight: bold;
+}
+
+.change-text {
+  flex: 1;
+  color: #303133;
+}
+
+.record-time {
+  color: #909399;
+  font-size: 12px;
+}
+
+.record-person {
+  color: #606266;
+  font-size: 12px;
+  font-style: italic;
+}
+
+.no-record {
+  color: #909399;
+  text-align: center;
+  padding: 20px;
 }
 </style>

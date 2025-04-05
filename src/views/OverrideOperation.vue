@@ -94,35 +94,35 @@
                         <el-tag :type="getOperationTagType(row.type)" size="small">{{ row.type }}</el-tag>
                     </template>
                 </el-table-column>
-                <el-table-column prop="status" label="状态" width="100" sortable :key="'col-status'">
+                <el-table-column prop="status" label="状态" width="80" sortable :key="'col-status'">
                     <template slot-scope="{row}">
                         <el-tag :type="getStatusTagType(row.status)" size="small">
                             {{ getStatusText(row.status) }}
                         </el-tag>
                     </template>
                 </el-table-column>
-                <el-table-column prop="sourceWarehouse" label="源仓库" width="100" :key="'col-source'">
+                <el-table-column prop="sourceWarehouse" label="源仓库" width="180" :key="'col-source'">
                     <template slot-scope="{row}">{{ getWarehouseName(row.sourceWarehouse) }}</template>
                 </el-table-column>
                 <el-table-column prop="targetWarehouse" label="目标仓库" width="180" :key="'col-target'">
                     <template slot-scope="{row}">{{ getWarehouseName(row.targetWarehouse) }}</template>
                 </el-table-column>
-                <el-table-column prop="applicant" label="申请人" width="100" :key="'col-applicant'"></el-table-column>
-                <el-table-column prop="executor" label="执行人" width="100" v-if="viewMode === 'ended'" :key="'col-executor'">
+                <el-table-column prop="applicant" label="申请人" width="90" :key="'col-applicant'"></el-table-column>
+                <el-table-column prop="executor" label="执行人" width="90" v-if="viewMode === 'ended'" :key="'col-executor'">
                     <template slot-scope="{row}">
                         {{ row.executor || '--' }}
                     </template>
                 </el-table-column>
 
                 <!-- 修改申请时间列的数据绑定方式 -->
-                <el-table-column label="申请时间" width="180" sortable :key="'col-time'">
+                <el-table-column label="申请时间" width="160" sortable :key="'col-time'">
                     <template slot-scope="{row}">
                         <span class="time-display">{{ formatDateTime(row.timestamp) }}</span>
                     </template>
                 </el-table-column>
                 
                 <!-- 修改申请理由列的数据绑定方式 -->
-                <el-table-column label="申请理由" min-width="120" :key="'col-reason'">
+                <el-table-column label="申请理由" min-width="100" :key="'col-reason'">
                     <template slot-scope="{row}">
                         <div class="reason-preview ellipsis-cell" @click="showReasonDetail(row)">
                             <span class="reason-text">{{ truncateReason(row.reason) }}</span>

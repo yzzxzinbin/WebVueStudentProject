@@ -63,98 +63,113 @@
             </div>
         </el-card>
         <!-- 修改商品信息弹框 -->
-        <el-dialog title="修改商品信息" :visible.sync="editDialogVisible" width="650px" center>
-            <el-form :model="editForm" label-width="80px">
-                <el-row :gutter="20">
-                    <el-col :span="12">
-                        <el-form-item label="商品ID">
-                            <el-input v-model="editForm.id" disabled></el-input>
-                        </el-form-item>
-                    </el-col>
-                    <el-col :span="12">
-                        <el-form-item label="商品名称">
-                            <el-input v-model="editForm.name"></el-input>
-                        </el-form-item>
-                    </el-col>
-                </el-row>
-                <el-row :gutter="20">
-                    <el-col :span="12">
-                        <el-form-item label="商品特性">
-                            <el-input v-model="editForm.features"></el-input>
-                        </el-form-item>
-                    </el-col>
-                    <el-col :span="12">
-                        <el-form-item label="商品价格">
-                            <el-input v-model="editForm.price" type="number"></el-input>
-                        </el-form-item>
-                    </el-col>
-                </el-row>
-                <el-row :gutter="20">
-                    <el-col :span="12">
-                        <el-form-item label="商品类型">
-                            <el-input v-model="editForm.type"></el-input>
-                        </el-form-item>
-                    </el-col>
-                    <el-col :span="12">
-                        <el-form-item label="供应商">
-                            <el-input v-model="editForm.supplier"></el-input>
-                        </el-form-item>
-                    </el-col>
-                </el-row>
-                <el-row>
-                    <el-col :span="24">
-                        <el-form-item label="创建日期">
-                            <el-date-picker v-model="editForm.createdAt" type="datetime" placeholder="选择日期时间"
-                                value-format="yyyy-MM-dd HH:mm:ss"></el-date-picker>
-                        </el-form-item>
-                    </el-col>
-                </el-row>
-            </el-form>
+        <el-dialog title="修改商品信息" :visible.sync="editDialogVisible" width="650px" center class="modern-dialog"
+            top="15vh">
+            <div class="dialog-content">
+                <div class="dialog-header">
+                    <div class="form-meta">
+                        <el-form :model="editForm" label-width="80px">
+                            <el-row :gutter="20">
+                                <el-col :span="12">
+                                    <el-form-item label="商品ID">
+                                        <el-input v-model="editForm.id" disabled></el-input>
+                                    </el-form-item>
+                                </el-col>
+                                <el-col :span="12">
+                                    <el-form-item label="商品名称">
+                                        <el-input v-model="editForm.name"></el-input>
+                                    </el-form-item>
+                                </el-col>
+                            </el-row>
+                            <el-row :gutter="20">
+                                <el-col :span="12">
+                                    <el-form-item label="商品特性">
+                                        <el-input v-model="editForm.features"></el-input>
+                                    </el-form-item>
+                                </el-col>
+                                <el-col :span="12">
+                                    <el-form-item label="商品价格">
+                                        <el-input v-model="editForm.price" type="number"></el-input>
+                                    </el-form-item>
+                                </el-col>
+                            </el-row>
+                            <el-row :gutter="20">
+                                <el-col :span="12">
+                                    <el-form-item label="商品类型">
+                                        <el-input v-model="editForm.type"></el-input>
+                                    </el-form-item>
+                                </el-col>
+                                <el-col :span="12">
+                                    <el-form-item label="供应商">
+                                        <el-input v-model="editForm.supplier"></el-input>
+                                    </el-form-item>
+                                </el-col>
+                            </el-row>
+                            <el-row>
+                                <el-col :span="24">
+                                    <el-form-item label="创建日期">
+                                        <el-date-picker v-model="editForm.createdAt" type="datetime" placeholder="选择日期时间"
+                                            value-format="yyyy-MM-dd HH:mm:ss"></el-date-picker>
+                                    </el-form-item>
+                                </el-col>
+                            </el-row>
+                        </el-form>
+                    </div>
+                </div>
+            </div>
             <div slot="footer" class="dialog-footer">
                 <el-button @click="editDialogVisible = false">取消</el-button>
                 <el-button type="primary" @click="saveEdit">保存</el-button>
             </div>
         </el-dialog>
+        
         <!-- 添加商品信息弹框 -->
-        <el-dialog title="添加商品信息" :visible.sync="addDialogVisible" width="650px" modal-append-to-body>
-            <el-form :model="addForm" label-width="80px">
-                <el-row :gutter="20">
-                    <el-col :span="12">
-                        <el-form-item label="商品ID">
-                            <el-input v-model="addForm.id"></el-input>
-                        </el-form-item>
-                    </el-col>
-                    <el-col :span="12">
-                        <el-form-item label="商品名称">
-                            <el-input v-model="addForm.name"></el-input>
-                        </el-form-item>
-                    </el-col>
-                </el-row>
-                <el-row :gutter="20">
-                    <el-col :span="12">
-                        <el-form-item label="商品特性">
-                            <el-input v-model="addForm.features"></el-input>
-                        </el-form-item>
-                    </el-col>
-                    <el-col :span="12">
-                        <el-form-item label="商品价格">
-                            <el-input v-model="addForm.price" type="number"></el-input>
-                        </el-form-item>
-                    </el-col>
-                </el-row>
-                <el-row :gutter="20">
-                    <el-col :span="12">
-                        <el-form-item label="商品类型">
-                            <el-input v-model="addForm.type"></el-input>
-                        </el-form-item>
-                    </el-col>
-                    <el-col :span="12">
-                        <el-form-item label="供应商">
-                            <el-input v-model="addForm.supplier"></el-input>
-                        </el-form-item>
-                    </el-col>
-                </el-row>
-            </el-form>
+        <el-dialog title="添加商品信息" :visible.sync="addDialogVisible" width="650px" center class="modern-dialog"
+            top="15vh">
+            <div class="dialog-content">
+                <div class="dialog-header">
+                    <div class="form-meta">
+                        <el-form :model="addForm" label-width="80px">
+                            <el-row :gutter="20">
+                                <el-col :span="12">
+                                    <el-form-item label="商品ID">
+                                        <el-input v-model="addForm.id"></el-input>
+                                    </el-form-item>
+                                </el-col>
+                                <el-col :span="12">
+                                    <el-form-item label="商品名称">
+                                        <el-input v-model="addForm.name"></el-input>
+                                    </el-form-item>
+                                </el-col>
+                            </el-row>
+                            <el-row :gutter="20">
+                                <el-col :span="12">
+                                    <el-form-item label="商品特性">
+                                        <el-input v-model="addForm.features"></el-input>
+                                    </el-form-item>
+                                </el-col>
+                                <el-col :span="12">
+                                    <el-form-item label="商品价格">
+                                        <el-input v-model="addForm.price" type="number"></el-input>
+                                    </el-form-item>
+                                </el-col>
+                            </el-row>
+                            <el-row :gutter="20">
+                                <el-col :span="12">
+                                    <el-form-item label="商品类型">
+                                        <el-input v-model="addForm.type"></el-input>
+                                    </el-form-item>
+                                </el-col>
+                                <el-col :span="12">
+                                    <el-form-item label="供应商">
+                                        <el-input v-model="addForm.supplier"></el-input>
+                                    </el-form-item>
+                                </el-col>
+                            </el-row>
+                        </el-form>
+                    </div>
+                </div>
+            </div>
             <div slot="footer" class="dialog-footer">
                 <el-button @click="addDialogVisible = false">取消</el-button>
                 <el-button type="primary" @click="saveAdd">保存</el-button>
@@ -661,5 +676,98 @@ export default {
 
 .el-table .el-table__header-wrapper th .cell {
     white-space: nowrap;
+}
+
+/* 现代对话框样式 */
+.modern-dialog>>>.el-dialog {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.modern-dialog>>>.el-dialog__header {
+    background-color: #f5f7fa;
+    padding: 16px 20px;
+    border-bottom: 1px solid #ebeef5;
+}
+
+.modern-dialog>>>.el-dialog__title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #303133;
+}
+
+.modern-dialog>>>.el-dialog__body {
+    padding: 20px;
+}
+
+.modern-dialog>>>.el-dialog__footer {
+    padding: 12px 20px;
+    border-top: 1px solid #ebeef5;
+}
+
+.dialog-content {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.dialog-header {
+    padding-bottom: 16px;
+}
+
+.form-meta {
+    width: 100%;
+}
+
+/* 对话框关闭按钮样式 */
+.modern-dialog>>>.el-dialog__headerbtn {
+    transition: all 0.3s;
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 30px;
+    height: 28px;
+    padding: 5px;
+}
+
+.modern-dialog>>>.el-dialog__headerbtn:hover {
+    background-color: rgba(245, 108, 108, 0.8);
+    border-radius: 4px;
+}
+
+.modern-dialog>>>.el-dialog__headerbtn:hover .el-dialog__close {
+    color: #ffffff;
+}
+
+.modern-dialog>>>.el-dialog__headerbtn .el-dialog__close {
+    transition: color 0.3s;
+    font-size: 18px;
+    transform: scale(1.2);
+}
+
+/* 美化表单样式 */
+.modern-dialog .el-input__inner,
+.modern-dialog .el-textarea__inner {
+    border-radius: 6px;
+    transition: all 0.3s;
+}
+
+.modern-dialog .el-input__inner:focus,
+.modern-dialog .el-textarea__inner:focus {
+    border-color: #409EFF;
+    box-shadow: 0 0 5px rgba(64, 158, 255, 0.2);
+}
+
+/* 美化按钮样式 */
+.modern-dialog .dialog-footer .el-button {
+    padding: 10px 20px;
+    border-radius: 6px;
+    transition: all 0.3s;
+}
+
+.modern-dialog .dialog-footer .el-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 </style>
