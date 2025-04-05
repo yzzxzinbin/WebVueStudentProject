@@ -5,92 +5,111 @@
         <span class="table-title">操作申请</span>
       </div>
       <hr class="custom-hr">
-      <div class="form-content">
-        <div class="form-inputs">
-          <el-form :model="operationForm" label-width="100px" class="operation-form" :rules="rules"
-            ref="operationFormRef">
-            <el-row :gutter="20">
-              <el-col :span="24">
-                <el-form-item label="操作类型" prop="type">
-                  <el-select v-model="operationForm.type" placeholder="请选择操作类型" @change="handleTypeChange">
-                    <el-option label="入库" value="入库"></el-option>
-                    <el-option label="出库" value="出库"></el-option>
-                    <el-option label="转调" value="转调"></el-option>
-                  </el-select>
-                </el-form-item>
-              </el-col>
-              <el-col :span="24">
-                <el-form-item label="商品ID" prop="productId">
-                  <el-autocomplete v-model="operationForm.productId" @clear="operationForm.productId = ''"
-                    :fetch-suggestions="queryProduct" placeholder="请输入商品ID" @select="handleProductSelect"
-                    :disabled="!operationForm.type">
-                  </el-autocomplete>
-                </el-form-item>
-              </el-col>
-              <el-col :span="24">
-                <el-form-item label="数量" prop="quantity">
-                  <el-input-number v-model="operationForm.quantity" :min="1" :max="9999"
-                    :disabled="!operationForm.productId"></el-input-number>
-                </el-form-item>
-              </el-col>
-              <el-col :span="24" v-if="operationForm.type !== '入库'">
-                <el-form-item label="源仓库" prop="sourceWarehouse">
-                  <el-select v-model="operationForm.sourceWarehouse" placeholder="请选择源仓库"
-                    :disabled="!operationForm.productId" filterable clearable>
-                    <el-option v-for="warehouse in filteredSourceWarehouses" :key="warehouse.id" :label="warehouse.name"
-                      :value="warehouse.id"></el-option>
-                    <el-option v-if="filteredSourceWarehouses.length === 0 && operationForm.productId" disabled value=""
-                      label=""></el-option>
-                  </el-select>
-                </el-form-item>
-              </el-col>
-              <el-col :span="24" v-if="operationForm.type !== '出库'">
-                <el-form-item label="目标仓库" prop="targetWarehouse">
-                  <el-select v-model="operationForm.targetWarehouse" placeholder="请选择目标仓库"
-                    :disabled="!operationForm.productId">
-                    <el-option v-for="warehouse in warehouses" :key="warehouse.id" :label="warehouse.name"
-                      :value="warehouse.id"></el-option>
-                  </el-select>
-                </el-form-item>
-              </el-col>
-            </el-row>
-          </el-form>
+      <el-form :model="operationForm" label-width="100px" class="operation-form" :rules="rules" ref="operationFormRef">
+        <div class="modern-layout">
+          <!-- 左侧列 - 基本信息 -->
+          <div class="operation-details">
+            <h3 class="section-title">操作详情</h3>
+            <el-form-item label="操作类型" prop="type">
+              <el-select v-model="operationForm.type" placeholder="请选择操作类型" @change="handleTypeChange">
+                <el-option label="入库" value="入库"></el-option>
+                <el-option label="出库" value="出库"></el-option>
+                <el-option label="转调" value="转调"></el-option>
+              </el-select>
+            </el-form-item>
+
+            <el-form-item label="商品ID" prop="productId">
+              <el-autocomplete v-model="operationForm.productId" @clear="operationForm.productId = ''"
+                :fetch-suggestions="queryProduct" placeholder="请输入商品ID" @select="handleProductSelect"
+                :disabled="!operationForm.type">
+              </el-autocomplete>
+            </el-form-item>
+
+            <el-form-item label="数量" prop="quantity">
+              <el-input-number v-model="operationForm.quantity" :min="1" :max="9999"
+                :disabled="!operationForm.productId" controls-position="right"></el-input-number>
+            </el-form-item>
+
+            <el-form-item label="源仓库" prop="sourceWarehouse" v-if="operationForm.type !== '入库'">
+              <el-select v-model="operationForm.sourceWarehouse" placeholder="请选择源仓库"
+                :disabled="!operationForm.productId" filterable clearable>
+                <el-option v-for="warehouse in filteredSourceWarehouses" :key="warehouse.id" :label="warehouse.name"
+                  :value="warehouse.id"></el-option>
+                <el-option v-if="filteredSourceWarehouses.length === 0 && operationForm.productId" disabled value=""
+                  label=""></el-option>
+              </el-select>
+            </el-form-item>
+
+            <el-form-item label="目标仓库" prop="targetWarehouse" v-if="operationForm.type !== '出库'">
+              <el-select v-model="operationForm.targetWarehouse" placeholder="请选择目标仓库"
+                :disabled="!operationForm.productId">
+                <el-option v-for="warehouse in warehouses" :key="warehouse.id" :label="warehouse.name"
+                  :value="warehouse.id"></el-option>
+              </el-select>
+            </el-form-item>
+          </div>
+
+          <!-- 右侧列 - 操作按钮 -->
+          <div class="operation-details action-section">
+            <h3 class="section-title">执行操作</h3>
+            <div class="action-description">
+              <p>根据自动补全和操作提示完成表单后，点击下方按钮提交操作请求。系统将验证您的操作权限并执行相应的仓库操作。</p>
+              <p>所有操作将被记录在日志中，可以在下方表格查看历史记录。</p>
+            </div>
+            <div class="form-actions">
+              <el-button type="primary" @click="submitOperation" icon="el-icon-check">提交操作</el-button>
+              <el-button @click="resetForm" icon="el-icon-refresh-left">重置表单</el-button>
+              <el-button type="warning" @click="exportLogs" icon="el-icon-download">导出日志</el-button>
+            </div>
+          </div>
         </div>
-        <div class="divider"></div>
-        <div class="form-actions">
-          <el-button type="primary" @click="submitOperation">提交</el-button>
-          <el-button @click="resetForm">重置</el-button>
-          <el-button type="warning" @click="exportLogs">导出日志</el-button>
-        </div>
-      </div>
+      </el-form>
     </el-card>
 
     <!-- 日志数据表单 -->
-    <el-card ref="logTableCard" shadow="hover" class="table-card">
+    <el-card ref="logTableCard" shadow="hover" class="table-card" style="height: calc(99vh - 580px);">
       <div class="table-header">
-        <span class="table-title">操作日志</span>
-        <el-tag type="info">共 {{ totalLogs }} 条记录</el-tag>
+        <div class="header-left">
+          <span class="table-title">操作日志</span>
+          <el-tag type="info" class="count-tag">共 {{ totalLogs }} 条记录</el-tag>
+        </div>
       </div>
-      <el-table ref="logTable" :data="paginatedLogs" height="tableHeight" stripe border highlight-current-row
-        style="width: 100%" v-loading="loading">
+      <el-table ref="logTable" :data="paginatedLogs" height="calc(99vh - 700px)" stripe border highlight-current-row
+        style="width: 100%" v-loading="loading" class="rounded-table fixed-height-table">
         <el-table-column prop="id" label="日志ID" width="200" sortable></el-table-column>
-        <el-table-column prop="type" label="操作类型" width="120" sortable></el-table-column>
+        <el-table-column prop="type" label="操作类型" width="120" sortable>
+          <template slot-scope="{row}">
+            <el-tag :type="getOperationTagType(row.type)" size="small">{{ row.type }}</el-tag>
+          </template>
+        </el-table-column>
         <el-table-column prop="productId" label="商品ID" width="120" sortable></el-table-column>
         <el-table-column prop="quantity" label="数量" width="100" sortable></el-table-column>
         <el-table-column prop="sourceWarehouse" label="源仓库" width="150"></el-table-column>
         <el-table-column prop="targetWarehouse" label="目标仓库" width="150"></el-table-column>
         <el-table-column prop="applicant" label="申请人" width="120"></el-table-column>
-        <el-table-column prop="status" label="状态" width="100" sortable></el-table-column>
-        <el-table-column prop="timestamp" label="时间" width="200" sortable></el-table-column>
+        <el-table-column prop="status" label="状态" width="100" sortable>
+          <template slot-scope="{row}">
+            <el-tag :type="getStatusTagType(row.status)" size="small">{{ getStatusText(row.status) }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="timestamp" label="时间" width="200" sortable>
+          <template slot-scope="{row}">
+            <span class="time-display">{{ formatDateTime(row.timestamp) }}</span>
+          </template>
+        </el-table-column>
       </el-table>
       <div class="table-footer">
-        <el-button type="primary" plain size="mini" @click="scrollToTop('logTable')" class="back-to-top">
-          <i class="el-icon-top"></i> 返回顶部
-        </el-button>
-        <el-pagination class="pagination" @size-change="handleLogSizeChange" @current-change="handleLogCurrentChange"
-          :current-page="logCurrentPage" :page-sizes="[10, 20, 50, 100]" :page-size="logPageSize"
-          layout="total, sizes, prev, pager, next, jumper" :total="totalLogs">
-        </el-pagination>
+        <div class="footer-left">
+          <el-button type="primary" plain size="mini" @click="scrollToTop('logTable')" class="back-to-top">
+            <i class="el-icon-top"></i> 返回顶部
+          </el-button>
+        </div>
+        <div class="footer-right">
+          <el-pagination class="pagination" @size-change="handleLogSizeChange" @current-change="handleLogCurrentChange"
+            :current-page="logCurrentPage" :page-sizes="[10, 20, 50, 100]" :page-size="logPageSize"
+            layout="total, sizes, prev, pager, next, jumper" :total="totalLogs">
+          </el-pagination>
+        </div>
       </div>
     </el-card>
   </div>
@@ -143,7 +162,7 @@ export default {
       let availableWarehouseIds = warehouseProducts
         .filter(p => p.id === this.operationForm.productId && p.quantity > 0)
         .map(p => p.warehouseId);
-      
+
       // 添加权限过滤
       const authorizedWarehouseIds = this.$permission.getAuthorizedWarehouseIds();
       availableWarehouseIds = availableWarehouseIds.filter(id => authorizedWarehouseIds.includes(id));
@@ -222,7 +241,7 @@ export default {
       this.operationForm.sourceWarehouse = '';
       this.operationForm.targetWarehouse = '';
       this.operationForm.productId = ''; // 清空商品ID以便重新选择
-      
+
       if (this.operationForm.type === '入库') {
         this.operationForm.sourceWarehouse = 'External'; // 标记为外部来源，修改为大写E
       } else if (this.operationForm.type === '出库') {
@@ -322,17 +341,17 @@ export default {
         }
 
         // 检查仓库权限
-        if (this.operationForm.sourceWarehouse && 
-            this.operationForm.sourceWarehouse !== 'External' && 
-            !this.$permission.canOperateWarehouse(this.operationForm.sourceWarehouse)) {
+        if (this.operationForm.sourceWarehouse &&
+          this.operationForm.sourceWarehouse !== 'External' &&
+          !this.$permission.canOperateWarehouse(this.operationForm.sourceWarehouse)) {
           this.logOperation('ERR', '您没有操作此源仓库的权限');
           this.$message.error('您没有操作此源仓库的权限');
           return;
         }
 
-        if (this.operationForm.targetWarehouse && 
-            this.operationForm.targetWarehouse !== 'External' && 
-            !this.$permission.canOperateWarehouse(this.operationForm.targetWarehouse)) {
+        if (this.operationForm.targetWarehouse &&
+          this.operationForm.targetWarehouse !== 'External' &&
+          !this.$permission.canOperateWarehouse(this.operationForm.targetWarehouse)) {
           this.logOperation('ERR', '您没有操作此目标仓库的权限');
           this.$message.error('您没有操作此目标仓库的权限');
           return;
@@ -366,7 +385,7 @@ export default {
             message: '操作成功'
           };
           this.logOperation('SUC', '操作成功'); // 成功时只记录一次日志
-          
+
           this.$message.success('操作提交成功');
           this.resetForm();
           this.loadLogs(); // 重新加载日志以更新显示
@@ -413,7 +432,7 @@ export default {
         this.$message.error('您没有导出日志的权限');
         return;
       }
-      
+
       const operations = JSON.parse(localStorage.getItem('operations')) || [];
       const dataStr = JSON.stringify(operations, null, 2);
       const blob = new Blob([dataStr], { type: 'application/json' });
@@ -594,10 +613,10 @@ export default {
     logOperation(status, message) {
       // 设置申请人 - 修复用户名称问题
       const user = JSON.parse(localStorage.getItem('user')) || {};
-      
+
       // 生成唯一的操作ID
       const operationId = this.generateOperationId();
-      
+
       const operationData = {
         id: operationId,
         ...this.operationForm,
@@ -605,10 +624,10 @@ export default {
         timestamp: new Date().toISOString(),
         status
       };
-      
+
       // 读取现有操作记录
       const operations = JSON.parse(localStorage.getItem('operations')) || [];
-      
+
       // 检查是否已经存在相同ID的记录，避免重复添加
       const existingIndex = operations.findIndex(op => op.id === operationId);
       if (existingIndex === -1) {
@@ -616,7 +635,7 @@ export default {
         operations.push(operationData);
         localStorage.setItem('operations', JSON.stringify(operations));
       }
-      
+
       if (status === 'ERR') {
         this.$message.error(message);
       }
@@ -646,7 +665,7 @@ export default {
     loadLogs() {
       const savedLogs = localStorage.getItem('operations');
       let logs = savedLogs ? JSON.parse(savedLogs) : [];
-      
+
       // 兼容处理：将旧的operator字段映射到applicant
       this.logs = logs.map(log => {
         // 如果有老数据使用operator字段，则转换为applicant
@@ -717,6 +736,57 @@ export default {
       if (ua.match(/Macintosh/i)) return 'Mac';
       if (ua.match(/Linux/i)) return 'Linux';
       return 'Unknown Device';
+    },
+
+    /**
+     * @Function_Para 获取操作类型标签样式
+     * @Function_Meth 根据操作类型返回对应的标签样式
+     */
+    getOperationTagType(type) {
+      const typeMap = {
+        '入库': 'success',
+        '出库': 'danger',
+        '转调': 'warning'
+      };
+      return typeMap[type] || 'info';
+    },
+
+    /**
+     * @Function_Para 获取状态标签样式
+     * @param {string} status - 操作状态
+     * @Function_Meth 根据状态返回对应的标签样式
+     */
+    getStatusTagType(status) {
+      const statusMap = {
+        'SUC': 'success',   // 成功
+        'ERR': 'danger',    // 错误
+        'PEN': 'warning'    // 待处理
+      };
+      return statusMap[status] || 'info';
+    },
+
+    /**
+     * @Function_Para 获取状态文本
+     * @param {string} status - 操作状态
+     * @Function_Meth 根据状态返回中文状态描述
+     */
+    getStatusText(status) {
+      const statusMap = {
+        'SUC': '成功',
+        'ERR': '失败',
+        'PEN': '待处理'
+      };
+      return statusMap[status] || status;
+    },
+
+    /**
+     * @Function_Para 格式化日期时间
+     * @Function_Meth 将ISO日期字符串格式化为易读形式
+     */
+    formatDateTime(dateStr) {
+      if (!dateStr) return '';
+      const date = new Date(dateStr);
+      return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
     }
   },
   created() {
@@ -729,138 +799,261 @@ export default {
 
 <style scoped>
 /* 主容器样式 */
-/* 设置操作页面的基本内边距 */
 .operation {
-  padding: 8px;
+  padding: 12px;
 }
 
 /* 卡片样式 */
-/* 为表单卡片和表格卡片设置统一的圆角和背景 */
 .form-card,
 .table-card {
-  border-radius: 8px;
+  border-radius: 12px;
   background-color: rgba(245, 245, 250, 1);
   backdrop-filter: blur(10px);
   margin-bottom: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+.table-card {
+  margin: 0;
 }
 
 /* 表单头部样式 */
-/* 设置表单标题区域的边距和布局 */
 .form-header {
   margin-bottom: 8px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-left: 24px;
+  padding: 0 24px;
 }
 
 /* 操作表单样式 */
-/* 设置表单的最大宽度和居中显示 */
 .operation-form {
-  
-  max-width: 800px;
-  margin: 0 auto;
+  width: 95%;
+  margin: 0;
+  padding-top: 5px;
+  padding-left: 20px;
 }
 
-/* 日志表格样式 */
-/* 设置日志表格的高度、圆角和布局 */
-.el-table {
+/* 现代布局 */
+.modern-layout {
+  display: flex;
+  gap: 20px;
+  width: 100%;
+  padding: 0;
+  justify-content: space-between;
+}
+
+/* 操作详情区域基础样式 */
+.operation-details {
   flex: 1;
-  height: calc(99vh - 670px);
-  overflow-y: auto;
-  border-radius: 12px;
-  margin-left: 18px;
-  max-width: 98%;
+  min-width: 250px;
+  max-width: 46%;
+  padding: 10px 15px;
+  padding-bottom: 0;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
+}
+
+/* 右侧操作区域特殊调整 */
+.action-section {
+  display: flex;
+  flex-direction: column;
+}
+
+/* 区域标题样式 */
+.section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #409EFF;
+  margin-top: 0;
+  margin-bottom: 10px;
+  position: relative;
+  padding-left: 12px;
+}
+
+.section-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 16px;
+  width: 4px;
+  background-color: #409EFF;
+  border-radius: 2px;
+}
+
+/* 操作描述样式 - 添加边框和更紧凑的内边距 */
+.action-description {
+  width: 90%;
+  padding: 12px 15px;
+  color: #606266;
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 0 auto 10px;  /* 上0 左右auto 下20px */
+  background-color: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(64, 158, 255, 0.15);
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+}
+
+.action-description p {
+  margin: 8px 0;
+}
+
+/* 操作按钮容器 - 调整宽度和对齐方式 */
+.form-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 15px;
+  align-items: center;
+  /* 居中对齐 */
+}
+
+.form-actions .el-button {
+  padding: 10px 0;
+  border-radius: 6px;
+  transition: all 0.3s;
+  width: 50%;
+  /* 按钮宽度减小为80% */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.form-actions .el-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.form-actions .el-button--primary {
+  margin-left: 10px;
+
+}
+
+.form-actions .el-button i {
+  margin-right: 5px;
 }
 
 /* 表格头部样式 */
-/* 设置表格标题区域的边距和布局 */
 .table-header {
-  margin-bottom: 10px;
+  margin-bottom: 15px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-left: 22px;
+  padding: 0 22px;
+}
+
+.header-left,
+.header-right {
+  display: flex;
+  align-items: center;
+}
+
+.count-tag {
+  margin-left: 15px;
 }
 
 /* 表格标题文本样式 */
-/* 设置表格标题的字体大小和粗细 */
 .table-title {
   font-size: 18px;
-  font-weight: bold;
+  font-weight: 600;
+  color: #303133;
 }
 
-/* 表格底部样式 */
-/* 设置表格底部分页和按钮区域的布局 */
+/* 自定义分隔线 - 改为简约灰色 */
+.custom-hr {
+  border: none;
+  height: 2px;
+  background-color: rgba(220, 220, 220, 0.6);
+  margin: 10px 10px 5px 20px;
+}
+
+/* 表单输入美化 */
+.el-select,
+.el-autocomplete,
+.el-input-number {
+  width: 100%;
+}
+
+.el-select>>>.el-input__inner,
+.el-autocomplete>>>.el-input__inner,
+.el-input-number>>>.el-input__inner {
+  border-radius: 6px;
+  height: 40px;
+  transition: all 0.3s;
+}
+
+.el-select>>>.el-input__inner:focus,
+.el-autocomplete>>>.el-input__inner:focus,
+.el-input-number>>>.el-input__inner:focus {
+  border-color: #409EFF;
+  box-shadow: 0 0 5px rgba(64, 158, 255, 0.2);
+}
+
+/* 响应式调整 */
+@media (max-width: 992px) {
+  .modern-layout {
+    flex-direction: column;
+  }
+
+  .operation-details {
+    max-width: none;
+  }
+
+  /* 移动端下让按钮宽度更大一些 */
+  .form-actions .el-button {
+    width: 90%;
+  }
+}
+
+/* 表格样式优化 */
+.rounded-table {
+  border-radius: 12px;
+  overflow: hidden;
+  margin: 0 20px 5px;
+  width: calc(100% - 44px) !important;
+}
+
+/* 固定高度表格和行高 */
+.fixed-height-table>>>.el-table__body tr {
+  height: 48px;
+}
+
+.fixed-height-table>>>.el-table__body td {
+  padding: 0 12px !important;
+}
+
+/* 表格底部样式优化 */
 .table-footer {
-  margin-top: 10px;
-  padding-left: 16px;
+  padding: 10px 22px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  width: calc(100% - 44px);
 }
 
-/* 分页控件样式 */
-/* 设置分页控件的对齐方式 */
-.pagination {
-  margin-left: auto;
-}
-
-/* 表单内容布局 */
-/* 使用Flexbox布局组织表单左侧输入区域和右侧操作区域 */
-.form-content {
+.footer-left,
+.footer-right {
   display: flex;
-  gap: 10px;
+  align-items: center;
 }
 
-/* 表单输入区样式 */
-/* 设置表单输入区占据较大空间比例 */
-.form-inputs {
-  flex: 3;
+/* 时间显示样式 */
+.time-display {
+  color: #606266;
+  font-size: 13px;
 }
 
-/* 表单操作区样式 */
-/* 设置表单操作按钮区域的布局、背景和内边距 */
-.form-actions {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  justify-content: flex-start;
-  align-items: stretch;
-  background-color: rgba(245, 245, 250, 0.6);
-  /*  使子元素拉伸填充宽度 */
-  padding-left: 30px;
-  padding-right: 30px;
-  padding-top: 50px;
-  padding-bottom: 50px;
-  border-radius: 8px;
+/* 返回顶部按钮 */
+.back-to-top {
+  transition: all 0.3s;
 }
 
-.form-actions .el-button {
-  width: 100%;
-  /*  按钮宽度100%填充容器 */
-  margin: 0;
-  /*  移除默认外边距 */
-  /*  添加左边距 */
-  min-width: 150px;
-  /*  设置最小宽度 */
-}
-
-.form-actions .el-button {
-  width: 100%;
-  /*  按钮宽度100%填充容器 */
-  margin: 0;
-  /*  移除默认外边距 */
-}
-
-.divider {
-  width: 1px;
-  background-color: #dcdcdc;
-  height: auto;
-}
-
-.custom-hr {
-  margin-bottom: 10px;
+.back-to-top:hover {
+  transform: translateY(-2px);
 }
 </style>
