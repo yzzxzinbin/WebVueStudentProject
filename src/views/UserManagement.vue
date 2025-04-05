@@ -66,7 +66,8 @@
         </el-card>
 
         <!-- 添加/编辑用户对话框 -->
-        <el-dialog :title="dialogTitle" :visible.sync="dialogVisible" width="50%" center>
+        <el-dialog :title="dialogTitle" :visible.sync="dialogVisible" width="50%" center
+                   class="modern-dialog" top="8vh">
             <el-form :model="currentUser" :rules="userRules" ref="userForm" label-width="80px">
                 <el-row :gutter="20">
                     <el-col :span="12">
@@ -128,33 +129,77 @@
                 <el-button type="primary" @click="saveUser">保存</el-button>
             </span>
         </el-dialog>
-        <el-dialog title="授权仓库管理" :visible.sync="warehouseDialogVisible" width="70%">
-            <el-table :data="warehouses" ref="warehouseTable" style="width: 100%" border stripe
-                @selection-change="handleWarehouseSelectionChange">
-                <el-table-column type="selection" width="55">
-                </el-table-column>
-                <el-table-column prop="id" label="仓库ID" width="120">
-                </el-table-column>
-                <el-table-column prop="name" label="仓库名称">
-                </el-table-column>
-                <el-table-column prop="location" label="仓库位置">
-                </el-table-column>
-                <el-table-column label="基本权限" width="100">
-                    <template slot-scope="scope">
-                        <el-checkbox v-model="scope.row.hasBasicPermission" 
-                                     @change="(value) => handleBasicPermissionChange(scope.row, value)">
-                        </el-checkbox>
-                    </template>
-                </el-table-column>
-                <el-table-column label="越权批准" width="100">
-                    <template slot-scope="scope">
-                        <el-checkbox v-model="scope.row.hasOverridePermission"
+        
+        <!-- 授权仓库管理对话框 - 全新现代高端设计 -->
+        <el-dialog title="授权仓库管理" :visible.sync="warehouseDialogVisible" width="70%" 
+                   class="modern-dialog authorization-dialog" top="5vh">
+            <div class="auth-header">
+                <div class="auth-user-info">
+                    <div class="auth-avatar">
+                        <i class="el-icon-user-solid"></i>
+                    </div>
+                    <div class="auth-details" v-if="currentAuthUser">
+                        <h3>{{ currentAuthUser.name }} <el-tag size="mini" :type="getRoleTagType(currentAuthUser.role)">
+                            {{ currentAuthUser.role === 'admin' ? '管理员' : 
+                               currentAuthUser.role === 'manager' ? '经理' : '操作员' }}
+                        </el-tag></h3>
+                        <p>正在设置仓库访问权限</p>
+                    </div>
+                </div>
+                <div class="auth-actions">
+                    <el-tooltip content="选择全部仓库" placement="top">
+                        <el-button type="primary" plain icon="el-icon-check" size="small" 
+                                   @click="selectAllWarehouses">全选</el-button>
+                    </el-tooltip>
+                    <el-tooltip content="取消所有选择" placement="top">
+                        <el-button type="info" plain icon="el-icon-close" size="small" 
+                                   @click="deselectAllWarehouses">清空</el-button>
+                    </el-tooltip>
+                </div>
+            </div>
+            
+            <div class="auth-content">
+                <el-table :data="warehouses" ref="warehouseTable" style="width: 100%" border stripe
+                    @selection-change="handleWarehouseSelectionChange"
+                    :header-cell-style="{ background: '#f5f7fa', color: '#606266' }">
+                    <el-table-column type="selection" width="55"></el-table-column>
+                    <el-table-column prop="id" label="仓库ID" width="120"></el-table-column>
+                    <el-table-column prop="name" label="仓库名称">
+                        <template slot-scope="scope">
+                            <span class="warehouse-name">{{ scope.row.name }}</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column prop="location" label="仓库位置"></el-table-column>
+                    <el-table-column label="基本权限" width="100" align="center">
+                        <template slot-scope="scope">
+                            <el-switch v-model="scope.row.hasBasicPermission" 
+                                     @change="(value) => handleBasicPermissionChange(scope.row, value)"
+                                     active-color="#67C23A">
+                            </el-switch>
+                        </template>
+                    </el-table-column>
+                    <el-table-column label="越权批准" width="100" align="center">
+                        <template slot-scope="scope">
+                            <el-switch v-model="scope.row.hasOverridePermission"
                                      :disabled="!scope.row.hasBasicPermission"
-                                     @change="(value) => handleOverridePermissionChange(scope.row, value)">
-                        </el-checkbox>
-                    </template>
-                </el-table-column>
-            </el-table>
+                                     @change="(value) => handleOverridePermissionChange(scope.row, value)"
+                                     active-color="#E6A23C">
+                            </el-switch>
+                        </template>
+                    </el-table-column>
+                </el-table>
+            </div>
+            
+            <div class="auth-summary" v-if="currentAuthUser">
+                <div class="summary-icon"><i class="el-icon-info"></i></div>
+                <div class="summary-text">
+                    <p>已为 <strong>{{ currentAuthUser.name }}</strong> 授权 
+                       <span class="highlight-count">{{ getSelectedWarehouseCount() }}</span> 个仓库的访问权限
+                       和 <span class="highlight-count">{{ getSelectedOverrideCount() }}</span> 个仓库的越权批准权限。
+                    </p>
+                </div>
+            </div>
+            
             <span slot="footer" class="dialog-footer">
                 <el-button @click="warehouseDialogVisible = false">取消</el-button>
                 <el-button type="primary" @click="saveWarehouseAuthorization">确认授权</el-button>
@@ -763,6 +808,59 @@ export default {
          */
         isAdminUser() {
             return this.currentAuthUser && this.currentAuthUser.role === 'admin';
+        },
+        
+        /**
+         * @Function_Para 全选仓库
+         * @Function_Meth 选择所有仓库并设置权限
+         */
+        selectAllWarehouses() {
+            this.warehouses.forEach(warehouse => {
+                warehouse.hasBasicPermission = true;
+                if (this.currentAuthUser.role === 'admin' || this.currentAuthUser.role === 'manager') {
+                    warehouse.hasOverridePermission = true;
+                }
+            });
+            
+            // 更新表格选择状态
+            this.$nextTick(() => {
+                this.$refs.warehouseTable.clearSelection();
+                this.warehouses.forEach(row => {
+                    this.$refs.warehouseTable.toggleRowSelection(row, true);
+                });
+            });
+        },
+        
+        /**
+         * @Function_Para 取消选择所有仓库
+         * @Function_Meth 清除所有仓库的权限设置
+         */
+        deselectAllWarehouses() {
+            this.warehouses.forEach(warehouse => {
+                warehouse.hasBasicPermission = false;
+                warehouse.hasOverridePermission = false;
+            });
+            
+            // 更新表格选择状态
+            this.$nextTick(() => {
+                this.$refs.warehouseTable.clearSelection();
+            });
+        },
+        
+        /**
+         * @Function_Para 获取已选择仓库数量
+         * @returns {number} 选择的仓库数量
+         */
+        getSelectedWarehouseCount() {
+            return this.warehouses.filter(w => w.hasBasicPermission).length;
+        },
+        
+        /**
+         * @Function_Para 获取已选择越权批准仓库数量
+         * @returns {number} 选择的越权批准仓库数量
+         */
+        getSelectedOverrideCount() {
+            return this.warehouses.filter(w => w.hasOverridePermission).length;
         }
     }
 };
@@ -936,5 +1034,199 @@ export default {
 /* 应用于仓库授权的el-button组件，class="authorize-button" */
 .authorize-button {
     margin-left: 10px;
+}
+
+/* 现代对话框样式 */
+.modern-dialog>>>.el-dialog {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.modern-dialog>>>.el-dialog__header {
+  background-color: #f5f7fa;
+  padding: 16px 20px;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.modern-dialog>>>.el-dialog__title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.modern-dialog>>>.el-dialog__body {
+  padding: 24px 20px;
+}
+
+.modern-dialog>>>.el-dialog__footer {
+  padding: 14px 20px;
+  border-top: 1px solid #ebeef5;
+  background-color: #f9fafc;
+}
+
+/* 对话框关闭按钮样式 */
+.modern-dialog>>>.el-dialog__headerbtn {
+  transition: all 0.3s;
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 30px;
+  height: 28px;
+  padding: 5px;
+}
+
+.modern-dialog>>>.el-dialog__headerbtn:hover {
+  background-color: rgba(245, 108, 108, 0.8);
+  border-radius: 4px;
+}
+
+.modern-dialog>>>.el-dialog__headerbtn:hover .el-dialog__close {
+  color: #ffffff;
+}
+
+.modern-dialog>>>.el-dialog__headerbtn .el-dialog__close {
+  transition: color 0.3s;
+  font-size: 18px;
+  transform: scale(1.2);
+}
+
+/* 美化表单样式 */
+.modern-dialog .el-input__inner,
+.modern-dialog .el-textarea__inner {
+  border-radius: 6px;
+  transition: all 0.3s;
+}
+
+.modern-dialog .el-input__inner:focus,
+.modern-dialog .el-textarea__inner:focus {
+  border-color: #409EFF;
+  box-shadow: 0 0 5px rgba(64, 158, 255, 0.2);
+}
+
+/* 美化按钮样式 */
+.modern-dialog .dialog-footer .el-button {
+  padding: 10px 20px;
+  border-radius: 6px;
+  transition: all 0.3s;
+}
+
+.modern-dialog .dialog-footer .el-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* 授权对话框特别样式 */
+.authorization-dialog>>>.el-dialog__body {
+  padding: 0;
+}
+
+.auth-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #eef2f6 100%);
+  border-bottom: 1px solid #ebeef5;
+}
+
+.auth-user-info {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.auth-avatar {
+  width: 50px;
+  height: 50px;
+  background-color: #e6f1fc;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #409EFF;
+  font-size: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.auth-details h3 {
+  margin: 0;
+  font-size: 16px;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.auth-details p {
+  margin: 0;
+  font-size: 14px;
+  color: #606266;
+}
+
+.auth-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.auth-content {
+  padding: 20px;
+}
+
+.warehouse-name {
+  font-weight: 500;
+  color: #303133;
+}
+
+.auth-summary {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 15px 20px;
+  background-color: #f0f9eb;
+  border-top: 1px solid #e1f3d8;
+}
+
+.summary-icon {
+  font-size: 24px;
+  color: #67c23a;
+}
+
+.summary-text {
+  flex: 1;
+}
+
+.summary-text p {
+  margin: 0;
+  color: #606266;
+}
+
+.highlight-count {
+  font-weight: bold;
+  color: #409EFF;
+}
+
+/* 表格内的开关样式 */
+.auth-content .el-switch {
+  margin: 0 auto;
+}
+
+/* 美化表格样式 */
+.authorization-dialog>>>.el-table th {
+  background-color: #f5f7fa;
+  color: #606266;
+  font-weight: 600;
+}
+
+.authorization-dialog>>>.el-table--border, 
+.authorization-dialog>>>.el-table--group {
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #ebeef5;
+}
+
+.authorization-dialog>>>.el-table--border::after, 
+.authorization-dialog>>>.el-table--group::after {
+  display: none;
 }
 </style>

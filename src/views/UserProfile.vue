@@ -156,7 +156,8 @@
         </el-card>
 
         <!-- 修改密码对话框 -->
-        <el-dialog title="修改密码" :visible.sync="passwordDialogVisible" width="500px">
+        <el-dialog title="修改密码" :visible.sync="passwordDialogVisible" width="500px" 
+                   class="modern-dialog" top="10vh">
             <el-form :model="passwordForm" :rules="passwordRules" ref="passwordForm" label-width="100px">
                 <el-form-item label="原密码" prop="oldPassword">
                     <el-input type="password" v-model="passwordForm.oldPassword" autocomplete="off"></el-input>
@@ -175,7 +176,8 @@
         </el-dialog>
 
         <!-- 编辑个人档案对话框 -->
-        <el-dialog title="编辑个人档案" :visible.sync="profileDialogVisible" width="600px">
+        <el-dialog title="编辑个人档案" :visible.sync="profileDialogVisible" width="600px" 
+                   class="modern-dialog" top="5vh">
             <el-form :model="profileForm" label-width="100px">
                 <el-row :gutter="20">
                     <el-col :span="12">
@@ -221,7 +223,8 @@
         </el-dialog>
 
         <!-- 编辑单个字段对话框 -->
-        <el-dialog :title="'编辑' + fieldLabels[editFieldName]" :visible.sync="fieldDialogVisible" width="400px">
+        <el-dialog :title="'编辑' + fieldLabels[editFieldName]" :visible.sync="fieldDialogVisible" width="400px"
+                   class="modern-dialog" top="15vh">
             <el-form :model="fieldForm" label-width="80px">
                 <el-form-item :label="fieldLabels[editFieldName]">
                     <el-input v-model="fieldForm.value"></el-input>
@@ -1221,4 +1224,86 @@ export default {
 .el-card .el-alert {
     background-color: rgba(240, 2, 2, 0.1);
 }
+
+/* 现代对话框样式 */
+.modern-dialog>>>.el-dialog {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.modern-dialog>>>.el-dialog__header {
+  background-color: #f5f7fa;
+  padding: 16px 20px;
+  border-bottom: 1px solid #ebeef5;
+  position: relative;
+}
+
+.modern-dialog>>>.el-dialog__title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.modern-dialog>>>.el-dialog__body {
+  padding: 24px 20px;
+}
+
+.modern-dialog>>>.el-dialog__footer {
+  padding: 14px 20px;
+  border-top: 1px solid #ebeef5;
+  background-color: #f9fafc;
+}
+
+/* 对话框关闭按钮样式 */
+.modern-dialog>>>.el-dialog__headerbtn {
+  transition: all 0.3s;
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 30px;
+  height: 28px;
+  padding: 5px;
+}
+
+.modern-dialog>>>.el-dialog__headerbtn:hover {
+  background-color: rgba(245, 108, 108, 0.8);
+  border-radius: 4px;
+}
+
+.modern-dialog>>>.el-dialog__headerbtn:hover .el-dialog__close {
+  color: #ffffff;
+}
+
+.modern-dialog>>>.el-dialog__headerbtn .el-dialog__close {
+  transition: color 0.3s;
+  font-size: 18px;
+  transform: scale(1.2);
+}
+
+/* 美化表单样式 */
+.modern-dialog .el-input__inner,
+.modern-dialog .el-textarea__inner {
+  border-radius: 6px;
+  transition: all 0.3s;
+}
+
+.modern-dialog .el-input__inner:focus,
+.modern-dialog .el-textarea__inner:focus {
+  border-color: #409EFF;
+  box-shadow: 0 0 5px rgba(64, 158, 255, 0.2);
+}
+
+/* 美化按钮样式 */
+.modern-dialog .dialog-footer .el-button {
+  padding: 10px 20px;
+  border-radius: 6px;
+  transition: all 0.3s;
+}
+
+.modern-dialog .dialog-footer .el-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
 </style>
+```
