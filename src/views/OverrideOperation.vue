@@ -1229,6 +1229,7 @@ export default {
     min-width: 250px;
     max-width: 46%;
     padding: 10px;
+    padding-right: 36px;
     padding-bottom: 0;
     border-radius: 10px;
     background: rgba(255, 255, 255, 0.5);

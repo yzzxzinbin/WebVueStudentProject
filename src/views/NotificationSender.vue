@@ -9,15 +9,9 @@
             <el-radio-button label="all">所有用户</el-radio-button>
             <el-radio-button label="specific">特定用户</el-radio-button>
           </el-radio-group>
-          
-          <el-select 
-            v-if="notificationForm.recipientType === 'specific'" 
-            v-model="notificationForm.recipients" 
-            multiple 
-            collapse-tags
-            placeholder="选择用户" 
-            filterable 
-            class="user-select">
+
+          <el-select v-if="notificationForm.recipientType === 'specific'" v-model="notificationForm.recipients" multiple
+            collapse-tags placeholder="选择用户" filterable class="user-select">
             <el-option v-for="user in users" :key="user.id" :label="user.name || user.username" :value="user.id">
               <div class="notify-user-option">
                 <el-avatar :size="24" :src="getUserAvatar(user.id)"></el-avatar>
@@ -57,7 +51,8 @@
 
             <!-- 消息内容 - 减小高度 -->
             <el-form-item label="通知内容" prop="content">
-              <el-input type="textarea" v-model="notificationForm.content" :rows="4" placeholder="请输入通知内容" resize="none"></el-input>
+              <el-input type="textarea" v-model="notificationForm.content" :rows="4" placeholder="请输入通知内容"
+                resize="none"></el-input>
             </el-form-item>
 
             <!-- 将优先级和有效期放在同一行 -->
@@ -74,13 +69,8 @@
               </el-col>
               <el-col :span="12">
                 <el-form-item label="有效期">
-                  <el-date-picker
-                    v-model="notificationForm.expiry"
-                    type="datetime"
-                    placeholder="选择通知失效时间"
-                    format="yyyy-MM-dd HH:mm"
-                    value-format="yyyy-MM-dd HH:mm:ss"
-                    style="width: 100%">
+                  <el-date-picker v-model="notificationForm.expiry" type="datetime" placeholder="选择通知失效时间"
+                    format="yyyy-MM-dd HH:mm" value-format="yyyy-MM-dd HH:mm:ss" style="width: 100%">
                   </el-date-picker>
                 </el-form-item>
               </el-col>
@@ -94,14 +84,8 @@
             <!-- 左侧：附件上传区域 -->
             <div class="attachment-section">
               <h3 class="section-title">附件</h3>
-              <el-upload
-                class="attachment-uploader"
-                action="#"
-                :http-request="handleFileUpload"
-                :file-list="attachmentFiles"
-                :on-remove="handleFileRemove"
-                multiple
-                :limit="5">
+              <el-upload class="attachment-uploader" action="#" :http-request="handleFileUpload"
+                :file-list="attachmentFiles" :on-remove="handleFileRemove" multiple :limit="5">
                 <el-button size="small" type="primary" icon="el-icon-upload2">添加附件</el-button>
                 <div slot="tip" class="el-upload__tip">最多5个附件，单个文件不超过10MB</div>
               </el-upload>
@@ -110,21 +94,14 @@
             <!-- 右侧：系统信息选择区域 -->
             <div class="system-info-section">
               <h3 class="section-title">附加系统信息</h3>
-              
+
               <!-- 系统信息类型选择 -->
               <el-tabs v-model="activeSystemInfoTab">
                 <el-tab-pane label="操作日志" name="operations">
-                  <el-select 
-                    v-model="selectedSystemInfo.operations" 
-                    multiple 
-                    filterable 
-                    placeholder="选择要附加的操作日志"
-                    style="width: 100%">
-                    <el-option 
-                      v-for="log in operationLogs" 
-                      :key="log.id" 
-                      :label="`${log.id.substring(0, 10)}... (${log.type})`" 
-                      :value="log.id">
+                  <el-select v-model="selectedSystemInfo.operations" multiple filterable collapse-tags
+                    placeholder="选择要附加的操作日志" style="width: 100%">
+                    <el-option v-for="log in operationLogs" :key="log.id"
+                      :label="`${log.id.substring(0, 10)}... (${log.type})`" :value="log.id">
                       <div class="info-option">
                         <el-tag :type="getOperationTagType(log.type)" size="mini">{{ log.type }}</el-tag>
                         <span>{{ formatDateTime(log.timestamp) }}</span>
@@ -133,39 +110,26 @@
                     </el-option>
                   </el-select>
                 </el-tab-pane>
-                
+
                 <el-tab-pane label="越权申请" name="overrides">
-                  <el-select 
-                    v-model="selectedSystemInfo.overrides" 
-                    multiple 
-                    filterable 
-                    placeholder="选择要附加的越权申请"
-                    style="width: 100%">
-                    <el-option 
-                      v-for="req in overrideRequests" 
-                      :key="req.id" 
-                      :label="`${req.id.substring(0, 10)}... (${getStatusText(req.status)})`" 
-                      :value="req.id">
+                  <el-select v-model="selectedSystemInfo.overrides" multiple collapse-tags filterable
+                    placeholder="选择要附加的越权申请" style="width: 100%">
+                    <el-option v-for="req in overrideRequests" :key="req.id"
+                      :label="`${req.id.substring(0, 10)}... (${getStatusText(req.status)})`" :value="req.id">
                       <div class="info-option">
-                        <el-tag :type="getStatusTagType(req.status)" size="mini">{{ getStatusText(req.status) }}</el-tag>
+                        <el-tag :type="getStatusTagType(req.status)" size="mini">{{ getStatusText(req.status)
+                        }}</el-tag>
                         <span>{{ formatDateTime(req.timestamp) }}</span>
                         <span class="text-ellipsis">{{ req.type }}: {{ req.productId }}</span>
                       </div>
                     </el-option>
                   </el-select>
                 </el-tab-pane>
-                
+
                 <el-tab-pane label="仓库数据" name="warehouses">
-                  <el-select 
-                    v-model="selectedSystemInfo.warehouses" 
-                    multiple 
-                    filterable 
-                    placeholder="选择要附加的仓库信息"
-                    style="width: 100%">
-                    <el-option 
-                      v-for="warehouse in warehouses" 
-                      :key="warehouse.id" 
-                      :label="warehouse.name" 
+                  <el-select v-model="selectedSystemInfo.warehouses" multiple filterable collapse-tags
+                    placeholder="选择要附加的仓库信息" style="width: 100%">
+                    <el-option v-for="warehouse in warehouses" :key="warehouse.id" :label="warehouse.name"
                       :value="warehouse.id">
                       <div class="info-option">
                         <span class="warehouse-name">{{ warehouse.name }}</span>
@@ -175,36 +139,22 @@
                   </el-select>
                 </el-tab-pane>
               </el-tabs>
-              
+
               <!-- 已选系统信息预览 -->
               <div class="selected-info-preview" v-if="hasSelectedSystemInfo">
                 <h4>已选系统信息</h4>
-                <el-tag 
-                  v-for="id in selectedSystemInfo.operations" 
-                  :key="'op-'+id" 
-                  closable
-                  @close="removeSelectedInfo('operations', id)"
-                  class="selected-tag">
+                <el-tag v-for="id in selectedSystemInfo.operations" :key="'op-' + id" closable
+                  @close="removeSelectedInfo('operations', id)" class="selected-tag">
                   操作日志 {{ id.substring(0, 8) }}...
                 </el-tag>
-                
-                <el-tag 
-                  v-for="id in selectedSystemInfo.overrides" 
-                  :key="'ov-'+id" 
-                  closable
-                  @close="removeSelectedInfo('overrides', id)"
-                  type="warning"
-                  class="selected-tag">
+
+                <el-tag v-for="id in selectedSystemInfo.overrides" :key="'ov-' + id" closable
+                  @close="removeSelectedInfo('overrides', id)" type="warning" class="selected-tag">
                   越权申请 {{ id.substring(0, 8) }}...
                 </el-tag>
-                
-                <el-tag 
-                  v-for="id in selectedSystemInfo.warehouses" 
-                  :key="'wh-'+id" 
-                  closable
-                  @close="removeSelectedInfo('warehouses', id)"
-                  type="info"
-                  class="selected-tag">
+
+                <el-tag v-for="id in selectedSystemInfo.warehouses" :key="'wh-' + id" closable
+                  @close="removeSelectedInfo('warehouses', id)" type="info" class="selected-tag">
                   仓库 {{ getWarehouseName(id) }}
                 </el-tag>
               </div>
@@ -225,26 +175,19 @@
               <el-radio-button label="sent">已发送</el-radio-button>
               <el-radio-button label="received">已接收</el-radio-button>
             </el-radio-group>
-            <el-input
-              placeholder="搜索通知"
-              prefix-icon="el-icon-search"
-              v-model="searchQuery"
-              size="small"
-              clearable
+            <el-input placeholder="搜索通知" prefix-icon="el-icon-search" v-model="searchQuery" size="small" clearable
               class="search-input">
             </el-input>
           </div>
         </div>
 
         <div class="notification-timeline" v-if="filteredNotifications.length > 0">
-          <div v-for="(notification, index) in filteredNotifications" 
-               :key="notification.id" 
-               class="timeline-item"
-               :class="{'expanded': expandedNotification === notification.id}"
-               @click="toggleNotificationExpand(notification.id)">
-            
+          <div v-for="(notification, index) in filteredNotifications" :key="notification.id" class="timeline-item"
+            :class="{ 'expanded': expandedNotification === notification.id }"
+            @click="toggleNotificationExpand(notification.id)">
+
             <div class="timeline-dot" :class="getPriorityDotClass(notification.priority)"></div>
-            
+
             <div class="timeline-card">
               <div class="card-header">
                 <div class="card-title">
@@ -260,30 +203,30 @@
                   <span class="card-status" :class="isExpired(notification) ? 'expired' : 'active'">
                     {{ isExpired(notification) ? '已失效' : '有效' }}
                   </span>
+                  <span class="card-sender" v-if="notification.senderName || notification.sender">
+                    <i class="el-icon-user"></i> {{ getUserName(notification.sender) || notification.senderName }}
+                  </span>
                 </div>
               </div>
-              
+
               <div class="card-recipients">
                 <template v-if="notification.recipientType === 'all'">
                   <span class="all-recipients">所有用户</span>
                 </template>
                 <template v-else>
-                  <el-avatar v-for="(id, i) in notification.recipients.slice(0, 3)" 
-                            :key="id" 
-                            :size="24" 
-                            :src="getUserAvatar(id)"
-                            class="recipient-avatar">
+                  <el-avatar v-for="(id, i) in notification.recipients.slice(0, 3)" :key="id" :size="24"
+                    :src="getUserAvatar(id)" class="recipient-avatar">
                   </el-avatar>
                   <span v-if="notification.recipients.length > 3" class="more-recipients">
                     +{{ notification.recipients.length - 3 }}
                   </span>
                 </template>
               </div>
-              
+
               <!-- 展开后显示的内容 -->
               <div class="card-content" v-if="expandedNotification === notification.id">
                 <p>{{ notification.content }}</p>
-                
+
                 <div class="card-attachments" v-if="notification.attachments && notification.attachments.length > 0">
                   <h5><i class="el-icon-paperclip"></i> 附件</h5>
                   <div class="attachment-chips">
@@ -293,7 +236,7 @@
                     </div>
                   </div>
                 </div>
-                
+
                 <div class="card-actions">
                   <el-button size="mini" type="text" @click.stop="viewNotificationDetail(notification)">
                     详细信息
@@ -306,7 +249,7 @@
             </div>
           </div>
         </div>
-        
+
         <div class="empty-list" v-else>
           <i class="el-icon-message"></i>
           <p>暂无通知</p>
@@ -315,40 +258,36 @@
     </div>
 
     <!-- 预览对话框 -->
-    <el-dialog title="通知预览" :visible.sync="previewVisible" width="60%" center class="modern-dialog"
-      top="8vh">
+    <el-dialog title="通知预览" :visible.sync="previewVisible" width="60%" center class="modern-dialog" top="8vh">
       <div class="notification-preview">
         <div class="preview-header">
           <h2>{{ notificationForm.title || '无标题' }}</h2>
           <div class="preview-meta">
-            <el-tag :type="getPriorityTagType(notificationForm.priority)">{{ getPriorityText(notificationForm.priority) }}</el-tag>
+            <el-tag :type="getPriorityTagType(notificationForm.priority)">{{ getPriorityText(notificationForm.priority)
+            }}</el-tag>
             <span class="preview-time">发送时间: {{ formatDateTime(new Date()) }}</span>
             <span v-if="notificationForm.expiry" class="preview-expiry">
               有效期至: {{ notificationForm.expiry }}
             </span>
           </div>
           <div class="preview-recipients">
-            接收者: 
+            接收者:
             <template v-if="notificationForm.recipientType === 'all'">
               <span class="all-users">所有用户</span>
             </template>
             <template v-else>
-              <el-tag 
-                v-for="id in notificationForm.recipients" 
-                :key="id" 
-                size="small"
-                class="recipient-tag">
+              <el-tag v-for="id in notificationForm.recipients" :key="id" size="small" class="recipient-tag">
                 {{ getUserName(id) }}
               </el-tag>
             </template>
           </div>
         </div>
-        
+
         <div class="preview-content">
           <p v-if="notificationForm.content">{{ notificationForm.content }}</p>
           <p v-else class="empty-content">无内容</p>
         </div>
-        
+
         <!-- 附件预览 -->
         <div class="preview-attachments detail-section" v-if="attachmentFiles.length > 0">
           <h3 class="section-title">附件 ({{ attachmentFiles.length }})</h3>
@@ -360,11 +299,11 @@
             </div>
           </div>
         </div>
-        
+
         <!-- 系统信息预览 -->
         <div class="preview-system-info detail-section" v-if="hasSelectedSystemInfo">
           <h3 class="section-title">系统信息</h3>
-          
+
           <div v-if="selectedSystemInfo.operations.length > 0">
             <h4>操作日志</h4>
             <ul class="info-list">
@@ -373,7 +312,7 @@
               </li>
             </ul>
           </div>
-          
+
           <div v-if="selectedSystemInfo.overrides.length > 0">
             <h4>越权申请</h4>
             <ul class="info-list">
@@ -382,7 +321,7 @@
               </li>
             </ul>
           </div>
-          
+
           <div v-if="selectedSystemInfo.warehouses.length > 0">
             <h4>仓库信息</h4>
             <ul class="info-list">
@@ -393,7 +332,7 @@
           </div>
         </div>
       </div>
-      
+
       <span slot="footer" class="dialog-footer">
         <el-button @click="previewVisible = false">关闭</el-button>
         <el-button type="primary" @click="sendNotification">发送</el-button>
@@ -457,30 +396,27 @@
             <span v-if="currentNotification.expiry" class="preview-expiry">
               有效期至: {{ currentNotification.expiry }}
             </span>
-          </div>
-          <div class="preview-recipients">
-            接收者: 
+            <span class="preview-sender" v-if="currentNotification.senderName || currentNotification.sender">
+              发送者: {{ getUserName(currentNotification.sender) || currentNotification.senderName }}
+            </span> <span class="preview-recipients">接收者:</span>
             <template v-if="currentNotification.recipientType === 'all'">
               <span class="all-users">所有用户</span>
             </template>
             <template v-else>
-              <el-tag 
-                v-for="id in currentNotification.recipients" 
-                :key="id" 
-                size="small"
-                class="recipient-tag">
+              <el-tag v-for="id in currentNotification.recipients" :key="id" size="small" class="recipient-tag">
                 {{ getUserName(id) }}
               </el-tag>
             </template>
           </div>
         </div>
-        
+
         <div class="preview-content">
           {{ currentNotification.content }}
         </div>
-        
+
         <!-- 附件列表 -->
-        <div class="preview-attachments detail-section" v-if="currentNotification.attachments && currentNotification.attachments.length > 0">
+        <div class="preview-attachments detail-section"
+          v-if="currentNotification.attachments && currentNotification.attachments.length > 0">
           <h3 class="section-title">附件 ({{ currentNotification.attachments.length }})</h3>
           <div class="attachment-list">
             <div v-for="(attachment, index) in currentNotification.attachments" :key="index" class="attachment-item">
@@ -491,11 +427,11 @@
             </div>
           </div>
         </div>
-        
+
         <!-- 系统信息 -->
         <div class="preview-system-info detail-section" v-if="hasSystemInfo(currentNotification)">
           <h3 class="section-title">系统信息</h3>
-          
+
           <div v-if="currentNotification.systemInfo.operations && currentNotification.systemInfo.operations.length > 0">
             <h4>操作日志</h4>
             <ul class="info-list">
@@ -504,7 +440,7 @@
               </li>
             </ul>
           </div>
-          
+
           <div v-if="currentNotification.systemInfo.overrides && currentNotification.systemInfo.overrides.length > 0">
             <h4>越权申请</h4>
             <ul class="info-list">
@@ -513,7 +449,7 @@
               </li>
             </ul>
           </div>
-          
+
           <div v-if="currentNotification.systemInfo.warehouses && currentNotification.systemInfo.warehouses.length > 0">
             <h4>仓库信息</h4>
             <ul class="info-list">
@@ -537,7 +473,7 @@ export default {
       db: null,
       avatarDB: null,
       userAvatars: {}, // 存储用户头像的缓存
-      
+
       // 通知表单
       notificationForm: {
         recipientType: 'all',
@@ -547,20 +483,20 @@ export default {
         priority: 'medium',
         expiry: null
       },
-      
+
       // 通知接收列表相关
       notificationFilter: 'all',
       searchQuery: '',
       expandedNotification: null,
-      
+
       // 表单验证规则
       rules: {
         title: [{ required: true, message: '请输入通知标题', trigger: 'blur' }],
         content: [{ required: true, message: '请输入通知内容', trigger: 'blur' }],
-        recipients: [{ 
+        recipients: [{
           type: 'array',
-          required: true, 
-          message: '请至少选择一位接收者', 
+          required: true,
+          message: '请至少选择一位接收者',
           trigger: 'change',
           validator: (rule, value, callback) => {
             if (this.notificationForm.recipientType === 'specific' && (!value || value.length === 0)) {
@@ -571,10 +507,10 @@ export default {
           }
         }]
       },
-      
+
       // 附件相关
       attachmentFiles: [],
-      
+
       // 系统信息相关
       activeSystemInfoTab: 'operations',
       selectedSystemInfo: {
@@ -582,12 +518,12 @@ export default {
         overrides: [],
         warehouses: []
       },
-      
+
       // 对话框控制
       previewVisible: false,
       sentNotificationsVisible: false,
       notificationDetailVisible: false,
-      
+
       // 数据集合
       users: [],
       warehouses: [],
@@ -597,7 +533,7 @@ export default {
       currentNotification: null
     };
   },
-  
+
   computed: {
     /**
      * @Function_Para 是否有选择的系统信息
@@ -606,10 +542,10 @@ export default {
      */
     hasSelectedSystemInfo() {
       return this.selectedSystemInfo.operations.length > 0 ||
-             this.selectedSystemInfo.overrides.length > 0 ||
-             this.selectedSystemInfo.warehouses.length > 0;
+        this.selectedSystemInfo.overrides.length > 0 ||
+        this.selectedSystemInfo.warehouses.length > 0;
     },
-    
+
     /**
      * @Function_Para 过滤后的通知列表
      *   无参数
@@ -620,18 +556,18 @@ export default {
       const currentUser = JSON.parse(localStorage.getItem('user')) || {};
       const userId = currentUser.id;
       const username = currentUser.username;
-      
+
       return this.sentNotifications.filter(notification => {
         // 权限过滤：只显示发给自己的、全体的和自己发送的通知
         const isAllUsers = notification.recipientType === 'all';
-        const isForCurrentUser = notification.recipientType === 'specific' && 
-                                notification.recipients.includes(userId);
+        const isForCurrentUser = notification.recipientType === 'specific' &&
+          notification.recipients.includes(userId);
         const isSentByCurrentUser = notification.sender === userId;
-        
+
         if (!isAllUsers && !isForCurrentUser && !isSentByCurrentUser) {
           return false;
         }
-        
+
         // 状态过滤
         if (this.notificationFilter === 'active' && this.isExpired(notification)) {
           return false;
@@ -646,19 +582,19 @@ export default {
         if (this.notificationFilter === 'received' && !isForCurrentUser && !isAllUsers) {
           return false;
         }
-        
+
         // 搜索过滤
         if (this.searchQuery) {
           const query = this.searchQuery.toLowerCase();
-          return notification.title.toLowerCase().includes(query) || 
-                notification.content.toLowerCase().includes(query);
+          return notification.title.toLowerCase().includes(query) ||
+            notification.content.toLowerCase().includes(query);
         }
-        
+
         return true;
       });
     }
   },
-  
+
   methods: {
     /**
      * @Function_Para 初始化IndexedDB
@@ -668,29 +604,29 @@ export default {
     async initIndexedDB() {
       return new Promise((resolve, reject) => {
         const request = indexedDB.open('NotificationsDB', 1);
-        
+
         request.onupgradeneeded = (event) => {
           const db = event.target.result;
-          
+
           // 创建附件存储
           if (!db.objectStoreNames.contains('attachments')) {
             db.createObjectStore('attachments', { keyPath: 'id', autoIncrement: true });
           }
         };
-        
+
         request.onsuccess = (event) => {
           this.db = event.target.result;
           console.log('通知数据库初始化成功');
           resolve();
         };
-        
+
         request.onerror = (event) => {
           console.error('通知数据库初始化失败:', event.target.error);
           reject(event.target.error);
         };
       });
     },
-    
+
     /**
      * @Function_Para 初始化头像数据库
      *   无参数
@@ -699,27 +635,27 @@ export default {
     async initAvatarDB() {
       return new Promise((resolve, reject) => {
         const request = indexedDB.open('AvatarDB', 1);
-        
+
         request.onupgradeneeded = (event) => {
           const db = event.target.result;
           if (!db.objectStoreNames.contains('avatars')) {
             db.createObjectStore('avatars', { keyPath: 'userId' });
           }
         };
-        
+
         request.onsuccess = (event) => {
           this.avatarDB = event.target.result;
           console.log('头像数据库初始化成功');
           resolve(this.avatarDB);
         };
-        
+
         request.onerror = (event) => {
           console.error('头像数据库初始化失败:', event.target.error);
           reject(event.target.error);
         };
       });
     },
-    
+
     /**
      * @Function_Para 处理附件上传
      *   @param {Object} options - 上传选项，包含文件信息
@@ -727,19 +663,19 @@ export default {
      */
     async handleFileUpload(options) {
       const file = options.file;
-      
+
       // 检查文件大小限制 (10MB)
       if (file.size > 10 * 1024 * 1024) {
         this.$message.error(`文件 ${file.name} 超过10MB大小限制`);
         return;
       }
-      
+
       // 读取文件内容为ArrayBuffer
       const arrayBuffer = await this.readFileAsArrayBuffer(file);
-      
+
       // 生成唯一ID
       const fileId = Date.now() + '_' + Math.floor(Math.random() * 10000);
-      
+
       // 添加到附件列表（用于UI显示）
       this.attachmentFiles.push({
         name: file.name,
@@ -748,7 +684,7 @@ export default {
         id: fileId,
         file: file  // 保存原始文件对象
       });
-      
+
       // 存储到IndexedDB
       this.storeAttachment({
         id: fileId,
@@ -759,7 +695,7 @@ export default {
         uploadTime: new Date().getTime()
       });
     },
-    
+
     /**
      * @Function_Para 读取文件为ArrayBuffer
      *   @param {File} file - 文件对象
@@ -773,7 +709,7 @@ export default {
         reader.readAsArrayBuffer(file);
       });
     },
-    
+
     /**
      * @Function_Para 存储附件到IndexedDB
      *   @param {Object} attachment - 附件对象
@@ -784,22 +720,22 @@ export default {
         console.error('数据库未初始化');
         return;
       }
-      
+
       const transaction = this.db.transaction(['attachments'], 'readwrite');
       const store = transaction.objectStore('attachments');
-      
+
       const request = store.add(attachment);
-      
+
       request.onsuccess = () => {
         console.log('附件存储成功，ID:', request.result);
       };
-      
+
       request.onerror = (event) => {
         console.error('附件存储失败:', event.target.error);
         this.$message.error(`附件 ${attachment.name} 存储失败`);
       };
     },
-    
+
     /**
      * @Function_Para 处理文件移除
      *   @param {Object} file - 被移除的文件信息
@@ -808,7 +744,7 @@ export default {
     handleFileRemove(file) {
       // 从UI列表中移除
       this.attachmentFiles = this.attachmentFiles.filter(f => f.id !== file.id);
-      
+
       // 如果有ID，从IndexedDB中移除
       if (file.id && this.db) {
         const transaction = this.db.transaction(['attachments'], 'readwrite');
@@ -816,7 +752,7 @@ export default {
         store.delete(file.id);
       }
     },
-    
+
     /**
      * @Function_Para 格式化文件大小
      *   @param {Number} size - 文件大小（字节）
@@ -833,7 +769,7 @@ export default {
         return (size / (1024 * 1024 * 1024)).toFixed(1) + 'GB';
       }
     },
-    
+
     /**
      * @Function_Para 获取文件图标
      *   @param {String} fileName - 文件名
@@ -841,7 +777,7 @@ export default {
      */
     getFileIcon(fileName) {
       const ext = fileName.split('.').pop().toLowerCase();
-      
+
       const iconMap = {
         pdf: 'el-icon-document',
         doc: 'el-icon-document-checked',
@@ -859,10 +795,10 @@ export default {
         '7z': 'el-icon-folder',
         txt: 'el-icon-document',
       };
-      
+
       return iconMap[ext] || 'el-icon-document';
     },
-    
+
     /**
      * @Function_Para 移除已选系统信息
      *   @param {String} type - 信息类型
@@ -872,7 +808,7 @@ export default {
     removeSelectedInfo(type, id) {
       this.selectedSystemInfo[type] = this.selectedSystemInfo[type].filter(item => item !== id);
     },
-    
+
     /**
      * @Function_Para 处理接收者类型变化
      *   无参数
@@ -883,7 +819,7 @@ export default {
         this.notificationForm.recipients = [];
       }
     },
-    
+
     /**
      * @Function_Para 预览通知
      *   无参数
@@ -898,7 +834,7 @@ export default {
         }
       });
     },
-    
+
     /**
      * @Function_Para 发送通知
      *   无参数
@@ -913,7 +849,7 @@ export default {
               this.$message.error('您没有发送全体通知的权限');
               return;
             }
-            
+
             // 准备附件信息
             const attachments = await Promise.all(this.attachmentFiles.map(async file => {
               return {
@@ -923,19 +859,19 @@ export default {
                 type: file.type
               };
             }));
-            
+
             // 获取当前用户
             const currentUser = JSON.parse(localStorage.getItem('user')) || {};
-            
+
             // 创建通知对象
             const notification = {
               id: 'notif_' + Date.now() + '_' + Math.floor(Math.random() * 10000),
               title: this.notificationForm.title,
               content: this.notificationForm.content,
               recipientType: this.notificationForm.recipientType,
-              recipients: this.notificationForm.recipientType === 'specific' 
-                          ? this.notificationForm.recipients
-                          : [],
+              recipients: this.notificationForm.recipientType === 'specific'
+                ? this.notificationForm.recipients
+                : [],
               priority: this.notificationForm.priority,
               expiry: this.notificationForm.expiry,
               timestamp: new Date().toISOString(),
@@ -948,19 +884,19 @@ export default {
                 warehouses: this.selectedSystemInfo.warehouses
               }
             };
-            
+
             // 保存通知到localStorage
             const notifications = JSON.parse(localStorage.getItem('notifications') || '[]');
             notifications.push(notification);
             localStorage.setItem('notifications', JSON.stringify(notifications));
-            
+
             // 更新本地通知列表
             this.sentNotifications = notifications;
-            
+
             this.$message.success('通知发送成功');
             this.previewVisible = false;
             this.resetForm();
-            
+
           } catch (error) {
             console.error('发送通知时出错:', error);
             this.$message.error('发送通知失败：' + error.message);
@@ -970,7 +906,7 @@ export default {
         }
       });
     },
-    
+
     /**
      * @Function_Para 重置表单
      *   无参数
@@ -986,10 +922,10 @@ export default {
         priority: 'medium',
         expiry: null
       };
-      
+
       // 清空附件
       this.attachmentFiles = [];
-      
+
       // 清空系统信息
       this.selectedSystemInfo = {
         operations: [],
@@ -997,7 +933,7 @@ export default {
         warehouses: []
       };
     },
-    
+
     /**
      * @Function_Para 查看已发送通知
      *   无参数
@@ -1007,7 +943,7 @@ export default {
       this.loadSentNotifications();
       this.sentNotificationsVisible = true;
     },
-    
+
     /**
      * @Function_Para 加载已发送通知
      *   无参数
@@ -1015,11 +951,11 @@ export default {
      */
     loadSentNotifications() {
       const notifications = JSON.parse(localStorage.getItem('notifications') || '[]');
-      this.sentNotifications = notifications.sort((a, b) => 
+      this.sentNotifications = notifications.sort((a, b) =>
         new Date(b.timestamp) - new Date(a.timestamp)
       );
     },
-    
+
     /**
      * @Function_Para 查看通知详情
      *   @param {Object} notification - 通知对象
@@ -1029,7 +965,7 @@ export default {
       this.currentNotification = notification;
       this.notificationDetailVisible = true;
     },
-    
+
     /**
      * @Function_Para 删除通知
      *   @param {String} id - 通知ID
@@ -1044,14 +980,14 @@ export default {
         const notifications = JSON.parse(localStorage.getItem('notifications') || '[]');
         const updatedNotifications = notifications.filter(n => n.id !== id);
         localStorage.setItem('notifications', JSON.stringify(updatedNotifications));
-        
+
         // 更新本地数据
         this.sentNotifications = this.sentNotifications.filter(n => n.id !== id);
-        
+
         this.$message.success('通知已删除');
-      }).catch(() => {});
+      }).catch(() => { });
     },
-    
+
     /**
      * @Function_Para 下载附件
      *   @param {Object} attachment - 附件信息
@@ -1062,34 +998,34 @@ export default {
         this.$message.warning('无法下载此附件');
         return;
       }
-      
+
       try {
         const transaction = this.db.transaction(['attachments'], 'readonly');
         const store = transaction.objectStore('attachments');
-        
+
         const request = store.get(attachment.id);
-        
+
         request.onsuccess = (event) => {
           const attachmentData = event.target.result;
-          
+
           if (attachmentData && attachmentData.data) {
             // 创建Blob
             const blob = new Blob([attachmentData.data], { type: attachment.type || 'application/octet-stream' });
-            
+
             // 创建下载链接
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
             a.download = attachment.name;
             a.click();
-            
+
             // 清理
             URL.revokeObjectURL(url);
           } else {
             this.$message.warning('附件数据不存在或已损坏');
           }
         };
-        
+
         request.onerror = () => {
           this.$message.error('下载附件失败');
         };
@@ -1098,7 +1034,7 @@ export default {
         this.$message.error('下载附件失败: ' + error.message);
       }
     },
-    
+
     /**
      * @Function_Para 判断是否过期
      *   @param {Object} notification - 通知对象
@@ -1106,13 +1042,13 @@ export default {
      */
     isExpired(notification) {
       if (!notification.expiry) return false;
-      
+
       const expiryDate = new Date(notification.expiry);
       const now = new Date();
-      
+
       return expiryDate < now;
     },
-    
+
     /**
      * @Function_Para 加载用户数据
      *   无参数
@@ -1121,7 +1057,7 @@ export default {
     async loadUsers() {
       const users = JSON.parse(localStorage.getItem('users') || '[]');
       this.users = users.filter(user => user.status === 'active');
-      
+
       // 预加载用户头像
       if (this.avatarDB) {
         for (const user of this.users) {
@@ -1134,7 +1070,7 @@ export default {
         }
       }
     },
-    
+
     /**
      * @Function_Para 加载仓库数据
      *   无参数
@@ -1142,11 +1078,11 @@ export default {
      */
     loadWarehouses() {
       const allWarehouses = JSON.parse(localStorage.getItem('warehouses') || '[]');
-      
+
       // 使用权限工具过滤有权限的仓库
       this.warehouses = this.$permission.filterAuthorizedWarehouses(allWarehouses);
     },
-    
+
     /**
      * @Function_Para 加载操作日志
      *   无参数
@@ -1155,31 +1091,31 @@ export default {
     loadOperationLogs() {
       const logs = JSON.parse(localStorage.getItem('operations') || '[]');
       const currentUser = JSON.parse(localStorage.getItem('user')) || {};
-      
+
       // 获取用户有权限的仓库ID列表
       const authorizedWarehouseIds = this.$permission.getAuthorizedWarehouseIds();
-      
+
       // 筛选有权限查看的日志
       const filteredLogs = logs.filter(log => {
         // 管理员可以看到所有日志
         if (currentUser.role === 'admin') return true;
-        
+
         // 用户可以看到与自己相关的日志
         if (log.applicant === currentUser.username) return true;
-        
+
         // 用户可以看到自己有权限的仓库相关的日志
         if (log.sourceWarehouse && authorizedWarehouseIds.includes(log.sourceWarehouse)) return true;
         if (log.targetWarehouse && authorizedWarehouseIds.includes(log.targetWarehouse)) return true;
-        
+
         return false;
       });
-      
+
       // 最新的日志优先显示
-      this.operationLogs = filteredLogs.sort((a, b) => 
+      this.operationLogs = filteredLogs.sort((a, b) =>
         new Date(b.timestamp) - new Date(a.timestamp)
       ).slice(0, 50); // 限制加载最近的50条记录
     },
-    
+
     /**
      * @Function_Para 加载越权申请
      *   无参数
@@ -1188,31 +1124,31 @@ export default {
     loadOverrideRequests() {
       const requests = JSON.parse(localStorage.getItem('pendingRequests') || '[]');
       const currentUser = JSON.parse(localStorage.getItem('user')) || {};
-      
+
       // 获取用户有权限的仓库ID列表
       const authorizedWarehouseIds = this.$permission.getAuthorizedWarehouseIds();
-      
+
       // 筛选有权限查看的申请
       const filteredRequests = requests.filter(req => {
         // 管理员可以看到所有申请
         if (currentUser.role === 'admin') return true;
-        
+
         // 用户可以看到自己发起的申请
         if (req.applicant === currentUser.username) return true;
-        
+
         // 用户可以看到自己有权限的仓库相关的申请
         if (req.sourceWarehouse && authorizedWarehouseIds.includes(req.sourceWarehouse)) return true;
         if (req.targetWarehouse && authorizedWarehouseIds.includes(req.targetWarehouse)) return true;
-        
+
         return false;
       });
-      
+
       // 最新的申请优先显示
-      this.overrideRequests = filteredRequests.sort((a, b) => 
+      this.overrideRequests = filteredRequests.sort((a, b) =>
         new Date(b.timestamp) - new Date(a.timestamp)
       ).slice(0, 50); // 限制加载最近的50条记录
     },
-    
+
     /**
      * @Function_Para 获取仓库名称
      *   @param {String} id - 仓库ID
@@ -1222,7 +1158,7 @@ export default {
       const warehouse = this.warehouses.find(w => w.id === id);
       return warehouse ? warehouse.name : id;
     },
-    
+
     /**
      * @Function_Para 获取用户名称
      *   @param {String} id - 用户ID
@@ -1232,7 +1168,7 @@ export default {
       const user = this.users.find(u => u.id === id);
       return user ? (user.name || user.username) : id;
     },
-    
+
     /**
      * @Function_Para 格式化用户角色
      *   @param {String} role - 角色代码
@@ -1246,7 +1182,7 @@ export default {
       };
       return roleMap[role] || role;
     },
-    
+
     /**
      * @Function_Para 获取优先级标签类型
      *   @param {String} priority - 优先级
@@ -1261,7 +1197,7 @@ export default {
       };
       return typeMap[priority] || '';
     },
-    
+
     /**
      * @Function_Para 获取优先级文本
      *   @param {String} priority - 优先级
@@ -1276,7 +1212,7 @@ export default {
       };
       return textMap[priority] || priority;
     },
-    
+
     /**
      * @Function_Para 获取操作类型标签样式
      *   @param {String} type - 操作类型
@@ -1290,7 +1226,7 @@ export default {
       };
       return typeMap[type] || 'info';
     },
-    
+
     /**
      * @Function_Para 获取状态标签样式
      *   @param {String} status - 状态代码
@@ -1305,7 +1241,7 @@ export default {
       };
       return statusMap[status] || 'info';
     },
-    
+
     /**
      * @Function_Para 获取状态文本
      *   @param {String} status - 状态代码
@@ -1320,7 +1256,7 @@ export default {
       };
       return statusMap[status] || status;
     },
-    
+
     /**
      * @Function_Para 格式化日期时间
      *   @param {String|Date} dateStr - 日期字符串或Date对象
@@ -1328,9 +1264,9 @@ export default {
      */
     formatDateTime(dateStr) {
       if (!dateStr) return '';
-      
+
       const date = typeof dateStr === 'string' ? new Date(dateStr) : dateStr;
-      
+
       // 格式化为 YYYY-MM-DD HH:mm:ss
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -1338,10 +1274,10 @@ export default {
       const hours = String(date.getHours()).padStart(2, '0');
       const minutes = String(date.getMinutes()).padStart(2, '0');
       const seconds = String(date.getSeconds()).padStart(2, '0');
-      
+
       return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
     },
-    
+
     /**
      * @Function_Para 获取操作日志摘要
      *   @param {String} id - 操作日志ID
@@ -1349,12 +1285,12 @@ export default {
      */
     getOperationSummary(id) {
       const log = this.operationLogs.find(log => log.id === id);
-      
+
       if (!log) return `操作 ${id} (数据不存在)`;
-      
+
       return `${log.type} 操作(${this.formatDateTime(log.timestamp)}): 商品${log.productId}, 数量${log.quantity}, 操作人: ${log.applicant}`;
     },
-    
+
     /**
      * @Function_Para 获取越权申请摘要
      *   @param {String} id - 越权申请ID
@@ -1362,12 +1298,12 @@ export default {
      */
     getOverrideSummary(id) {
       const request = this.overrideRequests.find(req => req.id === id);
-      
+
       if (!request) return `越权申请 ${id} (数据不存在)`;
-      
+
       return `${request.type} 越权申请(${this.getStatusText(request.status)}): 商品${request.productId}, 数量${request.quantity}, 申请人: ${request.applicant}`;
     },
-    
+
     /**
      * @Function_Para 获取仓库摘要
      *   @param {String} id - 仓库ID
@@ -1375,12 +1311,12 @@ export default {
      */
     getWarehouseSummary(id) {
       const warehouse = this.warehouses.find(w => w.id === id);
-      
+
       if (!warehouse) return `仓库 ${id} (数据不存在)`;
-      
+
       return `仓库: ${warehouse.name}, 位置: ${warehouse.location || '未知'}`;
     },
-    
+
     /**
      * @Function_Para 检查通知是否包含系统信息
      *   @param {Object} notification - 通知对象
@@ -1388,13 +1324,13 @@ export default {
      */
     hasSystemInfo(notification) {
       if (!notification || !notification.systemInfo) return false;
-      
+
       const info = notification.systemInfo;
       return (info.operations && info.operations.length > 0) ||
-             (info.overrides && info.overrides.length > 0) ||
-             (info.warehouses && info.warehouses.length > 0);
+        (info.overrides && info.overrides.length > 0) ||
+        (info.warehouses && info.warehouses.length > 0);
     },
-    
+
     /**
      * @Function_Para 从数据库读取头像
      *   @param {string} userId - 用户ID
@@ -1402,13 +1338,13 @@ export default {
      */
     async getAvatarFromDB(userId) {
       if (!this.avatarDB) return null;
-      
+
       return new Promise((resolve) => {
         const transaction = this.avatarDB.transaction(['avatars'], 'readonly');
         const store = transaction.objectStore('avatars');
-        
+
         const request = store.get(userId);
-        
+
         request.onsuccess = () => {
           const result = request.result ? request.result.avatarData : null;
           // 缓存结果
@@ -1417,14 +1353,14 @@ export default {
           }
           resolve(result);
         };
-        
+
         request.onerror = () => {
           console.error('获取头像失败:', userId);
           resolve(null);
         };
       });
     },
-    
+
     /**
      * @Function_Para 获取用户头像
      *   @param {string} userId - 用户ID
@@ -1435,18 +1371,18 @@ export default {
       if (this.userAvatars[userId]) {
         return this.userAvatars[userId];
       }
-      
+
       // 如果没有缓存，异步加载并更新缓存
       this.getAvatarFromDB(userId).then(avatarData => {
         if (avatarData) {
           this.$set(this.userAvatars, userId, avatarData);
         }
       });
-      
+
       // 返回默认头像
       return require('@/assets/default-avatar.svg');
     },
-    
+
     /**
      * @Function_Para 获取角色标签类型
      *   @param {String} role - 用户角色
@@ -1454,9 +1390,9 @@ export default {
      */
     getRoleTagType(role) {
       return role === 'admin' ? 'danger' :
-             role === 'manager' ? 'warning' : 'success';
+        role === 'manager' ? 'warning' : 'success';
     },
-    
+
     /**
      * @Function_Para 切换通知展开状态
      *   @param {String} id - 通知ID
@@ -1469,7 +1405,7 @@ export default {
         this.expandedNotification = id;
       }
     },
-    
+
     /**
      * @Function_Para 获取优先级点的样式类
      *   @param {String} priority - 优先级
@@ -1483,7 +1419,7 @@ export default {
         'dot-low': priority === 'low'
       };
     },
-    
+
     /**
      * @Function_Para 格式化短日期时间
      *   @param {String|Date} dateStr - 日期字符串或Date对象
@@ -1491,31 +1427,31 @@ export default {
      */
     formatDateTimeShort(dateStr) {
       if (!dateStr) return '';
-      
+
       const date = typeof dateStr === 'string' ? new Date(dateStr) : dateStr;
       const now = new Date();
       const diff = Math.floor((now - date) / 1000); // 时间差（秒）
-      
+
       // 今天的日期只显示时间
       if (date.toDateString() === now.toDateString()) {
         return `今天 ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
       }
-      
+
       // 昨天只显示"昨天"和时间
       const yesterday = new Date(now);
       yesterday.setDate(now.getDate() - 1);
       if (date.toDateString() === yesterday.toDateString()) {
         return `昨天 ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
       }
-      
+
       // 其他日期显示年月日
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, '0');
       const day = String(date.getDate()).padStart(2, '0');
-      
+
       return `${year}-${month}-${day}`;
     },
-    
+
     /**
      * @Function_Para 检查用户是否有发送全体通知的权限
      *   无参数
@@ -1526,7 +1462,7 @@ export default {
       return currentUser.role === 'admin' || currentUser.role === 'manager';
     }
   },
-  
+
   /**
    * @Function_Para 组件创建生命周期钩子
    * @Function_Meth 初始化组件:
@@ -1536,7 +1472,7 @@ export default {
   async created() {
     // 引入组件共享样式
     require('@/assets/style/components.css');
-    
+
     try {
       // 并行初始化两个数据库
       await Promise.all([
@@ -1547,7 +1483,7 @@ export default {
       console.error('数据库初始化失败:', error);
       this.$message.warning('附件存储功能初始化失败，可能无法上传附件');
     }
-    
+
     // 加载所有必要数据
     await this.loadUsers();
     this.loadWarehouses();
@@ -1555,7 +1491,7 @@ export default {
     this.loadOverrideRequests();
     this.loadSentNotifications();
   },
-  
+
   /**
    * @Function_Para 组件销毁前钩子
    * @Function_Meth 组件销毁前清理资源
@@ -1574,4 +1510,10 @@ export default {
 
 <style scoped>
 @import './style.notify.css';
+
+/* 确保上传列表中的所有元素都没有动画 */
+.attachment-uploader>>>.el-upload-list * {
+  transition: none !important;
+  animation: none !important;
+}
 </style>

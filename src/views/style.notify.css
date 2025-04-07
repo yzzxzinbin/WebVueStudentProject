@@ -91,6 +91,8 @@
   overflow-y: auto;
 }
 
+/* 移除文件上传列表项的动画效果 */
+
 /* 系统信息区域样式 */
 .system-info-section {
   flex: 1;
@@ -104,7 +106,7 @@
 /* 选项卡内容区域 - 移除滚动，超出部分隐藏 */
 .system-info-section>>>.el-tabs__content {
   overflow: hidden;
-  max-height: 150px;
+  max-height: 220px;
 }
 
 /* 限制 el-select 多选框的高度 */
@@ -133,7 +135,7 @@
   padding: 10px;
   background-color: #ffffff;
   border-radius: 8px;
-  max-height: 150px;
+  max-height: 220px;
   overflow-y: auto;
   flex-grow: 1;
 }
@@ -287,18 +289,18 @@
   font-style: italic;
 }
 
-/* 附件上传区域样式优化 */
-.attachment-uploader>>>.el-upload-list__item {
-  transition: none !important; /* 禁用可能冲突的过渡效果 */
-  opacity: 1 !important;
-  transform: none !important;
+/* 发送者信息样式 */
+.card-sender {
+  color: #606266;
+  font-size: 13px;
+  margin-left: 10px;
 }
 
-/* 为上传列表添加我们自己的渐入效果 */
-.attachment-uploader>>>.el-upload-list__item-appear {
-  animation: fadeIn 0.5s forwards;
+.preview-sender {
+  color: #606266;
+  font-size: 14px;
+  margin-left: 10px;
 }
-
 /* 响应式调整 */
 @media (max-width: 1400px) {
   .addons-container {
