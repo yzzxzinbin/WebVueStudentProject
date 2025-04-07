@@ -1,0 +1,374 @@
+/* 页面布局样式 */
+.notification-sender {
+  padding: 12px;
+  padding-bottom: 0px;
+  height: calc(100vh - 120px);
+  display: flex;
+  flex-direction: column;
+}
+
+/* 顶部操作栏样式 - 重新设计 */
+.top-bar {
+  margin-bottom: 12px;
+  padding: 12px 20px;
+  background-color: rgb(245, 245, 250);
+  border-radius: 12px;
+}
+
+.top-bar-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* 用户选择区域样式 */
+.recipient-selector {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-select {
+  width: 300px;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+/* 内容区域布局 */
+.content-area {
+  display: flex;
+  flex-grow: 1;
+  gap: 16px;
+  height: calc(100% - 30px);
+  overflow: hidden;
+}
+
+/* 消息编辑区样式 */
+.message-editor {
+  min-height: 43%;
+  padding: 0px;
+  border-radius: 12px;
+  background-color: rgb(245, 245, 250);
+}
+
+/* 附件和系统信息区域 - 水平布局 */
+.addons-section {
+  padding: 0px;
+  border-radius: 12px;
+  background-color: rgb(245, 245, 250);
+  /* 固定高度，与右侧卡片保持一致 */
+  height: calc(100% - 280px); /* 减去消息编辑区和间距的高度 */
+  overflow: hidden;
+}
+
+.addons-container {
+  display: flex;
+  gap: 24px;
+  height: 100%;
+}
+
+/* 附件区域样式 */
+.attachment-section {
+  flex: 0.8;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.attachment-uploader {
+  width: 100%;
+  overflow-y: auto;
+  max-height: calc(100% - 40px);
+}
+
+/* 上传列表滚动容器 */
+.attachment-uploader>>>.el-upload-list {
+  max-height: calc(100% - 60px); /* 减去按钮和提示的高度 */
+  overflow-y: auto;
+}
+
+/* 系统信息区域样式 */
+.system-info-section {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  max-height: 100%;
+  padding-bottom: 2px;
+}
+
+/* 选项卡内容区域 - 移除滚动，超出部分隐藏 */
+.system-info-section>>>.el-tabs__content {
+  overflow: hidden;
+  max-height: 150px;
+}
+
+/* 限制 el-select 多选框的高度 */
+.system-info-section>>>.el-select {
+  width: 60%;
+}
+
+/* 限制已选项显示区域高度 */
+.system-info-section>>>.el-select__tags {
+  max-height: 60px;
+  overflow: hidden;
+  display: block;
+}
+
+/* 确保输入区域不会过高 */
+.system-info-section>>>.el-input__inner {
+  height: auto;
+  min-height: 40px;
+  max-height: 60px;
+  overflow: hidden;
+}
+
+/* 已选系统信息预览样式 */
+.selected-info-preview {
+  margin-top: 10px;
+  padding: 10px;
+  background-color: #ffffff;
+  border-radius: 8px;
+  max-height: 150px;
+  overflow-y: auto;
+  flex-grow: 1;
+}
+
+/* 已选信息标题 - 使用不透明背景 */
+.selected-info-preview h4 {
+  font-size: 14px;
+  margin-top: 0;
+  margin-bottom: 8px;
+  color: #606266;
+  position: sticky;
+  top: 0;
+  background-color: #ffffff; /* 完全不透明的背景 */
+  padding: 2px 0;
+  z-index: 1;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.selected-tag {
+  margin-right: 8px;
+  margin-bottom: 8px;
+}
+
+/* 右侧通知列表样式 */
+.notification-list {
+  flex: 2;
+  padding: 0px;
+  border-radius: 12px;
+  background-color: rgb(245, 245, 250);
+  overflow-y: auto;
+  max-height: 100%;
+  padding-right: 0px;
+}
+
+.list-header {
+  margin-bottom: 16px;
+}
+
+.list-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-bottom: 16px;
+  justify-content: space-between;
+}
+
+.search-input {
+  width: 160px;
+}
+
+/* 接收者样式 */
+.card-recipients {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.all-recipients {
+  color: #409EFF;
+  font-weight: 500;
+  font-size: 13px;
+}
+
+.recipient-avatar {
+  border: 2px solid white;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.recipient-avatar + .recipient-avatar {
+  margin-left: -8px;
+}
+
+.more-recipients {
+  margin-left: 4px;
+  background-color: #f2f6fc;
+  padding: 2px 6px;
+  border-radius: 12px;
+  font-size: 12px;
+  color: #606266;
+}
+
+/* 卡片操作样式 */
+.card-actions {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* 通知预览样式 */
+.notification-preview {
+  padding: 10px;
+  background-color: white;
+  border-radius: 8px;
+}
+
+.preview-header {
+  margin-bottom: 20px;
+}
+
+.preview-header h2 {
+  margin-top: 0;
+  margin-bottom: 12px;
+  color: #303133;
+}
+
+.preview-meta {
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.preview-time, .preview-expiry {
+  color: #909399;
+  font-size: 13px;
+}
+
+.preview-recipients {
+  font-size: 14px;
+  color: #606266;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.all-users {
+  font-weight: 500;
+  color: #409EFF;
+}
+
+.recipient-tag {
+  margin-right: 0;
+}
+
+.preview-content {
+  padding: 16px;
+  background-color: #f9fafc;
+  border-radius: 6px;
+  line-height: 1.6;
+  color: #303133;
+  white-space: pre-line;
+  margin-bottom: 20px;
+}
+
+.empty-content {
+  color: #c0c4cc;
+  font-style: italic;
+}
+
+/* 附件上传区域样式优化 */
+.attachment-uploader>>>.el-upload-list__item {
+  transition: none !important; /* 禁用可能冲突的过渡效果 */
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+/* 为上传列表添加我们自己的渐入效果 */
+.attachment-uploader>>>.el-upload-list__item-appear {
+  animation: fadeIn 0.5s forwards;
+}
+
+/* 响应式调整 */
+@media (max-width: 1400px) {
+  .addons-container {
+    flex-direction: column;
+  }
+  
+  /* 在垂直布局模式下调整各区域高度 */
+  .attachment-section, 
+  .system-info-section {
+    height: 50%;
+  }
+  
+  .system-info-section>>>.el-tabs__content {
+    max-height: 60px;
+  }
+  
+  .selected-info-preview {
+    height: calc(100% - 110px);
+    max-height: 100px;
+  }
+  
+  .attachment-uploader>>>.el-upload-list {
+    max-height: calc(100% - 60px);
+  }
+  
+  .system-info-section>>>.el-select__tags {
+    max-height: 60px;
+  }
+  
+  .system-info-section>>>.el-input__inner {
+    max-height: 60px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .content-area {
+    flex-direction: column;
+  }
+  
+  .notification-list {
+    max-height: 500px;
+  }
+  
+  .top-bar-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .user-select {
+    width: 100%;
+  }
+  
+  .recipient-selector {
+    width: 100%;
+  }
+  
+  .action-buttons {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 768px) {
+  .action-buttons {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+  
+  .action-buttons .el-button {
+    margin-bottom: 8px;
+  }
+}

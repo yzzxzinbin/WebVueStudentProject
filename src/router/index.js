@@ -44,7 +44,7 @@ const routes = [
       {
         path: 'auxiliary/notification',
         component: () => import('../views/NotificationSender.vue'),
-        meta: { roles: ['admin', 'manager'] }
+        meta: { roles: ['admin', 'manager', 'operator'] }
       },
       {
         path: 'visualization',

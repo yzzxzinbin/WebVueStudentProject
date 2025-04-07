@@ -1,4 +1,3 @@
-<!-- 权限控制方面的接口还没有对接,暂时懒得写了 -->
 <template>
   <div class="notification-sender">
     <!-- 顶部操作栏 - 重新设计包含用户选择功能 -->
@@ -223,6 +222,8 @@
               <el-radio-button label="all">全部</el-radio-button>
               <el-radio-button label="active">有效</el-radio-button>
               <el-radio-button label="expired">已过期</el-radio-button>
+              <el-radio-button label="sent">已发送</el-radio-button>
+              <el-radio-button label="received">已接收</el-radio-button>
             </el-radio-group>
             <el-input
               placeholder="搜索通知"
@@ -612,10 +613,25 @@ export default {
     /**
      * @Function_Para 过滤后的通知列表
      *   无参数
-     * @Function_Meth 根据过滤条件和搜索查询过滤通知
+     * @Function_Meth 根据过滤条件、搜索查询和权限过滤通知
      */
     filteredNotifications() {
+      // 获取当前用户信息
+      const currentUser = JSON.parse(localStorage.getItem('user')) || {};
+      const userId = currentUser.id;
+      const username = currentUser.username;
+      
       return this.sentNotifications.filter(notification => {
+        // 权限过滤：只显示发给自己的、全体的和自己发送的通知
+        const isAllUsers = notification.recipientType === 'all';
+        const isForCurrentUser = notification.recipientType === 'specific' && 
+                                notification.recipients.includes(userId);
+        const isSentByCurrentUser = notification.sender === userId;
+        
+        if (!isAllUsers && !isForCurrentUser && !isSentByCurrentUser) {
+          return false;
+        }
+        
         // 状态过滤
         if (this.notificationFilter === 'active' && this.isExpired(notification)) {
           return false;
@@ -623,12 +639,19 @@ export default {
         if (this.notificationFilter === 'expired' && !this.isExpired(notification)) {
           return false;
         }
+        // 已发送/已接收过滤
+        if (this.notificationFilter === 'sent' && !isSentByCurrentUser) {
+          return false;
+        }
+        if (this.notificationFilter === 'received' && !isForCurrentUser && !isAllUsers) {
+          return false;
+        }
         
         // 搜索过滤
         if (this.searchQuery) {
           const query = this.searchQuery.toLowerCase();
           return notification.title.toLowerCase().includes(query) || 
-                 notification.content.toLowerCase().includes(query);
+                notification.content.toLowerCase().includes(query);
         }
         
         return true;
@@ -885,24 +908,24 @@ export default {
       this.$refs.notificationForm.validate(async valid => {
         if (valid) {
           try {
+            // 检查发送全体通知的权限
+            if (this.notificationForm.recipientType === 'all' && !this.canSendToAllUsers()) {
+              this.$message.error('您没有发送全体通知的权限');
+              return;
+            }
+            
             // 准备附件信息
             const attachments = await Promise.all(this.attachmentFiles.map(async file => {
-              if (file.id) {
-                // 获取存储在IndexedDB中的附件信息
-                return {
-                  id: file.id,
-                  name: file.name,
-                  size: file.size,
-                  type: file.type
-                };
-              } else {
-                return {
-                  name: file.name,
-                  size: file.size,
-                  type: file.type
-                };
-              }
+              return {
+                id: file.id,
+                name: file.name,
+                size: file.size,
+                type: file.type
+              };
             }));
+            
+            // 获取当前用户
+            const currentUser = JSON.parse(localStorage.getItem('user')) || {};
             
             // 创建通知对象
             const notification = {
@@ -911,14 +934,19 @@ export default {
               content: this.notificationForm.content,
               recipientType: this.notificationForm.recipientType,
               recipients: this.notificationForm.recipientType === 'specific' 
-                          ? this.notificationForm.recipients 
+                          ? this.notificationForm.recipients
                           : [],
               priority: this.notificationForm.priority,
               expiry: this.notificationForm.expiry,
               timestamp: new Date().toISOString(),
-              sender: JSON.parse(localStorage.getItem('user')).id,
-              systemInfo: this.selectedSystemInfo,
-              attachments: attachments
+              sender: currentUser.id,
+              senderName: currentUser.username,
+              attachments: attachments,
+              systemInfo: {
+                operations: this.selectedSystemInfo.operations,
+                overrides: this.selectedSystemInfo.overrides,
+                warehouses: this.selectedSystemInfo.warehouses
+              }
             };
             
             // 保存通知到localStorage
@@ -1110,21 +1138,44 @@ export default {
     /**
      * @Function_Para 加载仓库数据
      *   无参数
-     * @Function_Meth 从localStorage加载所有仓库数据
+     * @Function_Meth 从localStorage加载所有仓库数据，按权限过滤
      */
     loadWarehouses() {
-      this.warehouses = JSON.parse(localStorage.getItem('warehouses') || '[]');
+      const allWarehouses = JSON.parse(localStorage.getItem('warehouses') || '[]');
+      
+      // 使用权限工具过滤有权限的仓库
+      this.warehouses = this.$permission.filterAuthorizedWarehouses(allWarehouses);
     },
     
     /**
      * @Function_Para 加载操作日志
      *   无参数
-     * @Function_Meth 从localStorage加载操作日志数据
+     * @Function_Meth 从localStorage加载操作日志数据，按权限过滤
      */
     loadOperationLogs() {
       const logs = JSON.parse(localStorage.getItem('operations') || '[]');
+      const currentUser = JSON.parse(localStorage.getItem('user')) || {};
+      
+      // 获取用户有权限的仓库ID列表
+      const authorizedWarehouseIds = this.$permission.getAuthorizedWarehouseIds();
+      
+      // 筛选有权限查看的日志
+      const filteredLogs = logs.filter(log => {
+        // 管理员可以看到所有日志
+        if (currentUser.role === 'admin') return true;
+        
+        // 用户可以看到与自己相关的日志
+        if (log.applicant === currentUser.username) return true;
+        
+        // 用户可以看到自己有权限的仓库相关的日志
+        if (log.sourceWarehouse && authorizedWarehouseIds.includes(log.sourceWarehouse)) return true;
+        if (log.targetWarehouse && authorizedWarehouseIds.includes(log.targetWarehouse)) return true;
+        
+        return false;
+      });
+      
       // 最新的日志优先显示
-      this.operationLogs = logs.sort((a, b) => 
+      this.operationLogs = filteredLogs.sort((a, b) => 
         new Date(b.timestamp) - new Date(a.timestamp)
       ).slice(0, 50); // 限制加载最近的50条记录
     },
@@ -1132,12 +1183,32 @@ export default {
     /**
      * @Function_Para 加载越权申请
      *   无参数
-     * @Function_Meth 从localStorage加载越权申请数据
+     * @Function_Meth 从localStorage加载越权申请数据，按权限过滤
      */
     loadOverrideRequests() {
       const requests = JSON.parse(localStorage.getItem('pendingRequests') || '[]');
+      const currentUser = JSON.parse(localStorage.getItem('user')) || {};
+      
+      // 获取用户有权限的仓库ID列表
+      const authorizedWarehouseIds = this.$permission.getAuthorizedWarehouseIds();
+      
+      // 筛选有权限查看的申请
+      const filteredRequests = requests.filter(req => {
+        // 管理员可以看到所有申请
+        if (currentUser.role === 'admin') return true;
+        
+        // 用户可以看到自己发起的申请
+        if (req.applicant === currentUser.username) return true;
+        
+        // 用户可以看到自己有权限的仓库相关的申请
+        if (req.sourceWarehouse && authorizedWarehouseIds.includes(req.sourceWarehouse)) return true;
+        if (req.targetWarehouse && authorizedWarehouseIds.includes(req.targetWarehouse)) return true;
+        
+        return false;
+      });
+      
       // 最新的申请优先显示
-      this.overrideRequests = requests.sort((a, b) => 
+      this.overrideRequests = filteredRequests.sort((a, b) => 
         new Date(b.timestamp) - new Date(a.timestamp)
       ).slice(0, 50); // 限制加载最近的50条记录
     },
@@ -1443,6 +1514,16 @@ export default {
       const day = String(date.getDate()).padStart(2, '0');
       
       return `${year}-${month}-${day}`;
+    },
+    
+    /**
+     * @Function_Para 检查用户是否有发送全体通知的权限
+     *   无参数
+     * @Function_Meth 检查当前用户是否为管理员或经理
+     */
+    canSendToAllUsers() {
+      const currentUser = JSON.parse(localStorage.getItem('user')) || {};
+      return currentUser.role === 'admin' || currentUser.role === 'manager';
     }
   },
   
@@ -1492,377 +1573,5 @@ export default {
 </script>
 
 <style scoped>
-/* 页面布局样式 */
-.notification-sender {
-  padding: 12px;
-  padding-bottom: 0px;
-  height: calc(100vh - 120px);
-  display: flex;
-  flex-direction: column;
-}
-
-/* 顶部操作栏样式 - 重新设计 */
-.top-bar {
-  margin-bottom: 12px;
-  padding: 12px 20px;
-  background-color: rgb(245, 245, 250);
-  border-radius: 12px;
-}
-
-.top-bar-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-/* 用户选择区域样式 */
-.recipient-selector {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.user-select {
-  width: 300px;
-}
-
-.action-buttons {
-  display: flex;
-  gap: 12px;
-}
-
-/* 内容区域布局 */
-.content-area {
-  display: flex;
-  flex-grow: 1;
-  gap: 16px;
-  height: calc(100% - 30px);
-  overflow: hidden;
-}
-
-/* 消息编辑区样式 */
-.message-editor {
-  min-height: 43%;
-  padding: 0px;
-  border-radius: 12px;
-  background-color: rgb(245, 245, 250);
-}
-
-/* 附件和系统信息区域 - 水平布局 */
-.addons-section {
-  padding: 0px;
-  border-radius: 12px;
-  background-color: rgb(245, 245, 250);
-  /* 固定高度，与右侧卡片保持一致 */
-  height: calc(100% - 280px); /* 减去消息编辑区和间距的高度 */
-  overflow: hidden;
-}
-
-.addons-container {
-  display: flex;
-  gap: 24px;
-  height: 100%;
-}
-
-/* 附件区域样式 */
-.attachment-section {
-  flex: 0.8;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-
-.attachment-uploader {
-  width: 100%;
-  overflow-y: auto;
-  max-height: calc(100% - 40px);
-}
-
-/* 上传列表滚动容器 */
-.attachment-uploader>>>.el-upload-list {
-  max-height: calc(100% - 60px); /* 减去按钮和提示的高度 */
-  overflow-y: auto;
-}
-
-/* 系统信息区域样式 */
-.system-info-section {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  max-height: 100%;
-  padding-bottom: 2px;
-}
-
-/* 选项卡内容区域 - 移除滚动，超出部分隐藏 */
-.system-info-section>>>.el-tabs__content {
-  overflow: hidden;
-  max-height: 150px;
-}
-
-/* 限制 el-select 多选框的高度 */
-.system-info-section>>>.el-select {
-  width: 60%;
-}
-
-/* 限制已选项显示区域高度 */
-.system-info-section>>>.el-select__tags {
-  max-height: 60px;
-  overflow: hidden;
-  display: block;
-}
-
-/* 确保输入区域不会过高 */
-.system-info-section>>>.el-input__inner {
-  height: auto;
-  min-height: 40px;
-  max-height: 60px;
-  overflow: hidden;
-}
-
-/* 已选系统信息预览样式 */
-.selected-info-preview {
-  margin-top: 10px;
-  padding: 10px;
-  background-color: #ffffff;
-  border-radius: 8px;
-  max-height: 150px;
-  overflow-y: auto;
-  flex-grow: 1;
-}
-
-/* 已选信息标题 - 使用不透明背景 */
-.selected-info-preview h4 {
-  font-size: 14px;
-  margin-top: 0;
-  margin-bottom: 8px;
-  color: #606266;
-  position: sticky;
-  top: 0;
-  background-color: #ffffff; /* 完全不透明的背景 */
-  padding: 2px 0;
-  z-index: 1;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.selected-tag {
-  margin-right: 8px;
-  margin-bottom: 8px;
-}
-
-/* 右侧通知列表样式 */
-.notification-list {
-  flex: 2;
-  padding: 0px;
-  border-radius: 12px;
-  background-color: rgb(245, 245, 250);
-  overflow-y: auto;
-  max-height: 100%;
-}
-
-.list-header {
-  margin-bottom: 16px;
-}
-
-.list-actions {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  margin-bottom: 16px;
-  justify-content: space-between;
-}
-
-.search-input {
-  width: 180px;
-}
-
-/* 接收者样式 */
-.card-recipients {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin-top: 8px;
-}
-
-.all-recipients {
-  color: #409EFF;
-  font-weight: 500;
-  font-size: 13px;
-}
-
-.recipient-avatar {
-  border: 2px solid white;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-}
-
-.recipient-avatar + .recipient-avatar {
-  margin-left: -8px;
-}
-
-.more-recipients {
-  margin-left: 4px;
-  background-color: #f2f6fc;
-  padding: 2px 6px;
-  border-radius: 12px;
-  font-size: 12px;
-  color: #606266;
-}
-
-/* 卡片操作样式 */
-.card-actions {
-  margin-top: 12px;
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-/* 通知预览样式 */
-.notification-preview {
-  padding: 10px;
-  background-color: white;
-  border-radius: 8px;
-}
-
-.preview-header {
-  margin-bottom: 20px;
-}
-
-.preview-header h2 {
-  margin-top: 0;
-  margin-bottom: 12px;
-  color: #303133;
-}
-
-.preview-meta {
-  margin-bottom: 12px;
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.preview-time, .preview-expiry {
-  color: #909399;
-  font-size: 13px;
-}
-
-.preview-recipients {
-  font-size: 14px;
-  color: #606266;
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.all-users {
-  font-weight: 500;
-  color: #409EFF;
-}
-
-.recipient-tag {
-  margin-right: 0;
-}
-
-.preview-content {
-  padding: 16px;
-  background-color: #f9fafc;
-  border-radius: 6px;
-  line-height: 1.6;
-  color: #303133;
-  white-space: pre-line;
-  margin-bottom: 20px;
-}
-
-.empty-content {
-  color: #c0c4cc;
-  font-style: italic;
-}
-
-/* 附件上传区域样式优化 */
-.attachment-uploader>>>.el-upload-list__item {
-  transition: none !important; /* 禁用可能冲突的过渡效果 */
-  opacity: 1 !important;
-  transform: none !important;
-}
-
-/* 为上传列表添加我们自己的渐入效果 */
-.attachment-uploader>>>.el-upload-list__item-appear {
-  animation: fadeIn 0.5s forwards;
-}
-
-/* 响应式调整 */
-@media (max-width: 1400px) {
-  .addons-container {
-    flex-direction: column;
-  }
-  
-  /* 在垂直布局模式下调整各区域高度 */
-  .attachment-section, 
-  .system-info-section {
-    height: 50%;
-  }
-  
-  .system-info-section>>>.el-tabs__content {
-    max-height: 60px;
-  }
-  
-  .selected-info-preview {
-    height: calc(100% - 110px);
-    max-height: 100px;
-  }
-  
-  .attachment-uploader>>>.el-upload-list {
-    max-height: calc(100% - 60px);
-  }
-  
-  .system-info-section>>>.el-select__tags {
-    max-height: 60px;
-  }
-  
-  .system-info-section>>>.el-input__inner {
-    max-height: 60px;
-  }
-}
-
-@media (max-width: 1200px) {
-  .content-area {
-    flex-direction: column;
-  }
-  
-  .notification-list {
-    max-height: 500px;
-  }
-  
-  .top-bar-content {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-  }
-  
-  .user-select {
-    width: 100%;
-  }
-  
-  .recipient-selector {
-    width: 100%;
-  }
-  
-  .action-buttons {
-    width: 100%;
-    justify-content: flex-end;
-  }
-}
-
-@media (max-width: 768px) {
-  .action-buttons {
-    flex-wrap: wrap;
-    justify-content: flex-start;
-  }
-  
-  .action-buttons .el-button {
-    margin-bottom: 8px;
-  }
-}
+@import './style.notify.css';
 </style>
