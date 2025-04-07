@@ -143,6 +143,17 @@ export default {
           ]
         },
         {
+          path: '/auxiliary',
+          title: '辅助功能',
+          icon: 'el-icon-s-tools',
+          children: [
+            {
+              path: '/auxiliary/notification',
+              title: '通知发送',
+            }
+          ]
+        },
+        {
           path: '/system',
           title: '系统管理',
           icon: 'el-icon-setting',

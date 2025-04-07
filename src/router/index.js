@@ -40,6 +40,12 @@ const routes = [
         component: () => import('../views/OverrideOperation.vue'),
         meta: { roles: ['admin', 'manager', 'operator'] }
       },
+      // 添加通知发送页面路由
+      {
+        path: 'auxiliary/notification',
+        component: () => import('../views/NotificationSender.vue'),
+        meta: { roles: ['admin', 'manager'] }
+      },
       {
         path: 'visualization',
         component: () => import('../views/WarehouseVisualization.vue'),
