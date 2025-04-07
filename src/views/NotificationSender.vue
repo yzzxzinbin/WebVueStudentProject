@@ -1,199 +1,214 @@
+<!-- 权限控制方面的接口还没有对接,暂时懒得写了 -->
 <template>
   <div class="notification-sender">
-    <!-- 顶部操作栏 -->
+    <!-- 顶部操作栏 - 重新设计包含用户选择功能 -->
     <el-card shadow="hover" class="top-bar">
-      <div class="action-buttons">
-        <el-button type="primary" icon="el-icon-s-promotion" @click="sendNotification">发送通知</el-button>
-        <el-button icon="el-icon-view" @click="previewNotification">预览</el-button>
-        <el-button icon="el-icon-delete" @click="resetForm">清空</el-button>
-        <el-button type="info" icon="el-icon-message" @click="viewSentNotifications">查看已发送</el-button>
+      <div class="top-bar-content">
+        <!-- 左侧：发送用户选择 -->
+        <div class="recipient-selector">
+          <el-radio-group v-model="notificationForm.recipientType" @change="handleRecipientTypeChange" size="small">
+            <el-radio-button label="all">所有用户</el-radio-button>
+            <el-radio-button label="specific">特定用户</el-radio-button>
+          </el-radio-group>
+          
+          <el-select 
+            v-if="notificationForm.recipientType === 'specific'" 
+            v-model="notificationForm.recipients" 
+            multiple 
+            collapse-tags
+            placeholder="选择用户" 
+            filterable 
+            class="user-select">
+            <el-option v-for="user in users" :key="user.id" :label="user.name || user.username" :value="user.id">
+              <div class="notify-user-option">
+                <el-avatar :size="24" :src="getUserAvatar(user.id)"></el-avatar>
+                <span class="notify-user-info">
+                  <div class="notify-user-name">{{ user.name || user.username }}</div>
+                </span>
+                <el-tag :type="getRoleTagType(user.role)" size="mini" class="notify-role-tag">
+                  {{ formatRole(user.role) }}
+                </el-tag>
+              </div>
+            </el-option>
+          </el-select>
+        </div>
+
+        <!-- 右侧：操作按钮 -->
+        <div class="action-buttons">
+          <el-button type="primary" icon="el-icon-s-promotion" @click="sendNotification">发送通知</el-button>
+          <el-button icon="el-icon-view" @click="previewNotification">预览</el-button>
+          <el-button icon="el-icon-delete" @click="resetForm">清空</el-button>
+          <el-button type="info" icon="el-icon-message" @click="viewSentNotifications">查看已发送</el-button>
+        </div>
       </div>
     </el-card>
 
     <!-- 主要内容区域 -->
     <div class="content-area">
-      <!-- 左侧：消息编辑区 + 附件 + 系统信息 -->
+      <!-- 左侧：消息编辑区 -->
       <div class="left-container">
         <!-- 消息编辑区 -->
         <el-card shadow="hover" class="message-editor">
           <h3 class="section-title">通知内容</h3>
           <el-form :model="notificationForm" ref="notificationForm" :rules="rules" label-width="100px">
-            <!-- 接收者选择 -->
-            <el-form-item label="发送给" prop="recipientType">
-              <el-radio-group v-model="notificationForm.recipientType" @change="handleRecipientTypeChange">
-                <el-radio label="all">所有用户</el-radio>
-                <el-radio label="specific">特定用户</el-radio>
-              </el-radio-group>
-            </el-form-item>
-
-            <!-- 特定用户选择（当选择"特定用户"时显示） -->
-            <el-form-item label="选择用户" prop="recipients" v-if="notificationForm.recipientType === 'specific'">
-              <el-select v-model="notificationForm.recipients" multiple placeholder="请选择用户" filterable style="width: 100%">
-                <el-option v-for="user in users" :key="user.id" :label="user.name || user.username" :value="user.id">
-                  <div class="user-option">
-                    <el-avatar :size="24" :src="getUserAvatar(user.id)"></el-avatar>
-                    <span class="user-info">
-                      <div class="user-name">{{ user.name || user.username }}</div>
-                    </span>
-                    <el-tag :type="getRoleTagType(user.role)" size="mini" class="role-tag">
-                      {{ formatRole(user.role) }}
-                    </el-tag>
-                  </div>
-                </el-option>
-              </el-select>
-            </el-form-item>
-
             <!-- 消息标题 -->
             <el-form-item label="通知标题" prop="title">
               <el-input v-model="notificationForm.title" placeholder="请输入通知标题"></el-input>
             </el-form-item>
 
-            <!-- 消息内容 -->
+            <!-- 消息内容 - 减小高度 -->
             <el-form-item label="通知内容" prop="content">
-              <el-input type="textarea" v-model="notificationForm.content" :rows="8" placeholder="请输入通知内容" resize="none"></el-input>
+              <el-input type="textarea" v-model="notificationForm.content" :rows="4" placeholder="请输入通知内容" resize="none"></el-input>
             </el-form-item>
 
-            <!-- 优先级选择 -->
-            <el-form-item label="优先级">
-              <el-select v-model="notificationForm.priority" placeholder="请选择优先级">
-                <el-option label="低" value="low"></el-option>
-                <el-option label="中" value="medium"></el-option>
-                <el-option label="高" value="high"></el-option>
-                <el-option label="紧急" value="urgent"></el-option>
-              </el-select>
-            </el-form-item>
-
-            <!-- 通知有效期 -->
-            <el-form-item label="有效期">
-              <el-date-picker
-                v-model="notificationForm.expiry"
-                type="datetime"
-                placeholder="选择通知失效时间"
-                format="yyyy-MM-dd HH:mm"
-                value-format="yyyy-MM-dd HH:mm:ss">
-              </el-date-picker>
-            </el-form-item>
+            <!-- 将优先级和有效期放在同一行 -->
+            <el-row :gutter="20">
+              <el-col :span="12">
+                <el-form-item label="优先级">
+                  <el-select v-model="notificationForm.priority" placeholder="请选择优先级" style="width: 100%">
+                    <el-option label="低" value="low"></el-option>
+                    <el-option label="中" value="medium"></el-option>
+                    <el-option label="高" value="high"></el-option>
+                    <el-option label="紧急" value="urgent"></el-option>
+                  </el-select>
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="有效期">
+                  <el-date-picker
+                    v-model="notificationForm.expiry"
+                    type="datetime"
+                    placeholder="选择通知失效时间"
+                    format="yyyy-MM-dd HH:mm"
+                    value-format="yyyy-MM-dd HH:mm:ss"
+                    style="width: 100%">
+                  </el-date-picker>
+                </el-form-item>
+              </el-col>
+            </el-row>
           </el-form>
         </el-card>
 
-        <!-- 附件和系统信息 -->
+        <!-- 附件和系统信息 - 改为水平并排布局 -->
         <el-card shadow="hover" class="addons-section">
-          <!-- 附件上传区域 -->
-          <div class="attachment-section">
-            <h3 class="section-title">附件</h3>
-            <el-upload
-              class="attachment-uploader"
-              action="#"
-              :http-request="handleFileUpload"
-              :file-list="attachmentFiles"
-              :on-remove="handleFileRemove"
-              multiple
-              :limit="5">
-              <el-button size="small" type="primary" icon="el-icon-upload2">添加附件</el-button>
-              <div slot="tip" class="el-upload__tip">最多5个附件，单个文件不超过10MB</div>
-            </el-upload>
-          </div>
+          <div class="addons-container">
+            <!-- 左侧：附件上传区域 -->
+            <div class="attachment-section">
+              <h3 class="section-title">附件</h3>
+              <el-upload
+                class="attachment-uploader"
+                action="#"
+                :http-request="handleFileUpload"
+                :file-list="attachmentFiles"
+                :on-remove="handleFileRemove"
+                multiple
+                :limit="5">
+                <el-button size="small" type="primary" icon="el-icon-upload2">添加附件</el-button>
+                <div slot="tip" class="el-upload__tip">最多5个附件，单个文件不超过10MB</div>
+              </el-upload>
+            </div>
 
-          <!-- 系统信息选择区域 -->
-          <div class="system-info-section">
-            <h3 class="section-title">附加系统信息</h3>
-            
-            <!-- 系统信息类型选择 -->
-            <el-tabs v-model="activeSystemInfoTab">
-              <el-tab-pane label="操作日志" name="operations">
-                <el-select 
-                  v-model="selectedSystemInfo.operations" 
-                  multiple 
-                  filterable 
-                  placeholder="选择要附加的操作日志"
-                  style="width: 100%">
-                  <el-option 
-                    v-for="log in operationLogs" 
-                    :key="log.id" 
-                    :label="`${log.id.substring(0, 10)}... (${log.type})`" 
-                    :value="log.id">
-                    <div class="info-option">
-                      <el-tag :type="getOperationTagType(log.type)" size="mini">{{ log.type }}</el-tag>
-                      <span>{{ formatDateTime(log.timestamp) }}</span>
-                      <span class="ellipsis">ID: {{ log.id }}</span>
-                    </div>
-                  </el-option>
-                </el-select>
-              </el-tab-pane>
+            <!-- 右侧：系统信息选择区域 -->
+            <div class="system-info-section">
+              <h3 class="section-title">附加系统信息</h3>
               
-              <el-tab-pane label="越权申请" name="overrides">
-                <el-select 
-                  v-model="selectedSystemInfo.overrides" 
-                  multiple 
-                  filterable 
-                  placeholder="选择要附加的越权申请"
-                  style="width: 100%">
-                  <el-option 
-                    v-for="req in overrideRequests" 
-                    :key="req.id" 
-                    :label="`${req.id.substring(0, 10)}... (${getStatusText(req.status)})`" 
-                    :value="req.id">
-                    <div class="info-option">
-                      <el-tag :type="getStatusTagType(req.status)" size="mini">{{ getStatusText(req.status) }}</el-tag>
-                      <span>{{ formatDateTime(req.timestamp) }}</span>
-                      <span class="ellipsis">{{ req.type }}: {{ req.productId }}</span>
-                    </div>
-                  </el-option>
-                </el-select>
-              </el-tab-pane>
+              <!-- 系统信息类型选择 -->
+              <el-tabs v-model="activeSystemInfoTab">
+                <el-tab-pane label="操作日志" name="operations">
+                  <el-select 
+                    v-model="selectedSystemInfo.operations" 
+                    multiple 
+                    filterable 
+                    placeholder="选择要附加的操作日志"
+                    style="width: 100%">
+                    <el-option 
+                      v-for="log in operationLogs" 
+                      :key="log.id" 
+                      :label="`${log.id.substring(0, 10)}... (${log.type})`" 
+                      :value="log.id">
+                      <div class="info-option">
+                        <el-tag :type="getOperationTagType(log.type)" size="mini">{{ log.type }}</el-tag>
+                        <span>{{ formatDateTime(log.timestamp) }}</span>
+                        <span class="text-ellipsis">ID: {{ log.id }}</span>
+                      </div>
+                    </el-option>
+                  </el-select>
+                </el-tab-pane>
+                
+                <el-tab-pane label="越权申请" name="overrides">
+                  <el-select 
+                    v-model="selectedSystemInfo.overrides" 
+                    multiple 
+                    filterable 
+                    placeholder="选择要附加的越权申请"
+                    style="width: 100%">
+                    <el-option 
+                      v-for="req in overrideRequests" 
+                      :key="req.id" 
+                      :label="`${req.id.substring(0, 10)}... (${getStatusText(req.status)})`" 
+                      :value="req.id">
+                      <div class="info-option">
+                        <el-tag :type="getStatusTagType(req.status)" size="mini">{{ getStatusText(req.status) }}</el-tag>
+                        <span>{{ formatDateTime(req.timestamp) }}</span>
+                        <span class="text-ellipsis">{{ req.type }}: {{ req.productId }}</span>
+                      </div>
+                    </el-option>
+                  </el-select>
+                </el-tab-pane>
+                
+                <el-tab-pane label="仓库数据" name="warehouses">
+                  <el-select 
+                    v-model="selectedSystemInfo.warehouses" 
+                    multiple 
+                    filterable 
+                    placeholder="选择要附加的仓库信息"
+                    style="width: 100%">
+                    <el-option 
+                      v-for="warehouse in warehouses" 
+                      :key="warehouse.id" 
+                      :label="warehouse.name" 
+                      :value="warehouse.id">
+                      <div class="info-option">
+                        <span class="warehouse-name">{{ warehouse.name }}</span>
+                        <span class="warehouse-location">{{ warehouse.location }}</span>
+                      </div>
+                    </el-option>
+                  </el-select>
+                </el-tab-pane>
+              </el-tabs>
               
-              <el-tab-pane label="仓库数据" name="warehouses">
-                <el-select 
-                  v-model="selectedSystemInfo.warehouses" 
-                  multiple 
-                  filterable 
-                  placeholder="选择要附加的仓库信息"
-                  style="width: 100%">
-                  <el-option 
-                    v-for="warehouse in warehouses" 
-                    :key="warehouse.id" 
-                    :label="warehouse.name" 
-                    :value="warehouse.id">
-                    <div class="info-option">
-                      <span class="warehouse-name">{{ warehouse.name }}</span>
-                      <span class="warehouse-location">{{ warehouse.location }}</span>
-                    </div>
-                  </el-option>
-                </el-select>
-              </el-tab-pane>
-            </el-tabs>
-            
-            <!-- 已选系统信息预览 -->
-            <div class="selected-info-preview" v-if="hasSelectedSystemInfo">
-              <h4>已选系统信息</h4>
-              <el-tag 
-                v-for="id in selectedSystemInfo.operations" 
-                :key="'op-'+id" 
-                closable
-                @close="removeSelectedInfo('operations', id)"
-                class="selected-tag">
-                操作日志 {{ id.substring(0, 8) }}...
-              </el-tag>
-              
-              <el-tag 
-                v-for="id in selectedSystemInfo.overrides" 
-                :key="'ov-'+id" 
-                closable
-                @close="removeSelectedInfo('overrides', id)"
-                type="warning"
-                class="selected-tag">
-                越权申请 {{ id.substring(0, 8) }}...
-              </el-tag>
-              
-              <el-tag 
-                v-for="id in selectedSystemInfo.warehouses" 
-                :key="'wh-'+id" 
-                closable
-                @close="removeSelectedInfo('warehouses', id)"
-                type="info"
-                class="selected-tag">
-                仓库 {{ getWarehouseName(id) }}
-              </el-tag>
+              <!-- 已选系统信息预览 -->
+              <div class="selected-info-preview" v-if="hasSelectedSystemInfo">
+                <h4>已选系统信息</h4>
+                <el-tag 
+                  v-for="id in selectedSystemInfo.operations" 
+                  :key="'op-'+id" 
+                  closable
+                  @close="removeSelectedInfo('operations', id)"
+                  class="selected-tag">
+                  操作日志 {{ id.substring(0, 8) }}...
+                </el-tag>
+                
+                <el-tag 
+                  v-for="id in selectedSystemInfo.overrides" 
+                  :key="'ov-'+id" 
+                  closable
+                  @close="removeSelectedInfo('overrides', id)"
+                  type="warning"
+                  class="selected-tag">
+                  越权申请 {{ id.substring(0, 8) }}...
+                </el-tag>
+                
+                <el-tag 
+                  v-for="id in selectedSystemInfo.warehouses" 
+                  :key="'wh-'+id" 
+                  closable
+                  @close="removeSelectedInfo('warehouses', id)"
+                  type="info"
+                  class="selected-tag">
+                  仓库 {{ getWarehouseName(id) }}
+                </el-tag>
+              </div>
             </div>
           </div>
         </el-card>
@@ -596,6 +611,7 @@ export default {
     
     /**
      * @Function_Para 过滤后的通知列表
+     *   无参数
      * @Function_Meth 根据过滤条件和搜索查询过滤通知
      */
     filteredNotifications() {
@@ -1479,17 +1495,35 @@ export default {
 /* 页面布局样式 */
 .notification-sender {
   padding: 12px;
-  height: calc(100vh - 140px);
+  padding-bottom: 0px;
+  height: calc(100vh - 120px);
   display: flex;
   flex-direction: column;
 }
 
-/* 顶部操作栏样式 */
+/* 顶部操作栏样式 - 重新设计 */
 .top-bar {
   margin-bottom: 12px;
   padding: 12px 20px;
   background-color: rgb(245, 245, 250);
   border-radius: 12px;
+}
+
+.top-bar-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* 用户选择区域样式 */
+.recipient-selector {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-select {
+  width: 300px;
 }
 
 .action-buttons {
@@ -1502,61 +1536,114 @@ export default {
   display: flex;
   flex-grow: 1;
   gap: 16px;
-  height: calc(100% - 50px);
+  height: calc(100% - 30px);
   overflow: hidden;
-}
-
-/* 左侧容器样式 */
-.left-container {
-  flex: 3;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  overflow-y: auto;
-  max-height: 100%;
 }
 
 /* 消息编辑区样式 */
 .message-editor {
-  padding: 20px;
+  min-height: 43%;
+  padding: 0px;
   border-radius: 12px;
   background-color: rgb(245, 245, 250);
 }
 
-/* 附件和系统信息区域 */
+/* 附件和系统信息区域 - 水平布局 */
 .addons-section {
-  padding: 20px;
+  padding: 0px;
   border-radius: 12px;
   background-color: rgb(245, 245, 250);
+  /* 固定高度，与右侧卡片保持一致 */
+  height: calc(100% - 280px); /* 减去消息编辑区和间距的高度 */
+  overflow: hidden;
+}
+
+.addons-container {
+  display: flex;
+  gap: 24px;
+  height: 100%;
 }
 
 /* 附件区域样式 */
 .attachment-section {
-  margin-bottom: 24px;
+  flex: 0.8;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .attachment-uploader {
   width: 100%;
+  overflow-y: auto;
+  max-height: calc(100% - 40px);
+}
+
+/* 上传列表滚动容器 */
+.attachment-uploader>>>.el-upload-list {
+  max-height: calc(100% - 60px); /* 减去按钮和提示的高度 */
+  overflow-y: auto;
 }
 
 /* 系统信息区域样式 */
 .system-info-section {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
+  max-height: 100%;
+  padding-bottom: 2px;
+}
+
+/* 选项卡内容区域 - 移除滚动，超出部分隐藏 */
+.system-info-section>>>.el-tabs__content {
+  overflow: hidden;
+  max-height: 150px;
+}
+
+/* 限制 el-select 多选框的高度 */
+.system-info-section>>>.el-select {
+  width: 60%;
+}
+
+/* 限制已选项显示区域高度 */
+.system-info-section>>>.el-select__tags {
+  max-height: 60px;
+  overflow: hidden;
+  display: block;
+}
+
+/* 确保输入区域不会过高 */
+.system-info-section>>>.el-input__inner {
+  height: auto;
+  min-height: 40px;
+  max-height: 60px;
+  overflow: hidden;
 }
 
 /* 已选系统信息预览样式 */
 .selected-info-preview {
-  margin-top: 20px;
-  padding: 12px;
-  background-color: rgba(255, 255, 255, 0.6);
+  margin-top: 10px;
+  padding: 10px;
+  background-color: #ffffff;
   border-radius: 8px;
+  max-height: 150px;
+  overflow-y: auto;
+  flex-grow: 1;
 }
 
+/* 已选信息标题 - 使用不透明背景 */
 .selected-info-preview h4 {
   font-size: 14px;
-  margin-bottom: 12px;
+  margin-top: 0;
+  margin-bottom: 8px;
   color: #606266;
+  position: sticky;
+  top: 0;
+  background-color: #ffffff; /* 完全不透明的背景 */
+  padding: 2px 0;
+  z-index: 1;
+  border-bottom: 1px solid #f0f0f0;
 }
 
 .selected-tag {
@@ -1567,7 +1654,7 @@ export default {
 /* 右侧通知列表样式 */
 .notification-list {
   flex: 2;
-  padding: 20px;
+  padding: 0px;
   border-radius: 12px;
   background-color: rgb(245, 245, 250);
   overflow-y: auto;
@@ -1581,137 +1668,16 @@ export default {
 .list-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 2px;
   margin-bottom: 16px;
+  justify-content: space-between;
 }
 
 .search-input {
   width: 180px;
 }
 
-/* 时间线样式 */
-.notification-timeline {
-  position: relative;
-  padding-left: 16px;
-}
-
-.notification-timeline::before {
-  content: '';
-  position: absolute;
-  left: 8px;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  background-color: #e8e8e8;
-  z-index: 1;
-}
-
-.timeline-item {
-  position: relative;
-  margin-bottom: 16px;
-  transition: all 0.3s ease;
-  cursor: pointer;
-}
-
-.timeline-dot {
-  position: absolute;
-  left: -8px;
-  top: 16px;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background-color: #909399;
-  z-index: 2;
-}
-
-.dot-urgent {
-  background-color: #F56C6C;
-  box-shadow: 0 0 0 4px rgba(245, 108, 108, 0.2);
-}
-
-.dot-high {
-  background-color: #E6A23C;
-  box-shadow: 0 0 0 4px rgba(230, 162, 60, 0.2);
-}
-
-.dot-medium {
-  background-color: #409EFF;
-  box-shadow: 0 0 0 4px rgba(64, 158, 255, 0.2);
-}
-
-.dot-low {
-  background-color: #909399;
-  box-shadow: 0 0 0 4px rgba(144, 147, 153, 0.2);
-}
-
-.timeline-card {
-  padding: 16px;
-  background-color: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  transition: all 0.3s ease;
-  margin-left: 16px;
-}
-
-.timeline-item:hover .timeline-card {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.1);
-}
-
-.timeline-item.expanded .timeline-card {
-  box-shadow: 0 8px 24px 0 rgba(0, 0, 0, 0.15);
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 8px;
-}
-
-.card-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.card-title h4 {
-  margin: 0;
-  font-size: 15px;
-  font-weight: 500;
-  color: #303133;
-}
-
-.card-meta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #909399;
-  font-size: 12px;
-}
-
-.card-time {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.card-status {
-  padding: 2px 6px;
-  border-radius: 10px;
-  font-size: 12px;
-}
-
-.card-status.active {
-  background-color: rgba(103, 194, 58, 0.1);
-  color: #67c23a;
-}
-
-.card-status.expired {
-  background-color: rgba(144, 147, 153, 0.1);
-  color: #909399;
-}
-
+/* 接收者样式 */
 .card-recipients {
   display: flex;
   align-items: center;
@@ -1743,246 +1709,12 @@ export default {
   color: #606266;
 }
 
-.card-content {
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid #f0f0f0;
-  animation: fadeIn 0.3s ease;
-}
-
-.card-content p {
-  margin: 0 0 12px 0;
-  font-size: 14px;
-  color: #606266;
-  line-height: 1.5;
-  white-space: pre-line;
-}
-
-.card-attachments h5 {
-  margin: 0 0 8px 0;
-  font-size: 13px;
-  font-weight: 500;
-  color: #606266;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.attachment-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.attachment-chip {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 8px;
-  background-color: #f5f7fa;
-  border-radius: 4px;
-  font-size: 12px;
-  color: #606266;
-}
-
+/* 卡片操作样式 */
 .card-actions {
   margin-top: 12px;
   display: flex;
   justify-content: flex-end;
   gap: 8px;
-}
-
-/* 空列表样式 */
-.empty-list {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 40px 0;
-  color: #909399;
-}
-
-.empty-list i {
-  font-size: 48px;
-  margin-bottom: 16px;
-}
-
-.empty-list p {
-  margin: 0;
-  font-size: 14px;
-}
-
-/* 动画 */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* 响应式调整 */
-@media (max-width: 1200px) {
-  .content-area {
-    flex-direction: column;
-  }
-  
-  .notification-list {
-    max-height: 500px;
-  }
-}
-
-/* 页面布局样式 */
-.notification-sender {
-  padding: 12px;
-  height: calc(100vh - 140px);
-  display: flex;
-  flex-direction: column;
-}
-
-/* 顶部操作栏样式 */
-.top-bar {
-  margin-bottom: 12px;
-  padding: 12px 20px;
-  background-color: rgb(245, 245, 250);
-  border-radius: 12px;
-}
-
-.action-buttons {
-  display: flex;
-  gap: 12px;
-}
-
-/* 内容区域布局 */
-.content-area {
-  display: flex;
-  flex-grow: 1;
-  gap: 16px;
-  height: calc(100% - 50px);
-  overflow: hidden;
-}
-
-/* 消息编辑区样式 */
-.message-editor {
-  flex: 3;
-  padding: 20px;
-  overflow-y: auto;
-  border-radius: 12px;
-  background-color: rgb(245, 245, 250);
-}
-
-/* 侧边栏样式 */
-.sidebar {
-  flex: 2;
-  padding: 20px;
-  border-radius: 12px;
-  background-color: rgb(245, 245, 250);
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto;
-}
-
-/* 区域标题样式 - 覆盖全局样式以适应当前组件 */
-.section-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #409EFF;
-  margin-top: 0;
-  margin-bottom: 16px; /* 修改了间距 */
-  position: relative;
-  padding-left: 12px;
-}
-
-.section-title::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  height: 16px;
-  width: 4px;
-  background-color: #409EFF;
-  border-radius: 2px;
-}
-
-/* 附件区域样式 */
-.attachment-section {
-  margin-bottom: 24px;
-}
-
-.attachment-uploader {
-  width: 100%;
-}
-
-/* 系统信息区域样式 */
-.system-info-section {
-  flex-grow: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-/* 已选系统信息预览样式 */
-.selected-info-preview {
-  margin-top: 20px;
-  padding: 12px;
-  background-color: rgba(255, 255, 255, 0.6);
-  border-radius: 8px;
-}
-
-.selected-info-preview h4 {
-  font-size: 14px;
-  margin-bottom: 12px;
-  color: #606266;
-}
-
-.selected-tag {
-  margin-right: 8px;
-  margin-bottom: 8px;
-}
-
-/* 用户选择项样式 - 修复高度不足问题 */
-.user-option {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  padding: 4px 0;  /* 减少内边距 */
-  min-height: 32px; /* 降低最小高度 */
-}
-
-.user-info {
-  margin-left: 8px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  flex: 1;
-}
-
-.user-name {
-  font-size: 13px;
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* 用户角色标签样式 */
-.role-tag {
-  margin-left: auto;
-  transform: scale(0.9); /* 稍微缩小标签 */
-  transform-origin: right center;
-  white-space: nowrap; /* 确保标签文本不换行 */
-}
-
-/* 系统信息选择项样式 */
-.info-option {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-}
-
-.ellipsis {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  flex-grow: 1;
 }
 
 /* 通知预览样式 */
@@ -2048,111 +1780,7 @@ export default {
   font-style: italic;
 }
 
-/* 详情部分样式 - 与warehouse-product页面统一风格 */
-.detail-section {
-  background-color: #f9f9fb;
-  border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 16px;
-}
-
-/* 附件列表样式 */
-.attachment-list {
-  background-color: #fff;
-  border-radius: 8px;
-  padding: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-}
-
-.attachment-item {
-  display: flex;
-  align-items: center;
-  padding: 8px 0;
-  border-bottom: 1px solid #ebeef5;
-}
-
-.attachment-item:last-child {
-  border-bottom: none;
-}
-
-.attachment-item i {
-  margin-right: 10px;
-  font-size: 18px;
-  color: #909399;
-  min-width: 20px;
-}
-
-.file-size {
-  color: #c0c4cc;
-  margin-left: 8px;
-}
-
-/* 系统信息列表样式 */
-.info-list {
-  background-color: #fff;
-  border-radius: 6px;
-  padding: 3px 8px;
-  list-style-type: none;
-  margin: 0;
-  margin-top: 2px;
-  padding-left: 16px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-}
-
-.info-list li {
-  padding: 2px 0;
-  border-bottom: 1px dashed #ebeef5;
-  line-height: 1.4;
-  font-size: 13px;
-}
-
-.info-list li:last-child {
-  border-bottom: none;
-}
-
-/* 改进弹窗样式 - 扩展共享样式 */
-.modern-dialog>>>.el-dialog {
-  max-height: 90vh;
-  display: flex;
-  flex-direction: column;
-}
-
-.modern-dialog>>>.el-dialog__body {
-  overflow-y: auto; /* 确保内容可滚动 */
-}
-
-/* 避免滚动时头部和底部固定 */
-.modern-dialog>>>.el-dialog__header {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-
-.modern-dialog>>>.el-dialog__footer {
-  position: sticky;
-  bottom: 0;
-  background-color: #f9fafc;
-  z-index: 10;
-}
-
 /* 附件上传区域样式优化 */
-.attachment-uploader>>>.el-upload-list__item {
-  transition: all 0.3s ease;
-}
-
-/* 移除之前的slideIn动画 */
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateX(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-/* 自定义上传列表项样式，覆盖Element UI的默认样式 */
 .attachment-uploader>>>.el-upload-list__item {
   transition: none !important; /* 禁用可能冲突的过渡效果 */
   opacity: 1 !important;
@@ -2164,21 +1792,77 @@ export default {
   animation: fadeIn 0.5s forwards;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+/* 响应式调整 */
+@media (max-width: 1400px) {
+  .addons-container {
+    flex-direction: column;
+  }
+  
+  /* 在垂直布局模式下调整各区域高度 */
+  .attachment-section, 
+  .system-info-section {
+    height: 50%;
+  }
+  
+  .system-info-section>>>.el-tabs__content {
+    max-height: 60px;
+  }
+  
+  .selected-info-preview {
+    height: calc(100% - 110px);
+    max-height: 100px;
+  }
+  
+  .attachment-uploader>>>.el-upload-list {
+    max-height: calc(100% - 60px);
+  }
+  
+  .system-info-section>>>.el-select__tags {
+    max-height: 60px;
+  }
+  
+  .system-info-section>>>.el-input__inner {
+    max-height: 60px;
+  }
 }
 
-
-
-/* 响应式调整 */
 @media (max-width: 1200px) {
   .content-area {
     flex-direction: column;
   }
   
-  .sidebar {
-    height: 400px;
+  .notification-list {
+    max-height: 500px;
+  }
+  
+  .top-bar-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .user-select {
+    width: 100%;
+  }
+  
+  .recipient-selector {
+    width: 100%;
+  }
+  
+  .action-buttons {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 768px) {
+  .action-buttons {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+  
+  .action-buttons .el-button {
+    margin-bottom: 8px;
   }
 }
 </style>

@@ -3,12 +3,18 @@
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
 }
 
 .modern-dialog .el-dialog__header {
   background-color: #f5f7fa;
   padding: 16px 20px;
   border-bottom: 1px solid #ebeef5;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .modern-dialog .el-dialog__title {
@@ -19,11 +25,16 @@
 
 .modern-dialog .el-dialog__body {
   padding: 20px;
+  overflow-y: auto; /* 确保内容可滚动 */
 }
 
 .modern-dialog .el-dialog__footer {
   padding: 12px 20px;
   border-top: 1px solid #ebeef5;
+  position: sticky;
+  bottom: 0;
+  background-color: #f9fafc;
+  z-index: 10;
 }
 
 .dialog-content {
@@ -109,7 +120,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 20px;
+  margin-top: 2px;
   padding: 0 16px;
 }
 
@@ -192,4 +203,314 @@
   width: 100%;
   padding: 0;
   justify-content: space-between;
+}
+
+/* ============== 时间线和通知卡片样式 ============== */
+/* 时间线容器 */
+.notification-timeline {
+  position: relative;
+  padding-left: 16px;
+}
+
+.notification-timeline::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background-color: #e8e8e8;
+  z-index: 1;
+}
+
+/* 时间线项目 */
+.timeline-item {
+  position: relative;
+  margin-bottom: 16px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+/* 时间线点样式 */
+.timeline-dot {
+  position: absolute;
+  left: -8px;
+  top: 16px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background-color: #909399;
+  z-index: 2;
+}
+
+.dot-urgent {
+  background-color: #F56C6C;
+  box-shadow: 0 0 0 4px rgba(245, 108, 108, 0.2);
+}
+
+.dot-high {
+  background-color: #E6A23C;
+  box-shadow: 0 0 0 4px rgba(230, 162, 60, 0.2);
+}
+
+.dot-medium {
+  background-color: #409EFF;
+  box-shadow: 0 0 0 4px rgba(64, 158, 255, 0.2);
+}
+
+.dot-low {
+  background-color: #909399;
+  box-shadow: 0 0 0 4px rgba(144, 147, 153, 0.2);
+}
+
+/* 时间线卡片 */
+.timeline-card {
+  padding: 16px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  margin-left: 16px;
+}
+
+.timeline-item:hover .timeline-card {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.1);
+}
+
+.timeline-item.expanded .timeline-card {
+  box-shadow: 0 8px 24px 0 rgba(0, 0, 0, 0.15);
+}
+
+/* 卡片头部 */
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-title h4 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 500;
+  color: #303133;
+}
+
+.card-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #909399;
+  font-size: 12px;
+}
+
+.card-time {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.card-status {
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-size: 12px;
+}
+
+.card-status.active {
+  background-color: rgba(103, 194, 58, 0.1);
+  color: #67c23a;
+}
+
+.card-status.expired {
+  background-color: rgba(144, 147, 153, 0.1);
+  color: #909399;
+}
+
+/* 卡片内容 */
+.card-content {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #f0f0f0;
+  animation: fadeIn 0.3s ease;
+}
+
+.card-content p {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  color: #606266;
+  line-height: 1.5;
+  white-space: pre-line;
+}
+
+/* 附件列表样式 */
+.attachment-list {
+  background-color: #fff;
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.attachment-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.attachment-item:last-child {
+  border-bottom: none;
+}
+
+.attachment-item i {
+  margin-right: 10px;
+  font-size: 18px;
+  color: #909399;
+  min-width: 20px;
+}
+
+.file-size {
+  color: #c0c4cc;
+  margin-left: 8px;
+}
+
+/* 附件芯片 */
+.attachment-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.attachment-chip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background-color: #f5f7fa;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #606266;
+}
+
+/* 空列表样式 */
+.empty-list {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 0;
+  color: #909399;
+}
+
+.empty-list i {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.empty-list p {
+  margin: 0;
+  font-size: 14px;
+}
+
+/* 动画 */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ============== 布局容器样式 ============== */
+/* 左侧容器样式 */
+.left-container {
+  flex: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+  max-height: 100%;
+}
+
+/* 详情部分样式 */
+.detail-section {
+  background-color: #f9f9fb;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+/* 信息列表样式 */
+.info-list {
+  background-color: #fff;
+  border-radius: 6px;
+  padding: 3px 8px;
+  list-style-type: none;
+  margin: 0;
+  margin-top: 2px;
+  padding-left: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.info-list li {
+  padding: 2px 0;
+  border-bottom: 1px dashed #ebeef5;
+  line-height: 1.4;
+  font-size: 13px;
+}
+
+.info-list li:last-child {
+  border-bottom: none;
+}
+
+/* ============== 用户选择与标签样式 ============== */
+/* 用户选择项样式 */
+.notify-user-option {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 4px 0;
+  min-height: 32px;
+}
+
+.notify-user-info {
+  margin-left: 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  flex: 1;
+}
+
+.notify-user-name {
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 用户角色标签样式 */
+.notify-role-tag {
+  margin-left: auto;
+  transform: scale(0.9);
+  transform-origin: right center;
+  white-space: nowrap;
+}
+
+/* 系统信息选择项样式 */
+.info-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.text-ellipsis {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-grow: 1;
 }
