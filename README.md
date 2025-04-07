@@ -1,6 +1,6 @@
 # 仓库管理系统
 
-这是一个基于 Vue.js 2.x 和 Element UI 构建的现代化仓库管理系统前端演示项目。系统提供了全面的仓库管理功能，包括商品管理、仓库管理、库存操作、权限控制和数据可视化分析，作为作者大学前端课程设计使用，项目主体于2025.4.5完成，目前开源在 https://github.com/yzzxzinbin/WebVueStudentProject ， 由于初期设计问题，项目结构和代码都比较混乱，后续可能不会再继续更新。
+这是一个基于 Vue.js 2.x 和 Element UI 构建的现代化仓库管理系统前端演示项目。系统提供了全面的仓库管理功能，包括商品管理、仓库管理、库存操作、权限控制和数据可视化分析，作为作者大学前端课程设计使用，项目主体于2025.4.5完成，目前开源在 https://github.com/yzzxzinbin/WebVueStudentProject ，由于初期设计问题，项目结构和代码都比较混乱，后续可能不会再继续更新。
 
 ## 功能特性
 
@@ -182,7 +182,8 @@ npm run build
  - **实现功能**：多类型通知发送、接收者选择、优先级设置、附件上传、系统信息关联、通知历史管理
  - **数据存储**：使用IndexedDB存储附件，localStorage存储通知历史
  - **设计特点**：响应式布局、双面板设计（编辑+预览）、丰富的交互反馈
- 
+ ![image](https://github.com/user-attachments/assets/ca1ffe03-7744-4295-8ad0-bdefc41f97fe)
+
 ### 仓库数据可视化 (WarehouseVisualization.vue)
 
 - **技术点**：ECharts/ECharts GL、动态数据更新、3D可视化
