@@ -1,6 +1,6 @@
 # 仓库管理系统
 
-这是一个基于 Vue.js 2.x 和 Element UI 构建的现代化仓库管理系统前端演示项目。系统提供了全面的仓库管理功能，包括商品管理、仓库管理、库存操作、权限控制和数据可视化分析，作为作者大学前端课程设计使用，项目主体于2025.4.5完成，目前开源在https://github.com/yzzxzinbin/WebVueStudentProject，后续可能不会再继续更新。
+这是一个基于 Vue.js 2.x 和 Element UI 构建的现代化仓库管理系统前端演示项目。系统提供了全面的仓库管理功能，包括商品管理、仓库管理、库存操作、权限控制和数据可视化分析，作为作者大学前端课程设计使用，项目主体于2025.4.5完成，目前开源在 https://github.com/yzzxzinbin/WebVueStudentProject ，由于初期设计问题，项目结构和代码都比较混乱，后续可能不会再继续更新。
 
 ## 功能特性
 
@@ -72,6 +72,7 @@
 │   │   ├── Warehouse-products.vue 	# 仓库商品列表
 │   │   ├── Operation.vue    		# 常规操作申请
 │   │   ├── OverrideOperation.vue 	# 越权操作申请
+│   │   ├── NotificationSender          # 通知模块
 │   │   ├── WarehouseVisualization.vue 	# 仓库数据可视化
 │   │   ├── UserProfile.vue  		# 用户个人中心
 │   │   └── UserManagement.vue 		# 用户管理
@@ -127,6 +128,7 @@ npm run build
 - **实现功能**：用户登录验证、记住登录状态、用户IP和设备信息记录
 - **数据存储**：localStorage存储用户信息和登录令牌
 - **设计特点**：磨砂玻璃效果、渐变背景、响应式布局
+![image](https://github.com/user-attachments/assets/ea2819b8-6570-49a5-91ea-74e288c0e1cc)
 
 ### 主布局 (Layout.vue)
 
@@ -134,6 +136,7 @@ npm run build
 - **实现功能**：侧边栏导航、用户信息显示、动态折叠菜单
 - **数据存储**：IndexedDB存储用户头像、localStorage记忆菜单状态
 - **设计特点**：磨砂玻璃侧边栏、顶部渐变导航栏、自定义滚动条
+![image](https://github.com/user-attachments/assets/992ad64d-67cb-4cdb-88d5-3f35b517eac6)
 
 ### 商品列表 (ProductList.vue)
 
@@ -141,6 +144,7 @@ npm run build
 - **实现功能**：商品CRUD、分页查询、数据导入导出
 - **数据存储**：使用localStorage存储商品数据
 - **设计特点**：卡片式布局、高效表格、快捷操作按钮
+![image](https://github.com/user-attachments/assets/67e5ad11-1606-4a47-b4bb-c64e571348e9)
 
 ### 仓库列表 (Warehouse.vue)
 
@@ -155,6 +159,7 @@ npm run build
 - **实现功能**：仓库商品查询、库存管理、商品详情
 - **数据存储**：localStorage存储仓库商品关联数据
 - **设计特点**：详情弹窗、库存状态可视化
+![image](https://github.com/user-attachments/assets/b64c0ec9-3982-448f-978f-ce60e8ce0d03)
 
 ### 常规操作申请 (Operation.vue)
 
@@ -169,6 +174,15 @@ npm run build
 - **实现功能**：越权申请、审批流程、操作记录
 - **数据存储**：localStorage存储申请和审批记录
 - **设计特点**：申请表单、审批列表、状态跟踪
+![image](https://github.com/user-attachments/assets/96333811-042b-47e8-9ab5-29612cae1026)
+
+### 通知发送 (NotificationSender.vue)
+
+ - **技术点**：IndexedDB存储、表单验证、动态用户选择、附件管理、系统信息集成
+ - **实现功能**：多类型通知发送、接收者选择、优先级设置、附件上传、系统信息关联、通知历史管理
+ - **数据存储**：使用IndexedDB存储附件，localStorage存储通知历史
+ - **设计特点**：响应式布局、双面板设计（编辑+预览）、丰富的交互反馈
+ ![image](https://github.com/user-attachments/assets/ca1ffe03-7744-4295-8ad0-bdefc41f97fe)
 
 ### 仓库数据可视化 (WarehouseVisualization.vue)
 
@@ -176,6 +190,7 @@ npm run build
 - **实现功能**：仓库状态概览、商品分布、出入库趋势、3D库存可视化
 - **数据存储**：从localStorage获取仓库和操作数据进行分析
 - **设计特点**：多图表看板、3D交互、数据筛选器
+![image](https://github.com/user-attachments/assets/345020be-aa14-4d4e-bd27-8c28d8fa51f4)
 
 ### 用户个人中心 (UserProfile.vue)
 
@@ -183,6 +198,7 @@ npm run build
 - **实现功能**：个人信息管理、头像更换、密码修改、活动记录
 - **数据存储**：用户数据存储在localStorage、头像存储在IndexedDB
 - **设计特点**：信息卡片、活动时间线、编辑弹窗
+![image](https://github.com/user-attachments/assets/93ab70ef-2802-4ad8-b46c-fbe4a1e19a9e)
 
 ### 用户管理 (UserManagement.vue)
 
@@ -190,6 +206,7 @@ npm run build
 - **实现功能**：用户CRUD、角色分配、仓库授权管理
 - **数据存储**：localStorage存储用户和权限数据
 - **设计特点**：用户列表、授权对话框、权限可视化
+![image](https://github.com/user-attachments/assets/20b4fd23-d010-44ed-9d4c-06524b5a9a12)
 
 ## 许可证
 
